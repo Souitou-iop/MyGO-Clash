@@ -4,6 +4,9 @@
 # A pre-release tag such as v0.2.0-beta is published as a pre-release once
 # every platform is built: installed apps are never offered pre-releases.
 #
+# Running the workflow by hand with a tag, from the commit to release, tags
+# that commit on GitHub instead.
+#
 # Needs the MYGO_UPDATER_PRIVATE_KEY secret, the key that signs updates:
 #   gh secret set MYGO_UPDATER_PRIVATE_KEY < path/to/mygo-update.key
 name: Release
@@ -11,6 +14,14 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The version tag to create and release, such as v0.2.0-beta"
+        required: true
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: write # the draft release, and the uploads to it
@@ -21,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Check the version
-        run: test "$GITHUB_REF_NAME" = "v$(jq -r .version mygo.json)"
+        run: test "$TAG" = "v$(jq -r .version mygo.json)"
       - name: Write the release notes
         # The version's section of CHANGELOG.md, then the downloads and FAQ.
         run: |
@@ -31,16 +42,16 @@ jobs:
             sec { print }
           ' CHANGELOG.md > notes.md
           test -s notes.md || { echo "CHANGELOG.md has no section for $version"; exit 1; }
-          sed -e "s/{version}/$version/g" -e "s/{tag}/$GITHUB_REF_NAME/g" .github/release-template.md >> notes.md
+          sed -e "s/{version}/$version/g" -e "s/{tag}/$TAG/g" .github/release-template.md >> notes.md
       - name: Create the draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             prerelease=""
-            case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-              --draft $prerelease --verify-tag --title "MyGO-Clash $GITHUB_REF_NAME" --notes-file notes.md
+            case "$TAG" in *-*) prerelease="--prerelease" ;; esac
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --draft $prerelease --target "$GITHUB_SHA" --title "MyGO-Clash $TAG" --notes-file notes.md
           fi
 
   build:
@@ -96,18 +107,18 @@ jobs:
                  build/*/*.rpm build/*/*.pkg.tar.zst build/*/*.AppImage)
           scripts=(build/*/install.sh)
           if [ ${#scripts[@]} -gt 0 ]; then files+=("${scripts[0]}"); fi
-          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
           manifests=(build/*/update-*.json)
           if [ ${#manifests[@]} -gt 0 ]; then
-            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber "${manifests[@]}"
+            gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${manifests[@]}"
           fi
 
   publish-prerelease:
     needs: build
-    if: contains(github.ref_name, '-')
+    if: contains(inputs.tag || github.ref_name, '-')
     runs-on: ubuntu-latest
     steps:
       - name: Publish the pre-release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
