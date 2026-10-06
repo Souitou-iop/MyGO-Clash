@@ -36,7 +36,7 @@ jobs:
       - name: Write the release notes
         # The version's section of CHANGELOG.md, then the downloads and FAQ.
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${TAG#v}"
           awk -v v="$version" '
             /^## / { if (sec) exit; sec = ($2 == v || $2 == "[" v "]"); next }
             sec { print }
