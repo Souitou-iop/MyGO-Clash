@@ -106,7 +106,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
       footer={
         step === 1 ? (
           <>
-            <Button onClick={test} loading={busy} disabled={!url.trim()} style={{ marginRight: "auto" }}>
+            <Button onClick={test} loading={busy} disabled={!url.trim()} style={{ marginInlineEnd: "auto" }}>
               {t("sync.test")}
             </Button>
             <Button onClick={onClose}>{t("common.cancel")}</Button>
@@ -116,7 +116,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
           </>
         ) : (
           <>
-            <Button onClick={() => setStep(1)} style={{ marginRight: "auto" }}>
+            <Button onClick={() => setStep(1)} style={{ marginInlineEnd: "auto" }}>
               {t("common.back")}
             </Button>
             <Button onClick={onClose}>{t("common.cancel")}</Button>

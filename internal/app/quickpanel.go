@@ -139,7 +139,7 @@ func (p *quickPanel) load(win *mygo.Window) {
 	win.Update(func() {
 		p.st, p.state, p.ts = st, state, ts
 		p.selected = slices.Index([]string{"rule", "global", "direct"}, st.Clash.Mode)
-		p.sysOn, p.tunOn = st.SystemProxy.Enabled, st.Tun.Enabled
+		p.sysOn, p.tunOn = st.SystemProxy.Enabled, st.Tun.Enabled && state.TunAvailable
 	})
 }
 
@@ -332,17 +332,18 @@ func (p *quickPanel) view(c *ui.Context) {
 			})
 			ui.Divider(c)
 			ui.Row(c).AlignItems(ui.Center).Children(func() {
-				label := tr(a, "tun")
-				if !p.state.TunAvailable {
-					label = tr(a, "tunNeeds")
-				}
-				ui.Text(c, label).Grow(1)
-				sw := ui.Switch(c, &p.tunOn).Label(tr(a, "tun")).Disabled(!p.state.TunAvailable)
+				ui.Text(c, tunLabel(a, p.state)).Grow(1)
+				sw := ui.Switch(c, &p.tunOn).Label(tr(a, "tun"))
 				if sw.Changed() {
 					on := p.tunOn
-					go func() {
-						_, _ = a.updateSettings(context.Background(), func(s *config.Settings) { s.Tun.Enabled = on })
-					}()
+					if on && !p.state.TunAvailable {
+						p.tunOn = false // on once the service is in
+						go a.installServiceForTun()
+					} else {
+						go func() {
+							_, _ = a.updateSettings(context.Background(), func(s *config.Settings) { s.Tun.Enabled = on })
+						}()
+					}
 				}
 			})
 		})

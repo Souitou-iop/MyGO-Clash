@@ -47,7 +47,6 @@ type Settings struct {
 	AutoCloseConnections bool `json:"autoCloseConnections"`
 	// BuiltinEnhanced makes old profiles work with mihomo.
 	BuiltinEnhanced bool `json:"builtinEnhanced"`
-	AutoCheckUpdate bool `json:"autoCheckUpdate"`
 	// CoreMode chooses how the core runs: auto (the service when installed,
 	// else a child process), sidecar or service.
 	CoreMode string `json:"coreMode"`
@@ -67,7 +66,21 @@ type Settings struct {
 	Tailscale   Tailscale   `json:"tailscale"`
 	Sync        Sync        `json:"sync"`
 	Backup      Backup      `json:"backup"`
+	Updates     Updates     `json:"updates"`
 }
+
+// Updates is how the app looks for new versions of itself. Whether it
+// installs them without asking is the updater's, which its window changes
+// too.
+type Updates struct {
+	// AutoCheck looks for a new version in the background, every
+	// Interval: hourly, daily, weekly or monthly.
+	AutoCheck bool   `json:"autoCheck"`
+	Interval  string `json:"interval"`
+}
+
+// UpdateIntervals are the intervals Updates.Interval takes.
+var UpdateIntervals = []string{"hourly", "daily", "weekly", "monthly"}
 
 // UI is how the interface looks.
 type UI struct {
@@ -337,7 +350,6 @@ func Defaults() Settings {
 		CopyEnvType:     "posix",
 		Notifications:   true,
 		BuiltinEnhanced: true,
-		AutoCheckUpdate: true,
 		CoreMode:        "auto",
 		WebUIs: []string{
 			"https://metacubex.github.io/metacubexd/#/setup?http=true&hostname=%host&port=%port&secret=%secret",
@@ -398,7 +410,8 @@ func Defaults() Settings {
 		Lightweight: Lightweight{
 			DelayMinutes: 10,
 		},
-		Logs: Logs{Level: "info", MaxSizeMB: 8, MaxFiles: 5, AutoCleanDays: 7},
+		Updates: Updates{AutoCheck: true, Interval: "daily"},
+		Logs:    Logs{Level: "info", MaxSizeMB: 8, MaxFiles: 5, AutoCleanDays: 7},
 		Tailscale: Tailscale{
 			Mode:           "off",
 			ProxyName:      "Tailscale",
@@ -609,6 +622,9 @@ func (s *Settings) Normalize() error {
 	}
 	if s.Lightweight.DelayMinutes < 1 {
 		s.Lightweight.DelayMinutes = d.Lightweight.DelayMinutes
+	}
+	if !slices.Contains(UpdateIntervals, s.Updates.Interval) {
+		s.Updates = d.Updates
 	}
 	if !oneOf(s.Logs.Level, "debug", "info", "warn", "error") {
 		s.Logs.Level = d.Logs.Level

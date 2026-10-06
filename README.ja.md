@@ -27,7 +27,7 @@
 
 ### プロキシ
 
-- mihomo コアを内蔵し、独立したプロセスとして実行。システムサービスを入れると TUN モードが使えます
+- mihomo コアを内蔵し、独立したプロセスとして実行。TUN モードをオンにするとシステムサービスのインストールを案内し（管理者の認証は 1 回だけ）、アプリの更新後はサービスの更新も促します
 - ルール・グローバル・ダイレクトの 3 モード。ホーム、トレイ、クイックパネル、グローバルショートカットから切り替え
 - システムプロキシ：除外リスト、PAC スクリプト、ほかのアプリに書き換えられたときの自動復元
 - TUN：Mixed・gVisor・System スタック、自動ルート、厳格ルート、DNS ハイジャック、除外する範囲
@@ -66,17 +66,33 @@
 
 - トレイメニュー（モード、ノード、プロファイル、Tailscale）、トレイの通信速度表示、ネイティブのクイックパネル、グローバルショートカット
 - ホームのカードは表示と並び順を自由に変えられ、ウィンドウの幅に合わせて配置されます
-- ライト・ダークテーマと複数のアクセントカラー、フォントや CSS のカスタマイズ。表示言語は簡体字中国語と英語
+- ライト・ダークテーマと複数のアクセントカラー、フォントや CSS のカスタマイズ
+- 表示言語は 15 種類：简体中文、繁體中文、English、日本語、한국어、Русский、Español、Português (Brasil)、Deutsch、Français、Türkçe、Bahasa Indonesia、Tiếng Việt、فارسی、العربية。ペルシア語とアラビア語では左右反転したレイアウトになります
 - ウィンドウが前面にないときは、エラーと警告をシステムのネイティブ通知で表示。クリックすると関連する画面が開きます
 - 軽量モード：Web ビューを閉じてメモリを節約し、コアとトレイはそのまま動作
 - ログイン時の起動、サイレント起動、ターミナル用のプロキシ環境変数のコピー
 - 購読 URL やパスワードなどの機密情報は暗号化して保存し、鍵はシステムの安全な保管場所へ（macOS キーチェーン、Windows DPAPI、Linux Secret Service）
 - Windows では、Microsoft Store アプリがプロキシを使えるようにワンクリックで設定
 - macOS 26 以降では、アプリアイコンがシステムのライト・ダーク・クリア・色合いの外観に合わせて変わります
+- アプリの自動アップデート：自動確認の有無、確認の間隔（1 時間ごと〜毎月）、確認なしでのインストールを選べます。署名を検証し、変わった部分だけを取得する差分アップデートにも対応
 
 ## ダウンロード
 
-正式版はまだ公開していません。今はソースからビルドしてください（下記）。公開後は [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) ページからダウンロードできます。
+正式版はまだ公開していません。今はソースからビルドしてください（下記）。公開後は [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) ページからダウンロードできます：
+
+| システム | パッケージ | アップデート |
+|---|---|---|
+| macOS 12 以降（Apple シリコン / Intel） | `.dmg` | アプリ内で自動 |
+| Windows 10/11（x64 / ARM64） | インストーラー `Setup.exe` | アプリ内で自動 |
+| Linux（x64 / ARM64） | `.tar.gz` と `install.sh`（`~/.local` にインストール） | アプリ内で自動 |
+| Debian / Ubuntu | `.deb` | パッケージマネージャー |
+| Fedora / openSUSE | `.rpm` | パッケージマネージャー |
+| Arch Linux | `.pkg.tar.zst`（`sudo pacman -U`） | パッケージマネージャー |
+| その他のディストリビューション | `.AppImage` | 新しい版をダウンロード |
+
+Linux では GTK 3、WebKitGTK 4.1 と、トレイアイコン用の libayatana-appindicator が必要です。deb・rpm・Arch パッケージは自動で入れますが、AppImage と tar.gz ではシステムにあらかじめ必要です。
+
+パッケージにはまだコード署名がありません。macOS では初回は右クリックから「開く」を選んでください。Windows では SmartScreen の警告が出ることがあります。
 
 ## ソースからのビルド
 
@@ -96,6 +112,17 @@ bun run build   # このプラットフォーム向けにパッケージを作�
 ```
 
 ビルドには `package.json` のスクリプトを使ってください。mihomo に必要な `-tags=with_gvisor` が付きます。Go 側の API を変えたら、`bun run generate` でフロントエンドのバインディング `src/mygo.ts` を作り直します。
+
+Go は cgo を使わないので、Mac 1 台ですべてのプラットフォームをビルドできます：
+
+```bash
+bun run build -platform darwin/arm64,windows/amd64,windows/arm64,linux/amd64,linux/arm64
+go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"   # rpm・Arch パッケージ・AppImage
+```
+
+DMG は macOS でしか作れません。Windows のインストーラーには NSIS（`brew install makensis`）、AppImage には squashfs-tools（`brew install squashfs`）が必要です。
+
+`v0.2.0` のようなバージョンタグを push すると、GitHub Actions（`.github/workflows/release.yml`）がすべてのプラットフォームをビルドし、アップデートに署名して Release の下書きにアップロードします。下書きを公開すると、インストール済みのアプリがそのバージョンに更新されます。署名鍵は `go tool mygo keygen` で作り、リポジトリの `MYGO_UPDATER_PRIVATE_KEY` シークレットに置きます。リリースノートは `CHANGELOG.md` から取られます。
 
 アプリアイコンは Icon Composer のファイルから作っています。デザインを変えたら、Xcode 26 以降を入れた Mac で次のコマンドを実行すると、macOS 用の `Assets.car`、ほかのプラットフォーム用の `icon.png`、画面内のアイコンがまとめて作り直されます：
 
@@ -118,6 +145,7 @@ internal/cloudsync   エンドツーエンド暗号化の同期
 internal/sysproxy    システムプロキシ
 src/                 React のフロントエンド
 cmd/genicon          Icon Composer のファイルから各プラットフォームのアイコンを作成
+tools/linuxpkg       rpm・Arch パッケージ・AppImage を作成（独立した Go モジュール）
 ```
 
 ## 謝辞

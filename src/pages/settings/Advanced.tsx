@@ -1,10 +1,12 @@
-import { Bug, Copy, Cpu, ExternalLink, Feather, FolderOpen, KeyRound, LogOut, Power, RefreshCw, ScrollText } from "lucide-react";
+import { Bug, Copy, Cpu, Download, ExternalLink, Feather, FolderOpen, KeyRound, LogOut, Power, RefreshCw, ScrollText } from "lucide-react";
+import { useEffect, useState } from "react";
 import iconDark from "../../assets/icon-dark.png";
 import icon from "../../assets/icon.png";
 import { Five } from "../../components/Art";
+import { ltr, relative } from "../../lib/format";
 import { useT } from "../../lib/i18n";
 import { run, toast, useApp } from "../../lib/store";
-import { App, Core } from "../../mygo";
+import { App, Core, events, Updates, type UpdateState } from "../../mygo";
 import { Badge, Button, NumberInput, Row, Section, Select, Switch } from "../../ui";
 import { usePatch } from "./General";
 
@@ -73,17 +75,17 @@ export default function Advanced() {
       </Section>
 
       <Section title={t("adv.folders")}>
-        <Row label={t("adv.dataDir")} desc={info?.dataDir} icon={<FolderOpen size={16} />}>
+        <Row label={t("adv.dataDir")} desc={info && ltr(info.dataDir)} icon={<FolderOpen size={16} />}>
           <Button size="sm" onClick={() => App.openDir("data")}>
             {t("common.open")}
           </Button>
         </Row>
-        <Row label={t("adv.coreDir")} desc={info?.coreDir}>
+        <Row label={t("adv.coreDir")} desc={info && ltr(info.coreDir)}>
           <Button size="sm" onClick={() => App.openDir("core")}>
             {t("common.open")}
           </Button>
         </Row>
-        <Row label={t("adv.logsDir")} desc={info?.logsDir}>
+        <Row label={t("adv.logsDir")} desc={info && ltr(info.logsDir)}>
           <Button size="sm" onClick={() => App.openDir("logs")}>
             {t("common.open")}
           </Button>
@@ -117,7 +119,7 @@ export default function Advanced() {
               v{info?.version ?? ""} · mihomo {info?.coreVersion ?? ""} · {info?.os ?? ""}/{info?.arch ?? ""}
             </div>
             <div className="about-motto">
-              <span lang="ja">迷子でもいい、前へ進め。</span>
+              <span lang="ja" dir="ltr">迷子でもいい、前へ進め。</span>
               <span className="muted">{t("about.motto")}</span>
             </div>
           </div>
@@ -131,6 +133,8 @@ export default function Advanced() {
         </div>
         <div className="about-note faint">{t("about.homage")}</div>
       </div>
+
+      <UpdatesSection />
 
       <Section title={t("adv.more")}>
         <Row label={t("adv.license")} desc={t("adv.licenseDesc")}>
@@ -151,5 +155,71 @@ export default function Advanced() {
         </Row>
       </Section>
     </>
+  );
+}
+
+/**
+ * UpdatesSection checks for new versions of the app, and keeps the choices
+ * that Sparkle offers on the Mac: whether and how often to check, and
+ * whether to install updates without asking.
+ */
+function UpdatesSection() {
+  const t = useT();
+  const lang = useApp((st) => st.lang);
+  const s = useApp((st) => st.settings!);
+  const patch = usePatch();
+  const [u, setU] = useState<UpdateState>();
+  useEffect(() => {
+    void Updates.state().then(setU);
+    return events.update.on(setU);
+  }, []);
+  if (!u) return null;
+  const status = !u.supported
+    ? t(u.reason === "dev" ? "updates.dev" : "updates.package")
+    : u.checking
+      ? t("updates.checking")
+      : u.lastCheck
+        ? t("updates.lastCheck", { when: relative(u.lastCheck, lang) })
+        : t("updates.never");
+  const auto = s.updates.autoCheck;
+  return (
+    <Section title={t("updates.title")}>
+      <Row label={t("updates.check")} desc={status} icon={<Download size={16} />}>
+        {!u.supported && u.reason !== "dev" && (
+          <Button size="sm" variant="ghost" icon={<ExternalLink size={13} />} onClick={() => Updates.releasesURL().then(App.openURL)}>
+            {t("updates.releases")}
+          </Button>
+        )}
+        <Button size="sm" onClick={() => Updates.check()}>
+          {t("updates.checkNow")}
+        </Button>
+      </Row>
+      {u.ready && (
+        <Row label={t("updates.ready", { v: u.ready })} desc={t("updates.readyDesc")}>
+          <Button size="sm" variant="primary" icon={<RefreshCw size={13} />} onClick={() => App.relaunch()}>
+            {t("updates.relaunch")}
+          </Button>
+        </Row>
+      )}
+      {u.supported && (
+        <>
+          <Row label={t("updates.auto")} desc={t("updates.autoDesc")}>
+            <Switch checked={auto} onChange={(v) => patch({ updates: { autoCheck: v } })} />
+          </Row>
+          <Row label={t("updates.interval")}>
+            <Select
+              value={s.updates.interval}
+              disabled={!auto}
+              onChange={(v) => patch({ updates: { interval: v } })}
+              options={(["hourly", "daily", "weekly", "monthly"] as const).map((i) => ({ value: i, label: t(`updates.${i}`) }))}
+              width={150}
+            />
+          </Row>
+          <Row label={t("updates.autoInstall")} desc={t("updates.autoInstallDesc")}>
+            <Switch checked={u.automaticDownloads} disabled={!auto} onChange={(v) => run(() => Updates.setAutomaticDownloads(v), t("common.failed"))} />
+          </Row>
+        </>
+      )}
+    </Section>
   );
 }

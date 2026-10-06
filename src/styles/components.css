@@ -21,7 +21,7 @@
     radial-gradient(150% 34% at 0% 100%, var(--glow-a), transparent 72%),
     radial-gradient(130% 26% at 100% 0%, var(--glow-b), transparent 72%),
     var(--bg-sidebar);
-  border-right: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border);
   min-height: 0;
   overflow: hidden;
 }
@@ -98,7 +98,7 @@
   color: var(--text-2);
   border: 0;
   background: transparent;
-  text-align: left;
+  text-align: start;
   white-space: nowrap;
   font-weight: 520;
   position: relative;
@@ -116,7 +116,7 @@
 }
 
 .nav-item .nav-dot {
-  margin-left: auto;
+  margin-inline-start: auto;
   width: 7px;
   height: 7px;
   border-radius: 999px;
@@ -131,7 +131,7 @@
 .collapsed .nav-item .nav-dot {
   position: absolute;
   top: 7px;
-  right: 9px;
+  inset-inline-end: 9px;
 }
 
 .side-foot {
@@ -204,7 +204,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
+  margin-inline-start: auto;
   --app-region: no-drag;
 }
 
@@ -415,7 +415,7 @@
   border-radius: 8px;
   background: var(--surface);
   height: 30px;
-  padding-left: 9px;
+  padding-inline-start: 9px;
   gap: 6px;
   min-width: 0;
 }
@@ -458,7 +458,7 @@
   content: "";
   position: absolute;
   top: 2px;
-  left: 2px;
+  inset-inline-start: 2px;
   width: 17px;
   height: 17px;
   border-radius: 999px;
@@ -633,7 +633,7 @@
 
 .kv dd {
   margin: 0;
-  text-align: right;
+  text-align: end;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1038,7 +1038,7 @@
   border: 0;
   background: transparent;
   border-radius: 6px;
-  text-align: left;
+  text-align: start;
   font-size: 12.5px;
   white-space: nowrap;
 }
@@ -1338,3 +1338,43 @@ kbd {
     filter: drop-shadow(0 6px 16px color-mix(in oklab, var(--accent) 40%, transparent));
   }
 }
+
+/* ---------- Right-to-left languages ---------- */
+
+/* Persian and Arabic mirror the layout: the sidebar moves to the right,
+   while the window's controls stay where the system draws them, so the
+   insets that keep clear of them change sides. */
+[dir="rtl"] .sidebar-top {
+  padding-left: 14px;
+  padding-right: max(var(--mygo-titlebar-inset-right, 0px), 14px);
+}
+
+[dir="rtl"] .page-header {
+  padding: 0 20px 0 calc(var(--mygo-titlebar-inset-left, 0px) + 16px);
+}
+
+[dir="rtl"] .select {
+  padding-right: 10px;
+  padding-left: 28px;
+  background-position: left 9px center;
+}
+
+[dir="rtl"] .switch.on::after {
+  transform: translateX(-15px);
+}
+
+[dir="rtl"] .toasts.top-right,
+[dir="rtl"] .toasts.bottom-right {
+  right: calc(var(--sidebar-w) + 16px);
+}
+
+[dir="rtl"] .toasts.top-left,
+[dir="rtl"] .toasts.bottom-left {
+  left: 16px;
+}
+
+/* Arrows that point forward. */
+[dir="rtl"] .flip-rtl {
+  transform: scaleX(-1);
+}
+

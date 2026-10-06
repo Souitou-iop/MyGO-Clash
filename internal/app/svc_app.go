@@ -189,25 +189,10 @@ func (s AppService) NetworkInterfaces() []NetIface {
 }
 
 // AutoLaunch reports whether the app starts at login.
-func (s AppService) AutoLaunch() bool {
-	defer pinThread()()
-	return mygo.App.OpenAtLogin()
-}
+func (s AppService) AutoLaunch() bool { return mygo.App.OpenAtLogin() }
 
 // SetAutoLaunch starts the app at login, or not.
-func (s AppService) SetAutoLaunch(on bool) error {
-	defer pinThread()()
-	return mygo.App.SetOpenAtLogin(on)
-}
-
-// pinThread keeps the goroutine on its thread until unpin. mygo up to
-// v0.2.14 reads the app bundle, for the login item, in an autorelease pool
-// on the calling goroutine, and crashes when the goroutine moves to another
-// thread before popping it (fixed upstream after v0.2.14).
-func pinThread() (unpin func()) {
-	runtime.LockOSThread()
-	return runtime.UnlockOSThread
-}
+func (s AppService) SetAutoLaunch(on bool) error { return mygo.App.SetOpenAtLogin(on) }
 
 // Diagnostics returns a report for bug reports, without secrets, and copies
 // it.
@@ -290,24 +275,13 @@ func (s System) ServiceStatus(ctx context.Context) (ServiceState, error) {
 }
 
 // InstallService installs (or repairs, or updates) the service, asking for
-// an administrator's authorization, and moves the core to it.
-func (s System) InstallService(ctx context.Context) error {
+// an administrator's authorization, and moves the core to it; with
+// enableTun, it then turns TUN mode on.
+func (s System) InstallService(ctx context.Context, enableTun bool) error {
 	if err := s.a.waitReady(ctx); err != nil {
 		return err
 	}
-	err := service.Elevate(ctx, tr(s.a, "servicePrompt"), "service", "install", "--name", s.a.slug, "--owner", service.CurrentOwner())
-	if err != nil {
-		return err
-	}
-	deadline := time.Now().Add(15 * time.Second)
-	for time.Now().Before(deadline) {
-		if st := s.a.checkService(ctx); st.Installed && st.Error == "" {
-			break
-		}
-		time.Sleep(300 * time.Millisecond)
-	}
-	go s.a.startCore(context.Background())
-	return nil
+	return s.a.installService(context.WithoutCancel(ctx), enableTun)
 }
 
 // UninstallService removes the service; the core moves back to the app,

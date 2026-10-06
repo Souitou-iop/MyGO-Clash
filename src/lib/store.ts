@@ -18,7 +18,7 @@ import {
   type Traffic,
 } from "../mygo";
 import { errorText } from "./format";
-import { resolveLang, type Lang } from "./i18n";
+import { isRTL, loadLang, resolveLang, type Lang } from "./i18n";
 
 export type Page =
   | "home"
@@ -66,7 +66,7 @@ interface AppStore {
 export const useApp = create<AppStore>((set) => ({
   booted: false,
   preview: false,
-  lang: resolveLang(undefined, navigator.language),
+  lang: "en",
   page: "home",
   settingsTab: "general",
   info: null,
@@ -119,9 +119,18 @@ export type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? (T[K] exte
 /** patchSettings changes settings, and keeps the store in step. */
 export async function patchSettings(patch: DeepPartial<Settings>): Promise<Settings> {
   const next = await SettingsAPI.patch(patch as Record<string, unknown>);
-  useApp.setState((s) => ({ settings: next, lang: resolveLang(next.language, s.info?.locale) }));
+  useApp.setState({ settings: next });
+  void switchLang(resolveLang(next.language, useApp.getState().info?.locale));
   applyAppearance(next);
   return next;
+}
+
+/** switchLang shows the interface in a language once its strings are loaded. */
+async function switchLang(lang: Lang) {
+  await loadLang(lang).catch(() => undefined);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = isRTL(lang) ? "rtl" : "ltr";
+  useApp.setState({ lang });
 }
 
 /** textOn picks the text color that reads best on a #rrggbb background. */
@@ -222,6 +231,7 @@ export async function boot() {
     App.takePage(),
   ]);
   applyAppearance(settings);
+  await switchLang(resolveLang(settings.language, info.locale));
   const start = route(target) ?? route(settings.startPage) ?? { page: "home" };
   useApp.setState({
     booted: true,
@@ -231,13 +241,13 @@ export async function boot() {
     profiles,
     tailscale,
     sync,
-    lang: resolveLang(settings.language, info.locale),
     page: start.page,
     ...(start.tab ? { settingsTab: start.tab } : {}),
   });
   events.state.on((s) => useApp.setState({ state: s }));
   events.settings.on((s) => {
-    useApp.setState((st) => ({ settings: s, lang: resolveLang(s.language, st.info?.locale) }));
+    useApp.setState({ settings: s });
+    void switchLang(resolveLang(s.language, useApp.getState().info?.locale));
     applyAppearance(s);
   });
   events.profiles.on((p) => useApp.setState({ profiles: p }));
