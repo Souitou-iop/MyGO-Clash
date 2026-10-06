@@ -66,13 +66,20 @@ func (a *App) checkService(ctx context.Context) ServiceState {
 }
 
 // launcher chooses how to run the core: through the service when it is
-// installed and usable (or required), else as a child process.
+// installed and usable (or required), else as a child process. A service
+// of another version, left by an update of the app, runs nothing until the
+// user updates it: the core runs without privileges meanwhile, and the
+// user is told once.
 func (a *App) launcher(ctx context.Context) coremgr.Launcher {
 	st := a.settings.Get()
 	svc := a.checkService(ctx)
-	usable := svc.Installed && svc.Error == ""
-	if st.CoreMode != "sidecar" && usable {
+	if st.CoreMode != "sidecar" && svc.Usable() {
 		return coremgr.ServiceLauncher{Client: service.NewClient(a.slug)}
+	}
+	if st.CoreMode != "sidecar" && svc.Installed && svc.Outdated && !a.inFront() && a.outdatedTold.CompareAndSwap(false, true) {
+		// The window offers to update it when it opens; away, a
+		// notification says so.
+		a.notify(Notice{Level: "warning", Message: tr(a, "serviceOutdated"), Action: "repair-service", Page: "settings/network"})
 	}
 	return coremgr.Sidecar{Log: a.coreLog}
 }
@@ -93,7 +100,7 @@ func (a *App) startCore(ctx context.Context) {
 func (a *App) onCoreState(s coremgr.State) {
 	a.updateState(func(st *AppState) {
 		st.Core = s
-		st.TunAvailable = s.Privileged || (st.Service.Installed && st.Service.Error == "")
+		st.TunAvailable = s.Privileged || st.Service.Usable()
 		if s.Status != coremgr.StatusRunning {
 			st.Tun = false
 		}

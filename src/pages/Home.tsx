@@ -30,6 +30,7 @@ import { bytes, dateOnly, duration, flag, percent, rate, relative } from "../lib
 import { density, pack } from "../lib/homeLayout";
 import { useAsync, useNow, useWidth } from "../lib/hooks";
 import { useT } from "../lib/i18n";
+import { enableTunWithService } from "../lib/service";
 import { type Page, patchSettings, run, toastError, useApp, useTraffic } from "../lib/store";
 import {
   App,
@@ -55,7 +56,7 @@ function GoTo({ page, tab, label }: { page: Page; tab?: string; label: string })
   return (
     <button type="button" className="card-link" onClick={() => navigate(page, tab)}>
       {label}
-      <ChevronRight size={13} />
+      <ChevronRight size={13} className="flip-rtl" />
     </button>
   );
 }
@@ -89,7 +90,7 @@ function ControlCard() {
   };
   const install = async () => {
     setBusy("svc");
-    await run(() => System.installService(), t("service.installFailed"), t("service.installed"));
+    await enableTunWithService();
     setBusy("");
   };
 
@@ -123,7 +124,8 @@ function ControlCard() {
   ) : (
     t("home.sysproxyOff")
   );
-  const tunDesc = s.tun ? `${t("home.tunOn")} · ${settings.tun.stack}` : s.tunAvailable ? t("home.tunOff") : t("home.tunNeedsService");
+  const outdated = s.service.installed && s.service.outdated;
+  const tunDesc = s.tun ? `${t("home.tunOn")} · ${settings.tun.stack}` : s.tunAvailable ? t("home.tunOff") : outdated ? t("home.tunServiceOutdated") : t("home.tunNeedsService");
   const needsService = !s.tunAvailable && s.service.supported;
   return (
     <section className={`card control-card ${tone}`}>
@@ -159,11 +161,11 @@ function ControlCard() {
           title={t("settings.tun")}
           desc={tunDesc}
           on={s.tun}
-          onToggle={busy || needsService || !s.tunAvailable ? undefined : () => toggle("tun", !settings.tun.enabled)}
+          onToggle={busy ? undefined : needsService ? install : s.tunAvailable ? () => toggle("tun", !settings.tun.enabled) : undefined}
         >
           {needsService ? (
             <Button size="sm" variant="primary" icon={<ShieldCheck size={14} />} loading={busy === "svc"} onClick={install}>
-              {t("service.install")}
+              {outdated ? t("service.update") : t("service.install")}
             </Button>
           ) : (
             <Switch checked={settings.tun.enabled} busy={busy === "tun"} disabled={!s.tunAvailable} onChange={(v) => toggle("tun", v)} label={t("settings.tun")} />

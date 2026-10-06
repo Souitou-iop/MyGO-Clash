@@ -238,7 +238,7 @@ export function SeqEditor({
       size="wide"
       footer={
         <>
-          <Button variant="ghost" icon={<Code2 size={14} />} onClick={onRaw} style={{ marginRight: "auto" }}>
+          <Button variant="ghost" icon={<Code2 size={14} />} onClick={onRaw} style={{ marginInlineEnd: "auto" }}>
             {t("editor.editYaml")}
           </Button>
           <Button onClick={onClose}>{t("common.cancel")}</Button>

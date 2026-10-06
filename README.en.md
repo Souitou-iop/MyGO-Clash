@@ -27,7 +27,7 @@
 
 ### Proxy
 
-- The mihomo core built in, running as its own process; install the system service to turn on TUN mode
+- The mihomo core built in, running as its own process; turning on TUN mode installs the system service first, with one administrator authorization, and the app offers to update it after the app updates
 - Rule, global and direct modes, switched from the home page, the tray, the quick panel or global shortcuts
 - System proxy with a bypass list and PAC scripts, set again when another app changes it
 - TUN with the Mixed, gVisor and System stacks, auto route, strict route, DNS hijacking and excluded ranges
@@ -66,17 +66,33 @@
 
 - A tray menu (modes, proxies, profiles, Tailscale), the speed next to the tray icon, a native quick panel and global shortcuts
 - Home cards to turn on and off and put in order, laid out to fit the window's width
-- Light and dark themes, several accent colors, your own font and CSS; the interface in Simplified Chinese and English
+- Light and dark themes, several accent colors, your own font and CSS
+- The interface in 15 languages: 简体中文, 繁體中文, English, 日本語, 한국어, Русский, Español, Português (Brasil), Deutsch, Français, Türkçe, Bahasa Indonesia, Tiếng Việt, فارسی and العربية, with a mirrored layout for Persian and Arabic
 - Errors and warnings as native system notifications while the window isn't in front; clicking one opens the related page
 - Lightweight mode: closes the web view to save memory while the core and the tray keep running
 - Launch at login, silent start, and the terminal's proxy variables copied in one click
 - Subscription URLs, passwords and other secrets encrypted, with the key in the system's secure storage (the macOS Keychain, Windows DPAPI, the Linux Secret Service)
 - On Windows, one click lets Microsoft Store apps reach the proxy
 - On macOS 26 and later, the app icon follows the system's light, dark, clear and tinted appearances
+- Updates of the app itself: choose whether and how often to check (hourly to monthly) and whether to install without asking; updates are signed, and delta updates download only what changed
 
 ## Download
 
-No release has been published yet; for now, build from source (below). Releases will appear on the [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) page.
+No release has been published yet; for now, build from source (below). Releases will appear on the [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) page:
+
+| System | Package | Updates |
+|---|---|---|
+| macOS 12+ (Apple Silicon / Intel) | `.dmg` | Built in |
+| Windows 10/11 (x64 / ARM64) | `Setup.exe` installer | Built in |
+| Linux (x64 / ARM64) | `.tar.gz` with `install.sh`, which installs in `~/.local` | Built in |
+| Debian / Ubuntu | `.deb` | By the package manager |
+| Fedora / openSUSE | `.rpm` | By the package manager |
+| Arch Linux | `.pkg.tar.zst` (`sudo pacman -U`) | By the package manager |
+| Other distributions | `.AppImage` | Download the new version |
+
+Linux needs GTK 3, WebKitGTK 4.1 and libayatana-appindicator, for the tray icon. The deb, rpm and Arch packages install them; the AppImage and the tar.gz expect them on the system.
+
+The packages are not code-signed yet: on macOS, open the app the first time with right-click › Open; Windows may show a SmartScreen warning.
 
 ## Building from source
 
@@ -96,6 +112,17 @@ bun run build   # packages the app for this platform into build/
 ```
 
 Build through the scripts of `package.json`: they add the `-tags=with_gvisor` mihomo needs. After changing the Go side's API, `bun run generate` updates the frontend bindings in `src/mygo.ts`.
+
+Go needs no cgo, so one Mac builds every platform:
+
+```bash
+bun run build -platform darwin/arm64,windows/amd64,windows/arm64,linux/amd64,linux/arm64
+go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"   # rpm, Arch package and AppImage
+```
+
+Only macOS makes the DMG. The Windows installers need NSIS (`brew install makensis`), the AppImages squashfs-tools (`brew install squashfs`).
+
+Pushing a version tag such as `v0.2.0` runs GitHub Actions (`.github/workflows/release.yml`), which builds every platform, signs the updates and uploads them to a draft release; publishing the draft updates the installed apps. `go tool mygo keygen` makes the signing key, which goes in the repository's `MYGO_UPDATER_PRIVATE_KEY` secret; the release notes come from `CHANGELOG.md`.
 
 The app icon comes from an Icon Composer document. After changing the design, run this on a Mac with Xcode 26 or later to make the macOS `Assets.car`, the `icon.png` of the other platforms and the interface's icons again:
 
@@ -118,6 +145,7 @@ internal/cloudsync   end-to-end encrypted sync
 internal/sysproxy    the system proxy
 src/                 the React frontend
 cmd/genicon          makes every platform's icons from the Icon Composer document
+tools/linuxpkg       makes the rpm, Arch package and AppImage (a Go module of its own)
 ```
 
 ## Thanks

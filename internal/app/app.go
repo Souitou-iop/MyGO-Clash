@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -58,10 +59,13 @@ type App struct {
 	conns   *hub[coreapi.Connections]
 	logs    *logRing
 
-	ts     *tailscaleManager
-	syncer *syncer
-	tray   *trayUI
-	panel  *quickPanel
+	ts      *tailscaleManager
+	syncer  *syncer
+	tray    *trayUI
+	panel   *quickPanel
+	updates *updateChecker
+
+	outdatedTold atomic.Bool // the user heard that the service needs updating
 
 	applyMu sync.Mutex // one configuration at a time
 
@@ -103,6 +107,7 @@ func Main() {
 		}
 	})
 	mygo.App.OnBeforeQuit(a.beforeQuit)
+	useUpdater()
 	mygo.App.WhenReady(a.start)
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)
@@ -135,6 +140,7 @@ func (a *App) start() {
 	a.applyTheme(st)
 	a.tray = newTrayUI(a)
 	a.panel = newQuickPanel(a)
+	a.updates = newUpdateChecker(a)
 	if !st.SilentStart && !mygo.App.WasOpenedAtLogin() {
 		a.showMain()
 	} else if runtime.GOOS == "darwin" {
@@ -272,11 +278,7 @@ func (a *App) notify(n Notice) {
 	if n.Level == "" {
 		n.Level = "info"
 	}
-	a.mu.Lock()
-	win := a.win
-	a.mu.Unlock()
-	inFront := win != nil && !win.IsDestroyed() && win.IsVisible() && win.IsFocused()
-	if !inFront && (n.Level == "error" || n.Level == "warning") && a.settings != nil && a.settings.Get().Notifications && mygo.NotificationsSupported() {
+	if !a.inFront() && (n.Level == "error" || n.Level == "warning" || n.Important) && a.settings != nil && a.settings.Get().Notifications && mygo.NotificationsSupported() {
 		title, body := n.Message, n.Detail
 		if body == "" {
 			title, body = a.name, n.Message
@@ -284,13 +286,25 @@ func (a *App) notify(n Notice) {
 		nt := mygo.NewNotification(mygo.NotificationOptions{Title: title, Body: body})
 		page := n.Page
 		nt.OnClick(func() { a.navigate(page) })
-		err := nt.Show()
-		if err == nil {
-			return
-		}
-		log.Printf("notification: %v", err)
+		// Show waits for the system, and on macOS for the user to allow
+		// notifications the first time; a toast stands in when they're not.
+		go func() {
+			if err := nt.Show(); err != nil {
+				log.Printf("notification: %v", err)
+				_ = NoticeEvent.Broadcast(n)
+			}
+		}()
+		return
 	}
 	_ = NoticeEvent.Broadcast(n)
+}
+
+// inFront reports whether the main window is visible and focused.
+func (a *App) inFront() bool {
+	a.mu.Lock()
+	win := a.win
+	a.mu.Unlock()
+	return win != nil && !win.IsDestroyed() && win.IsVisible() && win.IsFocused()
 }
 
 // notifyErr reports err, if any; a click on its notification opens page.

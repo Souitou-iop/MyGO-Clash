@@ -21,7 +21,7 @@ import {
 import { useMemo, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { QRCode } from "../components/QRCode";
-import { bytes, relative } from "../lib/format";
+import { bytes, ltr, relative } from "../lib/format";
 import { useAsync, useNow } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, toast, toastError, useApp } from "../lib/store";
@@ -167,7 +167,7 @@ function Self({ status, mode }: { status: TailscaleStatus; mode: Mode }) {
           <dt>{t("ts.address")}</dt>
           <dd>
             {self.tailscaleIps.map((ip) => (
-              <button key={ip} className="chip mono" style={{ marginLeft: 4 }} onClick={() => copy(ip, t("ts.ipCopied"))}>
+              <button key={ip} className="chip mono" style={{ marginInlineStart: 4 }} onClick={() => copy(ip, t("ts.ipCopied"))}>
                 {ip}
               </button>
             ))}
@@ -280,8 +280,8 @@ function Peer({ p, mode }: { p: TailscalePeer; mode: Mode }) {
           </button>
         )}
         {ping && (
-          <span className="delay good" title={ping.endpoint || ping.derp} style={{ minWidth: 70, textAlign: "right" }}>
-            {ping.err ? <span className="delay bad">{t("common.failed")}</span> : `${ping.latencyMs.toFixed(0)} ms ${ping.endpoint ? "↔" : "⇢"}`}
+          <span className="delay good" title={ping.endpoint || ping.derp} style={{ minWidth: 70, textAlign: "end" }}>
+            {ping.err ? <span className="delay bad">{t("common.failed")}</span> : `${ltr(`${ping.latencyMs.toFixed(0)} ms`)} ${ping.endpoint ? "↔" : "⇢"}`}
           </span>
         )}
         <Button

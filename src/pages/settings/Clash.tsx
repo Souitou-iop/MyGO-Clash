@@ -194,7 +194,7 @@ function DNSDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
       flush
       footer={
         <>
-          <Button variant="ghost" onClick={() => SettingsAPI.defaults().then((d) => setText(d.dns.config))} style={{ marginRight: "auto" }}>
+          <Button variant="ghost" onClick={() => SettingsAPI.defaults().then((d) => setText(d.dns.config))} style={{ marginInlineEnd: "auto" }}>
             {t("settings.resetDefault")}
           </Button>
           <Button onClick={onClose}>{t("common.cancel")}</Button>

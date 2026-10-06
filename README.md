@@ -27,7 +27,7 @@
 
 ### 代理
 
-- 内置 mihomo 内核，作为独立进程运行；安装系统服务后可开启 TUN 模式
+- 内置 mihomo 内核，作为独立进程运行；开启 TUN 模式时会引导安装系统服务（只需一次管理员授权），应用更新后会提示同步更新服务
 - 规则、全局、直连三种模式，在首页、托盘、快捷面板和全局快捷键里都能切换
 - 系统代理：绕过列表、PAC 脚本，被其他软件改掉时自动恢复
 - TUN：Mixed、gVisor、System 三种协议栈，自动路由、严格路由、DNS 劫持、排除网段
@@ -66,17 +66,33 @@
 
 - 托盘菜单（模式、节点、订阅、Tailscale）、托盘网速、原生快捷面板、全局快捷键
 - 首页卡片可以自由开关、排序，布局随窗口宽度自动调整
-- 浅色、深色主题和多种强调色，可自定义字体与 CSS；界面支持简体中文和英文
+- 浅色、深色主题和多种强调色，可自定义字体与 CSS
+- 界面支持 15 种语言：简体中文、繁體中文、English、日本語、한국어、Русский、Español、Português (Brasil)、Deutsch、Français、Türkçe、Bahasa Indonesia、Tiếng Việt、فارسی、العربية；波斯语和阿拉伯语使用从右到左的镜像布局
 - 窗口不在前台时，错误和警告通过系统原生通知提示，点击直接打开相关页面
 - 轻量模式：关闭网页视图以节省内存，内核和托盘照常运行
 - 开机自启、静默启动，一键复制终端用的代理环境变量
 - 订阅地址、密码等敏感信息加密保存，密钥放在系统的安全存储中（macOS 钥匙串、Windows DPAPI、Linux Secret Service）
 - Windows 上可一键解除 Microsoft Store 应用的回环限制
 - macOS 26 及以上，应用图标跟随系统的浅色、深色、透明和着色外观
+- 应用自动更新：可设置是否自动检查、检查频率（每小时到每月）和是否自动下载安装；更新包经过签名校验，并支持只下载变化部分的增量更新
 
 ## 下载
 
-还没有发布正式版本，目前请从源码构建（见下文）。发布后可以在 [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) 页面下载。
+还没有发布正式版本，目前请从源码构建（见下文）。发布后可以在 [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) 页面下载：
+
+| 系统 | 安装包 | 自动更新 |
+|---|---|---|
+| macOS 12+（Apple Silicon / Intel） | `.dmg` | 支持 |
+| Windows 10/11（x64 / ARM64） | 安装程序 `Setup.exe` | 支持 |
+| Linux（x64 / ARM64） | `.tar.gz` 配合 `install.sh`，安装到 `~/.local` | 支持 |
+| Debian / Ubuntu | `.deb` | 由软件包管理器更新 |
+| Fedora / openSUSE | `.rpm` | 由软件包管理器更新 |
+| Arch Linux | `.pkg.tar.zst`（`sudo pacman -U`） | 由软件包管理器更新 |
+| 其他发行版 | `.AppImage` | 下载新版本替换 |
+
+Linux 需要 GTK 3、WebKitGTK 4.1 和 libayatana-appindicator（托盘图标）。deb、rpm 和 Arch 包会自动安装这些依赖，AppImage 和 tar.gz 需要系统里已经有。
+
+目前安装包还没有代码签名：macOS 首次打开请右键选择「打开」，Windows 可能会弹出 SmartScreen 提示。
 
 ## 从源码构建
 
@@ -96,6 +112,17 @@ bun run build   # 打包当前平台，输出到 build/
 ```
 
 请通过 `package.json` 里的脚本构建：它们会加上 mihomo 需要的 `-tags=with_gvisor`。修改 Go 侧的接口后，用 `bun run generate` 重新生成前端绑定 `src/mygo.ts`。
+
+Go 不需要 cgo，所以在一台 Mac 上就能构建所有平台：
+
+```bash
+bun run build -platform darwin/arm64,windows/amd64,windows/arm64,linux/amd64,linux/arm64
+go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"   # rpm、Arch 包和 AppImage
+```
+
+macOS 的 DMG 只能在 macOS 上生成。Windows 安装程序需要 NSIS（`brew install makensis`），AppImage 需要 squashfs-tools（`brew install squashfs`）。
+
+推送 `v0.2.0` 这样的版本标签后，GitHub Actions（`.github/workflows/release.yml`）会构建所有平台，签名更新包，并上传到 Release 草稿；发布草稿后，已安装的应用就会更新到这个版本。签名密钥用 `go tool mygo keygen` 生成，放在仓库的 `MYGO_UPDATER_PRIVATE_KEY` secret 里，更新说明取自 `CHANGELOG.md`。
 
 应用图标来自 Icon Composer 文件。修改设计后，在装有 Xcode 26 或更高版本的 Mac 上运行下面的命令，重新生成 macOS 的 `Assets.car`、其他平台用的 `icon.png` 和界面里的图标：
 
@@ -118,6 +145,7 @@ internal/cloudsync   端到端加密同步
 internal/sysproxy    系统代理
 src/                 React 前端
 cmd/genicon          从 Icon Composer 文件生成各平台图标
+tools/linuxpkg       生成 rpm、Arch 包和 AppImage（独立的 Go 模块）
 ```
 
 ## 致谢

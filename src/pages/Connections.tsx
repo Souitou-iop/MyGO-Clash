@@ -62,7 +62,7 @@ function Detail({ c, onClose }: { c: Connection | null; onClose: () => void }) {
         {rows.map(([k, v]) => (
           <div key={k} style={{ display: "contents" }}>
             <dt>{k}</dt>
-            <dd className="selectable mono" style={{ textAlign: "left", whiteSpace: "normal", wordBreak: "break-all" }}>
+            <dd className="selectable mono" style={{ textAlign: "start", whiteSpace: "normal", wordBreak: "break-all" }}>
               {v}
             </dd>
           </div>

@@ -539,7 +539,10 @@ export interface ServiceState {
   supported: boolean;
   installed: boolean;
   version?: string;
-  /** Outdated reports a service of another version than the app's. */
+  /**
+   * Outdated reports a service of another version than the app's, as
+   * after the app updated: it runs no core until it is updated too.
+   */
   outdated: boolean;
   error?: string;
 }
@@ -577,7 +580,6 @@ export interface Settings {
   autoCloseConnections: boolean;
   /** BuiltinEnhanced makes old profiles work with mihomo. */
   builtinEnhanced: boolean;
-  autoCheckUpdate: boolean;
   /**
    * CoreMode chooses how the core runs: auto (the service when installed,
    * else a child process), sidecar or service.
@@ -598,6 +600,7 @@ export interface Settings {
   tailscale: Tailscale;
   sync: Sync;
   backup: Backup;
+  updates: Updates;
 }
 
 /** Site is a site whose delay the home page tests. */
@@ -932,6 +935,48 @@ export interface Unlock {
   region?: string;
   detail?: string;
   at?: string;
+}
+
+/** UpdateState tells the page about updates of the app. */
+export interface UpdateState {
+  /**
+   * Supported is whether this install updates itself. When it does not,
+   * Reason says why: "dev" for development builds, "package" for apps
+   * that a package manager or an AppImage holds.
+   */
+  supported: boolean;
+  reason?: string;
+  /**
+   * AutomaticDownloads installs updates found in the background without
+   * asking.
+   */
+  automaticDownloads: boolean;
+  /**
+   * LastCheck is when the app last checked successfully, in Unix
+   * milliseconds; 0 for never.
+   */
+  lastCheck: number;
+  /** Checking is set during a background check. */
+  checking: boolean;
+  /**
+   * Ready is the version installed in the background, which runs when
+   * the app restarts.
+   */
+  ready?: string;
+}
+
+/**
+ * Updates is how the app looks for new versions of itself. Whether it
+ * installs them without asking is the updater's, which its window changes
+ * too.
+ */
+export interface Updates {
+  /**
+   * AutoCheck looks for a new version in the background, every
+   * Interval: hourly, daily, weekly or monthly.
+   */
+  autoCheck: boolean;
+  interval: string;
 }
 
 /** Usage is the traffic and expiry a subscription reports. */
@@ -1325,10 +1370,11 @@ export const Core = {
 export const System = {
   /**
    * InstallService installs (or repairs, or updates) the service, asking for
-   * an administrator's authorization, and moves the core to it.
+   * an administrator's authorization, and moves the core to it; with
+   * enableTun, it then turns TUN mode on.
    */
-  installService(): Promise<void> {
-    return call("System.InstallService");
+  installService(enableTun: boolean): Promise<void> {
+    return call("System.InstallService", enableTun);
   },
   /** ServiceStatus checks the service. */
   serviceStatus(): Promise<ServiceState> {
@@ -1505,6 +1551,32 @@ export const Tools = {
   },
 } as const;
 
+/** UpdateService checks for updates of the app. */
+export const Updates = {
+  /**
+   * Check checks for an update now, in the update window, which also says
+   * when the app is up to date or why it cannot update itself.
+   */
+  check(): Promise<void> {
+    return call("Updates.Check");
+  },
+  /** ReleasesURL returns the page to download versions from. */
+  releasesURL(): Promise<string> {
+    return call("Updates.ReleasesURL");
+  },
+  /**
+   * SetAutomaticDownloads installs updates found in the background without
+   * asking, or not.
+   */
+  setAutomaticDownloads(on: boolean): Promise<void> {
+    return call("Updates.SetAutomaticDownloads", on);
+  },
+  /** State returns the state of updates. */
+  state(): Promise<UpdateState> {
+    return call("Updates.State");
+  },
+} as const;
+
 // ---- Events ----
 
 /** Events sent by the Go side. Subscribe with `events.name.on(listener)`. */
@@ -1533,4 +1605,6 @@ export const events = {
    * page, from the tray or the quick panel.
    */
   selection: event<Selection>("selection"),
+  /** UpdateEvent tells pages that UpdateState changed. */
+  update: event<UpdateState>("update"),
 } as const;
