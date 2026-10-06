@@ -26,7 +26,7 @@ The first public beta of MyGO-Clash, built on the mihomo core and the MyGo frame
 
 #### 🍎 macOS
 
-- 提供 Apple 芯片与 Intel 芯片通用的 DMG 安装包，最低支持 macOS 12 / A universal DMG for Apple silicon and Intel, requires macOS 12 or later
+- 提供 Apple 芯片与 Intel 芯片分开的 DMG 安装包，最低支持 macOS 12 / Separate DMG installers for Apple silicon and Intel, requires macOS 12 or later
 
 #### 🐧 Linux
 
