@@ -68,7 +68,7 @@
 
 /* The title clips its overflow; a status dot keeps room for its halo. */
 .lead-title .dot {
-  margin-left: 3px;
+  margin-inline-start: 3px;
 }
 
 .lead-figure {
@@ -291,15 +291,15 @@
 
 .tstat:first-child,
 .tstats.two .tstat:nth-child(odd) {
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .tstat + .tstat {
-  border-left: 1px solid var(--border);
+  border-inline-start: 1px solid var(--border);
 }
 
 .tstats.two .tstat:nth-child(odd) {
-  border-left: 0;
+  border-inline-start: 0;
 }
 
 .tstat-label {
@@ -343,7 +343,7 @@
 .chart-note {
   position: absolute;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   font-size: 11px;
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
@@ -377,7 +377,7 @@
   border: 0;
   border-radius: 7px;
   background: transparent;
-  text-align: left;
+  text-align: start;
   font-size: 12.5px;
   color: var(--text-2);
 }
@@ -402,7 +402,7 @@
 
 .node-row .delay {
   min-width: 46px;
-  text-align: right;
+  text-align: end;
 }
 
 /* Sites: tiles like the proxies page's, or a list in a narrow card. */
@@ -557,7 +557,7 @@
   padding: 4px 6px;
   border-radius: 6px;
   min-width: 54px;
-  text-align: right;
+  text-align: end;
   flex: none;
 }
 
@@ -674,7 +674,7 @@
 
 .ts-points {
   margin: 0;
-  padding-left: 18px;
+  padding-inline-start: 18px;
   color: var(--text-2);
   font-size: 12.5px;
   display: flex;
@@ -794,7 +794,7 @@
 }
 
 .strength span {
-  margin-left: 8px;
+  margin-inline-start: 8px;
   min-width: 70px;
 }
 

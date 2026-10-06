@@ -17,4 +17,5 @@ func (a *App) bind() {
 	mygo.BindAs("Tailscale", Tailscale{a})
 	mygo.BindAs("Sync", Sync{a})
 	mygo.BindAs("Tools", Tools{a})
+	mygo.BindAs("Updates", UpdateService{a})
 }

@@ -142,7 +142,7 @@ function Group({
   return (
     <section className="card proxy-group">
       <div className="proxy-group-head" onClick={onToggle}>
-        {open ? <ChevronDown size={16} className="muted" /> : <ChevronRight size={16} className="muted" />}
+        {open ? <ChevronDown size={16} className="muted" /> : <ChevronRight size={16} className="muted flip-rtl" />}
         {showIcon && group.icon && <img src={group.icon} alt="" className="group-icon" />}
         <div className="grow" style={{ minWidth: 0 }}>
           <div className="row" style={{ gap: 7 }}>

@@ -13,6 +13,7 @@ import (
 
 	"github.com/mygo-clash/mygo-clash/internal/config"
 	"github.com/mygo-clash/mygo-clash/internal/coreapi"
+	"github.com/mygo-clash/mygo-clash/internal/service"
 	"github.com/mygo-clash/mygo-clash/internal/sysproxy"
 )
 
@@ -61,11 +62,16 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 	needRestart := old.CoreMode != cur.CoreMode
 	if cur.Tun.Enabled && !old.Tun.Enabled && !a.core.State().Privileged {
 		svc := a.snapshot().Service
-		if !svc.Installed || svc.Error != "" {
-			// TUN needs the service: undo the switch and say why.
+		if !svc.Usable() {
+			// TUN needs the service: undo the switch and say why. The
+			// pages, the tray and the hotkey install it first instead.
 			_, _, _ = a.settings.Update(func(s *config.Settings) { s.Tun.Enabled = false })
 			_ = SettingsEvent.Broadcast(a.settings.Get())
-			a.notify(Notice{Level: "warning", Message: tr(a, "tunNeedsService"), Action: "install-service", Page: "settings/network"})
+			if svc.Installed && svc.Outdated {
+				a.notify(Notice{Level: "warning", Message: tr(a, "serviceOutdated"), Action: "repair-service", Page: "settings/network"})
+				return errors.New(tr(a, "serviceOutdated"))
+			}
+			a.notify(Notice{Level: "warning", Message: tr(a, "tunNeedsService"), Action: "install-tun", Page: "settings/network"})
 			return errors.New(tr(a, "tunNeedsService"))
 		}
 		needRestart = true // move the core to the service
@@ -100,6 +106,9 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 	}
 	if changed(func(s config.Settings) any { return s.Sync }) {
 		a.syncer.restart()
+	}
+	if changed(func(s config.Settings) any { return s.Updates }) && a.updates != nil {
+		a.updates.schedule()
 	}
 	if changed(func(s config.Settings) any { return s.Tailscale }) {
 		a.ts.settingsChanged(old.Tailscale, cur.Tailscale)
@@ -144,7 +153,45 @@ func (a *App) toggleSystemProxy() {
 // toggleTun turns TUN on or off.
 func (a *App) toggleTun() {
 	on := !a.settings.Get().Tun.Enabled
+	if on && !a.snapshot().TunAvailable {
+		a.installServiceForTun()
+		return
+	}
 	_, _ = a.updateSettings(context.Background(), func(s *config.Settings) { s.Tun.Enabled = on })
+}
+
+// installService installs, repairs or updates the service, asking for an
+// administrator's authorization, and moves the core to it. With enableTun
+// it then turns TUN mode on: turning TUN on without the service installs
+// it first, as Clash Verge does.
+func (a *App) installService(ctx context.Context, enableTun bool) error {
+	err := service.Elevate(ctx, tr(a, "servicePrompt"), "service", "install", "--name", a.slug, "--owner", service.CurrentOwner())
+	if err != nil {
+		return err
+	}
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) && !a.checkService(ctx).Usable() {
+		time.Sleep(300 * time.Millisecond)
+	}
+	a.startCore(ctx)
+	if !enableTun {
+		return nil
+	}
+	if !a.snapshot().TunAvailable {
+		return errors.New(tr(a, "tunNeedsService"))
+	}
+	_, err = a.updateSettings(ctx, func(s *config.Settings) { s.Tun.Enabled = true })
+	return err
+}
+
+// installServiceForTun turns TUN on from the tray, the quick panel or a
+// hotkey when the service is missing or outdated: the system's
+// authorization dialog asks first, and declining it changes nothing.
+func (a *App) installServiceForTun() {
+	err := a.installService(context.Background(), true)
+	if err != nil && !errors.Is(err, service.ErrCanceled) {
+		a.notifyErr("settings/network", tr(a, "serviceFailed"), err)
+	}
 }
 
 // applySystemProxy sets the system's proxy as the settings say, and
@@ -302,4 +349,4 @@ func syncable(s config.Settings) map[string]any {
 }
 
 // deviceKeys are settings of one device, which never sync.
-var deviceKeys = []string{"sync", "coreMode", "silentStart", "hotkeys", "lightweight", "logs", "backup", "dns"}
+var deviceKeys = []string{"sync", "coreMode", "silentStart", "hotkeys", "lightweight", "logs", "backup", "dns", "updates"}

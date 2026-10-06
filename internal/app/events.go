@@ -39,10 +39,15 @@ type ServiceState struct {
 	Supported bool   `json:"supported"`
 	Installed bool   `json:"installed"`
 	Version   string `json:"version,omitempty"`
-	// Outdated reports a service of another version than the app's.
+	// Outdated reports a service of another version than the app's, as
+	// after the app updated: it runs no core until it is updated too.
 	Outdated bool   `json:"outdated"`
 	Error    string `json:"error,omitempty"`
 }
+
+// Usable reports whether the core can run in the service: it is installed,
+// answers, and is of the app's version.
+func (s ServiceState) Usable() bool { return s.Installed && s.Error == "" && !s.Outdated }
 
 // Notice is a message for the user, shown as a toast.
 type Notice struct {
@@ -56,6 +61,9 @@ type Notice struct {
 	// as "profiles", or a tab of the settings as "settings/sync". Empty
 	// means home.
 	Page string `json:"page,omitempty"`
+	// Important notices, like errors and warnings, become system
+	// notifications while the window is away.
+	Important bool `json:"-"`
 }
 
 // Events sent to the pages.

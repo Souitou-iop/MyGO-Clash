@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
 
 	"github.com/mygo-clash/mygo-clash/internal/art"
 	"github.com/mygo-clash/mygo-clash/internal/coremgr"
@@ -169,18 +170,8 @@ func (t *trayUI) build() {
 	items = append(items, mygo.Separator())
 	items = append(items, &mygo.MenuItem{Label: tr(a, "systemProxy"), Type: mygo.MenuItemCheckbox, Checked: st.SystemProxy.Enabled,
 		Click: func(*mygo.MenuItem, *mygo.Window) { go a.toggleSystemProxy() }})
-	tunLabel := tr(a, "tun")
-	if !s.TunAvailable {
-		tunLabel = tr(a, "tunNeeds")
-	}
-	items = append(items, &mygo.MenuItem{Label: tunLabel, Type: mygo.MenuItemCheckbox, Checked: st.Tun.Enabled,
-		Click: func(*mygo.MenuItem, *mygo.Window) {
-			if !a.snapshot().TunAvailable {
-				a.navigate("settings")
-				return
-			}
-			go a.toggleTun()
-		}})
+	items = append(items, &mygo.MenuItem{Label: tunLabel(a, s), Type: mygo.MenuItemCheckbox, Checked: st.Tun.Enabled && s.TunAvailable,
+		Click: func(*mygo.MenuItem, *mygo.Window) { go a.toggleTun() }})
 	if st.Tailscale.Mode != "off" {
 		items = append(items, t.tailscale())
 	}
@@ -216,6 +207,7 @@ func (t *trayUI) build() {
 		}),
 		mygo.Separator(),
 		item("lightweight", a.enterLightweight),
+		item("checkUpdates", updater.CheckForUpdates),
 		item("restartApp", func() { go mygo.App.Relaunch() }),
 		item("settings", func() { a.navigate("settings") }),
 	}})
@@ -385,4 +377,16 @@ func shortRate(b int64) string {
 		return strings.TrimSuffix(fmt.Sprintf("%.1f", f), ".0") + units[i]
 	}
 	return fmt.Sprintf("%.0f%s", f, units[i])
+}
+
+// tunLabel names TUN mode in the tray and the quick panel, with what
+// turning it on takes when the service is missing or outdated.
+func tunLabel(a *App, s AppState) string {
+	switch {
+	case s.TunAvailable:
+		return tr(a, "tun")
+	case s.Service.Installed && s.Service.Outdated:
+		return tr(a, "tunUpdate")
+	}
+	return tr(a, "tunNeeds")
 }

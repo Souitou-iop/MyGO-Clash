@@ -56,7 +56,7 @@ export function EditorDialog({ uid, title, lang, onClose, readOnly }: { uid: str
       flush
       footer={
         <>
-          <span className="muted" style={{ fontSize: 12, marginRight: "auto" }}>
+          <span className="muted" style={{ fontSize: 12, marginInlineEnd: "auto" }}>
             {readOnly ? t("profiles.readOnly") : dirty ? t("profiles.unsaved") : `${navigator.platform.includes("Mac") ? "⌘" : "Ctrl"}+S ${t("common.save")}`}
           </span>
           <Button onClick={close}>{t("common.close")}</Button>

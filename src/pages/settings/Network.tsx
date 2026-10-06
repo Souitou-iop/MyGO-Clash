@@ -2,6 +2,7 @@ import { Globe, Monitor, Network as NetIcon, ShieldCheck, ShieldOff, Wrench } fr
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
+import { enableTunWithService } from "../../lib/service";
 import { patchSettings, run, useApp } from "../../lib/store";
 import { Settings as SettingsAPI, System, type SystemProxy, type Tun } from "../../mygo";
 import { Badge, Banner, Button, confirm, Dialog, Field, Input, NumberInput, Row, Section, Segmented, Spinner, Switch } from "../../ui";
@@ -219,7 +220,7 @@ function ServiceSection() {
       >
         {svc.installed ? (
           <>
-            <Button size="sm" icon={<Wrench size={13} />} loading={busy === "repair"} onClick={() => act("repair", () => System.installService(), t("service.installed"), t("service.installFailed"))}>
+            <Button size="sm" icon={<Wrench size={13} />} loading={busy === "repair"} onClick={() => act("repair", () => System.installService(false), t("service.installed"), t("service.installFailed"))}>
               {svc.outdated ? t("service.update") : t("service.repair")}
             </Button>
             <Button
@@ -235,7 +236,7 @@ function ServiceSection() {
             </Button>
           </>
         ) : (
-          <Button size="sm" variant="primary" icon={<ShieldCheck size={13} />} loading={busy === "install"} onClick={() => act("install", () => System.installService(), t("service.installed"), t("service.installFailed"))}>
+          <Button size="sm" variant="primary" icon={<ShieldCheck size={13} />} loading={busy === "install"} onClick={() => act("install", () => System.installService(false), t("service.installed"), t("service.installFailed"))}>
             {t("service.install")}
           </Button>
         )}
@@ -271,13 +272,17 @@ export default function Network() {
         </Row>
         <Row
           label={t("settings.tun")}
-          desc={state?.tunAvailable ? t("settings.tunDesc") : t("settings.tunNeedsService")}
+          desc={state?.tunAvailable ? t("settings.tunDesc") : state?.service.outdated ? t("home.tunServiceOutdated") : t("settings.tunNeedsService")}
           icon={<NetIcon size={16} />}
         >
           <Button size="sm" onClick={() => setDialog("tun")}>
             {t("common.configure")}
           </Button>
-          <Switch checked={s.tun.enabled} disabled={!state?.tunAvailable && !s.tun.enabled} busy={busy === "tun"} onChange={(v) => toggle("tun", { tun: { enabled: v } })} />
+          <Switch
+            checked={s.tun.enabled && !!state?.tunAvailable}
+            busy={busy === "tun"}
+            onChange={(v) => (v && !state?.tunAvailable ? enableTunWithService() : toggle("tun", { tun: { enabled: v } }))}
+          />
         </Row>
         <Row label={t("settings.allowLan")} desc={t("settings.allowLanDesc")} icon={<Monitor size={16} />}>
           <Switch checked={s.clash.allowLan} onChange={(v) => patch({ clash: { allowLan: v } })} />

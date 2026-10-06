@@ -1,0 +1,68 @@
+# Builds every platform when a version tag such as v0.2.0 is pushed, and
+# uploads the installers, packages and signed updates to a draft release.
+# Publishing the draft makes it the version that installed apps update to.
+#
+# Needs the MYGO_UPDATER_PRIVATE_KEY secret, the key that signs updates:
+#   gh secret set MYGO_UPDATER_PRIVATE_KEY < path/to/mygo-update.key
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # the draft release, and the uploads to it
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the version
+        run: test "$GITHUB_REF_NAME" = "v$(jq -r .version mygo.json)"
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --draft --verify-tag --title "MyGO-Clash $GITHUB_REF_NAME" --generate-notes
+          fi
+
+  build:
+    needs: draft-release
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS, os: macos-latest, platform: "darwin/arm64,darwin/amd64" }
+          - { name: Windows, os: ubuntu-latest, platform: "windows/amd64,windows/arm64" }
+          - { name: Linux, os: ubuntu-latest, platform: "linux/amd64,linux/arm64" }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Install NSIS, for the Windows installers
+        if: matrix.name == 'Windows'
+        run: sudo apt-get update && sudo apt-get install -y nsis
+      - name: Install squashfs-tools, for the AppImages
+        if: matrix.name == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y squashfs-tools
+      - name: Build and upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+        run: bun run build -platform "${{ matrix.platform }}" -upload
+      - name: Make and upload the RPM and Arch packages and the AppImages
+        if: matrix.name == 'Linux'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber \
+            build/linux-*/*.rpm build/linux-*/*.pkg.tar.zst build/linux-*/*.AppImage

@@ -1,7 +1,7 @@
 import { Keyboard, LayoutPanelLeft, Paintbrush } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
-import { useT } from "../../lib/i18n";
+import { LANGUAGES, useT } from "../../lib/i18n";
 import { type DeepPartial, patchSettings, run, toast, useApp, PAGES } from "../../lib/store";
 import { App, type Settings } from "../../mygo";
 import { Button, Dialog, Input, Row, Section, Segmented, Select, Spinner, Switch } from "../../ui";
@@ -207,12 +207,8 @@ export default function General() {
           <Select
             value={s.language}
             onChange={(v) => patch({ language: v })}
-            options={[
-              { value: "", label: t("settings.followSystem") },
-              { value: "en", label: "English" },
-              { value: "zh-CN", label: "简体中文" },
-            ]}
-            width={150}
+            options={[{ value: "", label: t("settings.followSystem") }, ...LANGUAGES]}
+            width={190}
           />
         </Row>
         <Row label={t("settings.theme")}>

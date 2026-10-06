@@ -14,13 +14,14 @@ import {
   Settings as SettingsIcon,
   Waypoints,
 } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrandMark } from "./components/Brand";
 import { TrafficGraph } from "./components/TrafficGraph";
 import { rate } from "./lib/format";
 import { useT } from "./lib/i18n";
+import { enableTunWithService, offerServiceUpdate } from "./lib/service";
 import { type Page, PAGES, patchSettings, run, useApp, useTraffic } from "./lib/store";
-import { System } from "./mygo";
+import { App as AppAPI, System } from "./mygo";
 import Home from "./pages/Home";
 import { AskHost, Button, Spinner, Toasts } from "./ui";
 
@@ -135,11 +136,21 @@ export default function App() {
   const collapsed = useApp((s) => s.settings?.ui.collapseNav ?? false);
   const navigate = useApp((s) => s.navigate);
   const t = useT();
+  const outdated = useApp((s) => !!s.state?.service.outdated);
+  useEffect(() => {
+    if (booted && outdated) offerServiceUpdate();
+  }, [booted, outdated]);
   const onAction = (action: string) => {
     switch (action) {
       case "install-service":
       case "repair-service":
-        void run(() => System.installService(), t("service.installFailed"), t("service.installed"));
+        void run(() => System.installService(false), t("service.installFailed"), t("service.installed"));
+        break;
+      case "install-tun":
+        void enableTunWithService();
+        break;
+      case "relaunch":
+        void AppAPI.relaunch();
         break;
       case "open-sync":
         navigate("settings", "sync");

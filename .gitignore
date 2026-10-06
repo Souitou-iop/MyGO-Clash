@@ -4,3 +4,5 @@ node_modules/
 /.mygo/
 mygo_windows_*.syso
 .DS_Store
+# Icon design sources, kept outside the repository
+/MyGO-Clash-iConDesign/

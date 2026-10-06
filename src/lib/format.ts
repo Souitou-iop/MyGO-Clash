@@ -2,7 +2,19 @@
 
 const UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
 
+/**
+ * ltr keeps a measure such as "12 KB/s" in its order inside text written
+ * from right to left, where the number would otherwise move after its unit.
+ */
+export function ltr(s: string): string {
+  return document.documentElement.dir === "rtl" ? `\u2066${s}\u2069` : s;
+}
+
 export function bytes(n: number, digits = 1): string {
+  return ltr(plainBytes(n, digits));
+}
+
+function plainBytes(n: number, digits: number): string {
   if (!Number.isFinite(n) || n <= 0) return "0 B";
   let i = 0;
   let v = n;
@@ -14,7 +26,7 @@ export function bytes(n: number, digits = 1): string {
 }
 
 export function rate(n: number): string {
-  return `${bytes(n)}/s`;
+  return ltr(`${plainBytes(n, 1)}/s`);
 }
 
 export function duration(ms: number): string {
@@ -33,7 +45,7 @@ export function relative(when: string | number | Date | undefined | null, lang: 
   const t = new Date(when).getTime();
   if (!Number.isFinite(t) || t <= 0) return "—";
   const diff = (t - Date.now()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat(lang === "zh" ? "zh-CN" : "en", { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
   const abs = Math.abs(diff);
   if (abs < 45) return rtf.format(Math.round(diff), "second");
   if (abs < 2700) return rtf.format(Math.round(diff / 60), "minute");
@@ -69,7 +81,7 @@ export function delayClass(d: number | undefined): DelayClass {
 export function delayText(d: number | undefined, timeout: string): string {
   if (d === undefined || d < 0) return "—";
   if (d === 0) return timeout;
-  return `${d} ms`;
+  return ltr(`${d} ms`);
 }
 
 /** The emoji flag of a country code. */

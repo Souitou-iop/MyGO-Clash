@@ -4,7 +4,7 @@ go 1.27.1
 
 require (
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
-	github.com/egoist/mygo v0.2.12
+	github.com/egoist/mygo v0.2.15
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/metacubex/chi v0.1.1
 	github.com/metacubex/http v0.1.8

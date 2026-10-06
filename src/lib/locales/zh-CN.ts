@@ -1,6 +1,6 @@
 import type { Key } from "./en";
 
-export const zh: Record<Key, string> = {
+const zhCN: Record<Key, string> = {
   "nav.home": "首页",
   "nav.proxies": "代理",
   "nav.profiles": "订阅",
@@ -770,4 +770,38 @@ export const zh: Record<Key, string> = {
   "adv.restartApp": "应用",
   "adv.restart": "重启",
   "adv.quit": "退出",
+
+  "updates.title": "软件更新",
+  "updates.check": "检查更新",
+  "updates.checkNow": "立即检查",
+  "updates.lastCheck": "上次检查：{when}",
+  "updates.never": "尚未检查",
+  "updates.dev": "开发版本不会自动更新",
+  "updates.package": "这种安装方式不能自动更新，请到发布页下载新版本，或通过软件包管理器更新",
+  "updates.releases": "发布页",
+  "updates.auto": "自动检查更新",
+  "updates.autoDesc": "在后台查找新版本，有新版本时提示你",
+  "updates.autoInstall": "自动下载并安装",
+  "updates.autoInstallDesc": "发现新版本时直接在后台下载安装，重启应用后生效",
+  "action.install-tun": "安装并开启",
+  "action.relaunch": "立即重启",
+  "home.tunServiceOutdated": "更新服务后可重新接管全部流量",
+  "service.tunTitle": "TUN 模式需要系统服务",
+  "service.tunMessage": "要接管全部流量，MyGO-Clash 需要安装一次系统服务，系统会请求管理员密码。安装完成后会自动开启 TUN 模式。",
+  "service.installAndTun": "安装并开启 TUN",
+  "service.tunReady": "TUN 模式已开启",
+  "service.outdatedTitle": "需要更新系统服务",
+  "service.outdatedMessage": "已安装的服务版本为 {v}，应用版本为 {app}，通常是应用刚刚更新过。更新服务需要管理员密码；在此之前内核以普通权限运行，TUN 模式不可用。",
+  "service.updated": "服务已更新",
+  "updates.checking": "正在检查…",
+  "updates.interval": "检查频率",
+  "updates.hourly": "每小时",
+  "updates.daily": "每天",
+  "updates.weekly": "每周",
+  "updates.monthly": "每月",
+  "updates.ready": "新版本 {v} 已就绪",
+  "updates.readyDesc": "重启应用后生效",
+  "updates.relaunch": "立即重启",
 };
+
+export default zhCN;
