@@ -11,7 +11,7 @@
   "out": "build",
   "urlSchemes": ["clash", "mygo-clash"],
   "updates": {
-    "publicKey": "WIc75ezZ4U+u5ck8Xx3767084l4Q2iIdHoozGk5anZg=",
+    "publicKey": "B4Cn0yDCrLOQ4HQq2O9u7hXbWT2jZ9D0sg4eNxzoJ1c=",
     "github": "Souitou-iop/MyGO-Clash"
   },
   "linux": {
