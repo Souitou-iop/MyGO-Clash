@@ -19,6 +19,10 @@ on:
       tag:
         description: "The version tag to create and release, such as v0.2.0-beta"
         required: true
+      notes_only:
+        description: "Only rewrite the notes of the existing release, from CHANGELOG.md and its files"
+        type: boolean
+        default: false
 
 env:
   TAG: ${{ inputs.tag || github.ref_name }}
@@ -28,21 +32,15 @@ permissions:
 
 jobs:
   draft-release:
+    if: ${{ !inputs.notes_only }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - name: Check the version
         run: test "$TAG" = "v$(jq -r .version mygo.json)"
       - name: Write the release notes
-        # The version's section of CHANGELOG.md, then the downloads and FAQ.
-        run: |
-          version="${TAG#v}"
-          awk -v v="$version" '
-            /^## / { if (sec) exit; sec = ($2 == v || $2 == "[" v "]"); next }
-            sec { print }
-          ' CHANGELOG.md > notes.md
-          test -s notes.md || { echo "CHANGELOG.md has no section for $version"; exit 1; }
-          sed -e "s/{version}/$version/g" -e "s/{tag}/$TAG/g" .github/release-template.md >> notes.md
+        # The downloads are added once the files are uploaded, in finish.
+        run: .github/release-notes.sh "$TAG" > notes.md
       - name: Create the draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -113,12 +111,22 @@ jobs:
             gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${manifests[@]}"
           fi
 
-  publish-prerelease:
+  finish:
+    # Links the uploaded files from the notes, under their names on GitHub,
+    # and publishes a pre-release.
     needs: build
-    if: contains(inputs.tag || github.ref_name, '-')
+    if: ${{ !cancelled() && (needs.build.result == 'success' || inputs.notes_only) }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+      - name: Write the release notes, with the downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          .github/release-notes.sh "$TAG" > notes.md
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
       - name: Publish the pre-release
+        if: contains(inputs.tag || github.ref_name, '-')
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
