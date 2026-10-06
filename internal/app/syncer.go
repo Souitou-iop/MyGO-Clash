@@ -33,20 +33,20 @@ const (
 
 // SyncStatus is the state of sync.
 type SyncStatus struct {
-	Configured bool                  `json:"configured"`
-	Enabled    bool                  `json:"enabled"`
-	Running    bool                  `json:"running"`
-	Pending    bool                  `json:"pending"`
-	LastSync   time.Time             `json:"lastSync,omitzero"`
-	LastError  string                `json:"lastError,omitempty"`
-	Conflicts  []cloudsync.Conflict  `json:"conflicts"`
-	Devices    int                   `json:"devices"`
-	DeviceID   string                `json:"deviceId"`
-	DeviceName string                `json:"deviceName"`
-	KeyID      string                `json:"keyId,omitempty"`
-	Report     *cloudsync.Report     `json:"report,omitempty"`
-	NextSync   time.Time             `json:"nextSync,omitzero"`
-	Labels     map[string]string     `json:"labels"`
+	Configured bool                 `json:"configured"`
+	Enabled    bool                 `json:"enabled"`
+	Running    bool                 `json:"running"`
+	Pending    bool                 `json:"pending"`
+	LastSync   time.Time            `json:"lastSync,omitzero"`
+	LastError  string               `json:"lastError,omitempty"`
+	Conflicts  []cloudsync.Conflict `json:"conflicts"`
+	Devices    int                  `json:"devices"`
+	DeviceID   string               `json:"deviceId"`
+	DeviceName string               `json:"deviceName"`
+	KeyID      string               `json:"keyId,omitempty"`
+	Report     *cloudsync.Report    `json:"report,omitempty"`
+	NextSync   time.Time            `json:"nextSync,omitzero"`
+	Labels     map[string]string    `json:"labels"`
 }
 
 type syncer struct {
@@ -293,7 +293,7 @@ func (s *syncer) run(ctx context.Context) (cloudsync.Report, error) {
 		return rep, err
 	}
 	if len(rep.Conflicts) > 0 {
-		s.a.notify(Notice{Level: "warning", Message: fmt.Sprintf(tr(s.a, "syncConflicts"), len(rep.Conflicts)), Action: "open-sync"})
+		s.a.notify(Notice{Level: "warning", Message: fmt.Sprintf(tr(s.a, "syncConflicts"), len(rep.Conflicts)), Action: "open-sync", Page: "settings/sync"})
 	}
 	return rep, nil
 }
@@ -653,7 +653,7 @@ func (s Sync) Setup(ctx context.Context, setup SyncSetup) (bool, error) {
 	}
 	go func() {
 		if _, err := s.a.syncer.run(s.a.ctx); err != nil {
-			s.a.notifyErr(tr(s.a, "syncFailed"), err)
+			s.a.notifyErr("settings/sync", tr(s.a, "syncFailed"), err)
 		}
 	}()
 	return created, nil

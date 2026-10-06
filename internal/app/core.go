@@ -82,11 +82,11 @@ func (a *App) startCore(ctx context.Context) {
 	l := a.launcher(ctx)
 	err := a.core.Start(ctx, l)
 	if err != nil && l.Mode() == "service" {
-		a.notify(Notice{Level: "warning", Message: tr(a, "serviceFallback"), Detail: err.Error(), Action: "repair-service"})
+		a.notify(Notice{Level: "warning", Message: tr(a, "serviceFallback"), Detail: err.Error(), Action: "repair-service", Page: "settings/network"})
 		err = a.core.Start(ctx, coremgr.Sidecar{Log: a.coreLog})
 	}
 	if err != nil {
-		a.notifyErr(tr(a, "coreStartFailed"), err)
+		a.notifyErr("", tr(a, "coreStartFailed"), err)
 	}
 }
 
@@ -106,7 +106,7 @@ func (a *App) onCoreState(s coremgr.State) {
 func (a *App) onCoreReady(ctx context.Context, c *coreapi.Client) {
 	a.updateState(func(st *AppState) { st.Ready = true })
 	if err := a.applyConfig(ctx); err != nil {
-		a.notifyErr(tr(a, "applyFailed"), err)
+		a.notifyErr("profiles", tr(a, "applyFailed"), err)
 	}
 	a.restoreSelections(ctx)
 	a.applySystemProxy(a.settings.Get())
@@ -203,7 +203,7 @@ func (a *App) applyConfig(ctx context.Context) error {
 	}
 	_ = RuntimeEvent.Broadcast(RuntimeInfo{ProfileUID: rt.ProfileUID, AppliedAt: now, Notes: notes})
 	for _, w := range res.Warnings {
-		a.notify(Notice{Level: "warning", Message: w})
+		a.notify(Notice{Level: "warning", Message: w, Page: "profiles"})
 	}
 	if a.tray != nil {
 		go a.tray.rebuild()
@@ -228,7 +228,7 @@ func (a *App) scheduleApply() {
 		ctx, cancel := context.WithTimeout(a.ctx, 2*time.Minute)
 		defer cancel()
 		if err := a.applyConfig(ctx); err != nil {
-			a.notifyErr(tr(a, "applyFailed"), err)
+			a.notifyErr("profiles", tr(a, "applyFailed"), err)
 		}
 	})
 }
@@ -399,7 +399,7 @@ func (a *App) checkCurrentDelays() {
 func (a *App) onProfileUpdated(uid string, err error) {
 	p, _ := a.profiles.Get(uid)
 	if err != nil {
-		a.notify(Notice{Level: "warning", Message: fmt.Sprintf(tr(a, "updateFailed"), p.Name), Detail: err.Error()})
+		a.notify(Notice{Level: "warning", Message: fmt.Sprintf(tr(a, "updateFailed"), p.Name), Detail: err.Error(), Page: "profiles"})
 	}
 }
 

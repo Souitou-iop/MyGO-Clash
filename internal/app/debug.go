@@ -20,6 +20,7 @@ import (
 //	POST /eval              runs the body as JavaScript in the page
 //	POST /navigate?page=p   shows a page
 //	POST /panel             toggles the quick panel
+//	POST /notify            tells the user the Notice in the body
 func (a *App) startDebug() {
 	addr := os.Getenv("MYGO_CLASH_DEBUG")
 	if addr == "" || !mygo.IsDev() {
@@ -73,6 +74,15 @@ func (a *App) startDebug() {
 	})
 	mux.HandleFunc("POST /panel", func(w http.ResponseWriter, r *http.Request) {
 		a.panel.toggle()
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("POST /notify", func(w http.ResponseWriter, r *http.Request) {
+		var n Notice
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&n); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		a.notify(n)
 		w.WriteHeader(http.StatusNoContent)
 	})
 	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}

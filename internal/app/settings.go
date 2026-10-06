@@ -65,7 +65,7 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 			// TUN needs the service: undo the switch and say why.
 			_, _, _ = a.settings.Update(func(s *config.Settings) { s.Tun.Enabled = false })
 			_ = SettingsEvent.Broadcast(a.settings.Get())
-			a.notify(Notice{Level: "warning", Message: tr(a, "tunNeedsService"), Action: "install-service"})
+			a.notify(Notice{Level: "warning", Message: tr(a, "tunNeedsService"), Action: "install-service", Page: "settings/network"})
 			return errors.New(tr(a, "tunNeedsService"))
 		}
 		needRestart = true // move the core to the service
@@ -129,7 +129,7 @@ func (a *App) patchMode(ctx context.Context, mode string) error {
 // setMode switches the mode, from the tray, a shortcut or the panel.
 func (a *App) setMode(mode string) {
 	if _, err := a.updateSettings(context.Background(), func(s *config.Settings) { s.Clash.Mode = mode }); err != nil {
-		a.notifyErr(tr(a, "modeFailed"), err)
+		a.notifyErr("", tr(a, "modeFailed"), err)
 	}
 }
 
@@ -137,7 +137,7 @@ func (a *App) setMode(mode string) {
 func (a *App) toggleSystemProxy() {
 	on := !a.settings.Get().SystemProxy.Enabled
 	if _, err := a.updateSettings(context.Background(), func(s *config.Settings) { s.SystemProxy.Enabled = on }); err != nil {
-		a.notifyErr(tr(a, "sysproxyFailed"), err)
+		a.notifyErr("settings/network", tr(a, "sysproxyFailed"), err)
 	}
 }
 
@@ -201,7 +201,7 @@ func (a *App) applySystemProxy(st config.Settings) error {
 	if sp.Guard {
 		a.guard.OnFix = func() { log.Printf("the system proxy was changed; set it again") }
 		a.guard.OnFail = func(err error) {
-			a.notify(Notice{Level: "warning", Message: tr(a, "guardStopped"), Detail: err.Error()})
+			a.notify(Notice{Level: "warning", Message: tr(a, "guardStopped"), Detail: err.Error(), Page: "settings/network"})
 		}
 		a.guard.Watch(want, time.Duration(sp.GuardInterval)*time.Second)
 	} else {
@@ -252,7 +252,7 @@ func (a *App) registerHotkeys(st config.Settings) {
 		config.HotkeyReactivate: func() {
 			go func() {
 				if err := a.applyConfig(context.Background()); err != nil {
-					a.notifyErr(tr(a, "applyFailed"), err)
+					a.notifyErr("profiles", tr(a, "applyFailed"), err)
 				}
 			}()
 		},
@@ -264,7 +264,7 @@ func (a *App) registerHotkeys(st config.Settings) {
 			continue
 		}
 		if err := mygo.GlobalShortcut.Register(acc, fn); err != nil {
-			a.notify(Notice{Level: "warning", Message: tr(a, "hotkeyFailed") + " " + acc, Detail: err.Error()})
+			a.notify(Notice{Level: "warning", Message: tr(a, "hotkeyFailed") + " " + acc, Detail: err.Error(), Page: "settings/general"})
 			continue
 		}
 		registered = append(registered, acc)

@@ -40,7 +40,7 @@ type Options struct {
 	PinnedKey string
 	// Proxy routes requests through a proxy, such as the core's; nil goes
 	// direct.
-	Proxy func(*http.Request) (*url.URL, error)
+	Proxy   func(*http.Request) (*url.URL, error)
 	Timeout time.Duration
 }
 

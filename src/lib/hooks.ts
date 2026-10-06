@@ -99,3 +99,23 @@ export function useBusy() {
   }, []);
   return [busy, wrap] as const;
 }
+
+/**
+ * useWidth follows the width of an element, also one that renders later:
+ * pass ref as the element's ref; el holds the element.
+ */
+export function useWidth<T extends HTMLElement>(): [(node: T | null) => void, number, React.RefObject<T | null>] {
+  const el = useRef<T | null>(null);
+  const ro = useRef<ResizeObserver | null>(null);
+  const [width, setWidth] = useState(0);
+  const ref = useCallback((node: T | null) => {
+    ro.current?.disconnect();
+    ro.current = null;
+    el.current = node;
+    if (!node) return;
+    setWidth(node.clientWidth);
+    ro.current = new ResizeObserver(() => setWidth(node.clientWidth));
+    ro.current.observe(node);
+  }, []);
+  return [ref, width, el];
+}

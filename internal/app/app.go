@@ -22,8 +22,8 @@ import (
 
 	"github.com/mygo-clash/mygo-clash/internal/config"
 	"github.com/mygo-clash/mygo-clash/internal/coreapi"
-	"github.com/mygo-clash/mygo-clash/internal/coremgr"
 	"github.com/mygo-clash/mygo-clash/internal/corehost"
+	"github.com/mygo-clash/mygo-clash/internal/coremgr"
 	"github.com/mygo-clash/mygo-clash/internal/logx"
 	"github.com/mygo-clash/mygo-clash/internal/paths"
 	"github.com/mygo-clash/mygo-clash/internal/profiles"
@@ -73,6 +73,7 @@ type App struct {
 	quitting    bool
 	cleaned     bool
 	pendingURLs []string
+	pendingPage string // for the main window being created; see navigate
 	hotkeys     []string
 }
 
@@ -265,33 +266,40 @@ func (a *App) snapshot() AppState {
 	return a.state
 }
 
-// notify shows a toast in the window, or a system notification when the
-// window is hidden.
+// notify shows a toast while the main window is in front, and otherwise
+// errors and warnings as system notifications whose click opens n.Page.
 func (a *App) notify(n Notice) {
 	if n.Level == "" {
 		n.Level = "info"
 	}
 	a.mu.Lock()
-	visible := a.win != nil && !a.win.IsDestroyed() && a.win.IsVisible()
+	win := a.win
 	a.mu.Unlock()
-	if visible {
-		_ = NoticeEvent.Broadcast(n)
-		return
-	}
-	if (n.Level == "error" || n.Level == "warning") && a.settings != nil && a.settings.Get().Notifications && mygo.NotificationsSupported() {
-		nt := mygo.NewNotification(mygo.NotificationOptions{Title: a.name, Body: strings.TrimSpace(n.Message + " " + n.Detail)})
-		nt.OnClick(a.showMain)
-		_ = nt.Show()
+	inFront := win != nil && !win.IsDestroyed() && win.IsVisible() && win.IsFocused()
+	if !inFront && (n.Level == "error" || n.Level == "warning") && a.settings != nil && a.settings.Get().Notifications && mygo.NotificationsSupported() {
+		title, body := n.Message, n.Detail
+		if body == "" {
+			title, body = a.name, n.Message
+		}
+		nt := mygo.NewNotification(mygo.NotificationOptions{Title: title, Body: body})
+		page := n.Page
+		nt.OnClick(func() { a.navigate(page) })
+		err := nt.Show()
+		if err == nil {
+			return
+		}
+		log.Printf("notification: %v", err)
 	}
 	_ = NoticeEvent.Broadcast(n)
 }
 
-func (a *App) notifyErr(msg string, err error) {
+// notifyErr reports err, if any; a click on its notification opens page.
+func (a *App) notifyErr(page, msg string, err error) {
 	if err == nil {
 		return
 	}
 	log.Printf("%s: %v", msg, err)
-	a.notify(Notice{Level: "error", Message: msg, Detail: err.Error()})
+	a.notify(Notice{Level: "error", Message: msg, Detail: err.Error(), Page: page})
 }
 
 // ---- Windows ----
@@ -408,21 +416,25 @@ func (a *App) toggleMain() {
 	a.showMain()
 }
 
-// navigate shows the main window on a page.
+// navigate shows the main window on a page: "proxies", "settings/sync" (a
+// tab of the settings), or home when page is empty.
 func (a *App) navigate(page string) {
+	if page == "" {
+		page = "home"
+	}
+	a.mu.Lock()
+	win := a.win
+	if win == nil || win.IsDestroyed() {
+		// The window showMain creates takes it when its page boots
+		// (App.takePage), as events sent before that are lost.
+		a.pendingPage = page
+		win = nil
+	}
+	a.mu.Unlock()
 	a.showMain()
-	go func() {
-		// A window just created needs its page first.
-		for i := 0; i < 50; i++ {
-			a.mu.Lock()
-			win := a.win
-			a.mu.Unlock()
-			if win != nil && NavigateEvent.Emit(win, page) == nil {
-				return
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
+	if win != nil {
+		_ = NavigateEvent.Emit(win, page)
+	}
 }
 
 // ---- Deep links ----
@@ -449,15 +461,15 @@ func (a *App) handleURL(raw string) {
 	if sub == "" {
 		return
 	}
-	a.notify(Notice{Level: "info", Message: tr(a, "importing"), Detail: u.Query().Get("name")})
+	a.notify(Notice{Level: "info", Message: tr(a, "importing"), Detail: u.Query().Get("name"), Page: "profiles"})
 	ctx, cancel := context.WithTimeout(a.ctx, 2*time.Minute)
 	defer cancel()
 	p, err := a.profiles.Create(ctx, profiles.NewProfile{Type: profiles.TypeRemote, URL: sub, Name: u.Query().Get("name")})
 	if err != nil {
-		a.notifyErr(tr(a, "importFailed"), err)
+		a.notifyErr("profiles", tr(a, "importFailed"), err)
 		return
 	}
-	a.notify(Notice{Level: "success", Message: tr(a, "imported"), Detail: p.Name})
+	a.notify(Notice{Level: "success", Message: tr(a, "imported"), Detail: p.Name, Page: "profiles"})
 	a.navigate("profiles")
 }
 

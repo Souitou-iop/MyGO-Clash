@@ -66,7 +66,9 @@ function Sidebar() {
       <div className="sidebar-top" />
       <div className="brand">
         <BrandMark />
-        <span className="brand-name">MyGO-Clash</span>
+        <span className="brand-name">
+          <i>MyGO</i>-Clash
+        </span>
       </div>
       <nav className="nav">
         {nav.map((p) => {
@@ -84,11 +86,11 @@ function Sidebar() {
         {settings?.ui.trafficGraph !== false && <TrafficGraph up={traffic.up.slice(-40)} down={traffic.down.slice(-40)} height={34} minimal />}
         <div className="side-traffic">
           <div className="side-rate" title={t("common.upload")}>
-            <ArrowUp size={13} color="var(--accent-2)" />
+            <ArrowUp size={13} color="var(--graph-up)" />
             <span className="side-traffic-text">{rate(traffic.now.up)}</span>
           </div>
           <div className="side-rate" title={t("common.download")}>
-            <ArrowDown size={13} color="var(--accent)" />
+            <ArrowDown size={13} color="var(--graph-down)" />
             <span className="side-traffic-text">{rate(traffic.now.down)}</span>
           </div>
         </div>
@@ -161,8 +163,9 @@ export default function App() {
             <PageView page={page} />
           </Suspense>
         ) : (
-          <div className="empty" style={{ flex: 1 }}>
-            <Spinner size={20} />
+          <div className="empty boot" style={{ flex: 1 }}>
+            <BrandMark size={48} />
+            <Spinner size={16} />
           </div>
         )}
       </main>

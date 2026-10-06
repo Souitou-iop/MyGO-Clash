@@ -8,7 +8,16 @@ import { Button, Dialog, Input, Row, Section, Segmented, Select, Spinner, Switch
 
 const CodeEditor = lazy(() => import("../../components/CodeEditor"));
 
-const ACCENTS = ["#7c5cff", "#e8579a", "#2f7cf6", "#0ea5a4", "#1f9d66", "#e08a00", "#e0484e", "#5b6472"];
+// The accents: MyGO's own, which follows the theme, then one per member,
+// toned to read in both themes.
+const ACCENTS = [
+  { value: "", name: "accent.mygo" },
+  { value: "#4fa3d1", name: "accent.tomori" },
+  { value: "#f07891", name: "accent.anon" },
+  { value: "#4fbf6b", name: "accent.raana" },
+  { value: "#e8b84a", name: "accent.soyo" },
+  { value: "#7d7bc0", name: "accent.taki" },
+] as const;
 
 export function usePatch() {
   const t = useT();
@@ -218,17 +227,25 @@ export default function General() {
           />
         </Row>
         <Row label={t("settings.accent")}>
-          <div className="row" style={{ gap: 6 }}>
+          <div className="row" style={{ gap: 7 }}>
             {ACCENTS.map((c) => (
               <button
-                key={c}
-                className={`swatch${(s.accent || ACCENTS[0]) === c ? " active" : ""}`}
-                style={{ background: c }}
-                onClick={() => patch({ accent: c === ACCENTS[0] ? "" : c })}
-                aria-label={c}
+                key={c.name}
+                className={`swatch${c.value ? "" : " mygo"}${s.accent.toLowerCase() === c.value ? " active" : ""}`}
+                style={c.value ? { background: c.value } : undefined}
+                onClick={() => patch({ accent: c.value })}
+                aria-label={t(c.name)}
+                data-tip={t(c.name)}
               />
             ))}
-            <input type="color" className="swatch-input" value={s.accent || ACCENTS[0]} onChange={(e) => patch({ accent: e.target.value })} />
+            <input
+              type="color"
+              className="swatch-input"
+              value={s.accent || "#2a7ab0"}
+              onChange={(e) => patch({ accent: e.target.value })}
+              aria-label={t("accent.custom")}
+              data-tip={t("accent.custom")}
+            />
           </div>
         </Row>
         <Row label={t("settings.startPage")}>

@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, Cable, ChevronsUpDown, Pause, Play, X, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Pause, Play, X, XCircle } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { bytes, duration, rate } from "../lib/format";
@@ -181,7 +181,7 @@ export default function Connections() {
         {!running ? (
           <Empty title={t("common.coreNotRunning")} />
         ) : list.length === 0 ? (
-          <Empty title={t("conn.empty")} icon={<Cable size={22} />} />
+          <Empty title={t("conn.empty")} art />
         ) : (
           <div className="vlist" ref={scroller}>
             <div style={{ minWidth: 1100 }}>

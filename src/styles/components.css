@@ -11,10 +11,16 @@
   --sidebar-w: 64px;
 }
 
+/* The sidebar is a window on a rainy night: faint streaks, and the glow of
+   the accents from below and above. */
 .sidebar {
   display: flex;
   flex-direction: column;
-  background: var(--bg-sidebar);
+  background:
+    var(--rain) 0 0 / 160px 160px,
+    radial-gradient(150% 34% at 0% 100%, var(--glow-a), transparent 72%),
+    radial-gradient(130% 26% at 100% 0%, var(--glow-b), transparent 72%),
+    var(--bg-sidebar);
   border-right: 1px solid var(--border);
   min-height: 0;
   overflow: hidden;
@@ -42,15 +48,24 @@
 }
 
 .brand-mark {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(140deg, var(--accent-2), var(--accent));
-  color: #fff;
-  box-shadow: 0 2px 8px color-mix(in oklab, var(--accent) 35%, transparent);
+  display: block;
   flex: none;
+  user-select: none;
+}
+
+/* The wordmark leans like the band's logo; "MyGO" wears the accents. */
+.brand-name {
+  letter-spacing: -0.015em;
+}
+
+.brand-name i {
+  font-style: italic;
+  font-weight: 800;
+  padding-right: 0.06em;
+  background: linear-gradient(100deg, var(--accent-2), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .collapsed .brand-name,
@@ -96,7 +111,7 @@
 
 .nav-item.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-fg);
   font-weight: 620;
 }
 
@@ -454,7 +469,7 @@
 
 .switch.on {
   background: var(--accent);
-  box-shadow: none;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 70%, black) inset;
 }
 
 .switch.on::after {
@@ -557,38 +572,31 @@
   gap: 12px;
 }
 
-.home-grid {
+/* A wide card and a narrow one side by side, of one height. */
+.split {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 12px;
 }
 
-.home-grid > .span-12 {
-  grid-column: span 12;
+.split > * {
+  display: flex;
+  min-width: 0;
 }
 
-.home-grid > .span-8 {
-  grid-column: span 8;
-}
-
-.home-grid > .span-6 {
-  grid-column: span 6;
-}
-
-.home-grid > .span-4 {
-  grid-column: span 4;
+.split > * > .card {
+  flex: 1;
 }
 
 @media (max-width: 1080px) {
-  .home-grid > .span-4,
-  .home-grid > .span-8 {
-    grid-column: span 6;
+  .split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 860px) {
-  .home-grid > * {
-    grid-column: span 12 !important;
+  .split {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -615,6 +623,7 @@
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 6px 14px;
+  margin: 0;
   font-size: 12.5px;
 }
 
@@ -651,7 +660,7 @@
 
 .badge.accent {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-fg);
   border-color: transparent;
 }
 
@@ -1036,7 +1045,7 @@
 
 .menu-item:hover:not(:disabled) {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-fg);
 }
 
 .menu-item.danger {
@@ -1090,7 +1099,7 @@
 }
 
 .tab.active {
-  color: var(--accent);
+  color: var(--accent-fg);
   border-bottom-color: var(--accent);
 }
 
@@ -1113,9 +1122,15 @@
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: var(--surface-2);
+  background:
+    var(--rain) 0 0 / 96px 96px,
+    var(--surface-2);
   color: var(--text-faint);
   border: 1px solid var(--border);
+}
+
+.empty .rainy-pick {
+  margin-bottom: 2px;
 }
 
 .empty h3 {
@@ -1235,7 +1250,7 @@ button.chip:hover {
 
 button.chip.active {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-fg);
   background: var(--accent-softer);
 }
 
@@ -1311,4 +1326,15 @@ kbd {
 /* Icons keep their size inside fixed-width buttons. */
 .btn svg {
   flex: none;
+}
+
+.boot .brand-mark {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.04);
+    filter: drop-shadow(0 6px 16px color-mix(in oklab, var(--accent) 40%, transparent));
+  }
 }

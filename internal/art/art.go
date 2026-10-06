@@ -1,6 +1,7 @@
-// Package art draws the app's icons: a guitar pick, after the band MyGo is
-// named for. Shapes are signed distance fields, so every size is drawn
-// anti-aliased from the same description.
+// Package art draws the tray icon after the app icon: the compass of
+// MyGO!!!!!, a star of four long and four short points tilted in a ring.
+// Shapes are signed distance fields, so every size is drawn anti-aliased
+// from the same description.
 package art
 
 import (
@@ -11,22 +12,72 @@ import (
 	"math"
 )
 
-// pick is the signed distance from p (in units of the shape's radius,
-// y pointing down) to the pick: a rounded triangle, pointing down, whose
-// sides bulge toward a circle.
-func pick(x, y float64) float64 {
-	const k = 1.7320508075688772 // √3
-	r := 0.62
-	// iq's equilateral triangle, mirrored to point down.
-	px, py := math.Abs(x)-r, y+r/k-0.08
-	if px+k*py > 0 {
-		px, py = (px-k*py)/2, (-k*px-py)/2
+// The compass, in units of the long points' length (y pointing down), from
+// the band's logo. starQuarter is a quarter of the star, from the top point
+// round toward the left one; turn makes the rest.
+var (
+	starQuarter = [][2]float64{{0.1822, -0.9833}, {-0.1449, -0.3382}, {-0.3269, -0.4757}, {-0.2638, -0.2565}}
+	// facetQuarter is the light face of the top point, which the logo
+	// draws white over the star.
+	facetQuarter = [][2]float64{{0.1525, -0.8227}, {-0.1471, -0.2141}, {0, 0}}
+	ringInner    = 0.735
+	ringOuter    = 0.857
+)
+
+// The compass is turned 10.5° clockwise.
+const tiltCos, tiltSin = 0.98325, 0.18224
+
+// turn repeats a quarter of the compass round the other three quarters.
+func turn(q [][2]float64) [][2]float64 {
+	var out [][2]float64
+	for k := 0; k < 4; k++ {
+		for _, p := range q {
+			x, y := p[0], p[1]
+			for i := 0; i < k; i++ {
+				x, y = y, -x
+			}
+			out = append(out, [2]float64{x, y})
+		}
 	}
-	px -= math.Max(-2*r, math.Min(px, 0))
-	tri := -math.Hypot(px, py) * sign(py)
-	tri -= 0.22 // rounded corners
-	circle := math.Hypot(x, y-0.06) - 0.9
-	return 0.62*tri + 0.38*circle
+	return out
+}
+
+var star = turn(starQuarter)
+
+// facets are the light faces of the four long points.
+var facets = func() (f [][][2]float64) {
+	all := turn(facetQuarter)
+	for i := 0; i < len(all); i += len(facetQuarter) {
+		f = append(f, all[i:i+len(facetQuarter)])
+	}
+	return f
+}()
+
+// facet is the signed distance to the light faces of the long points.
+func facet(x, y float64) float64 {
+	d := math.Inf(1)
+	for _, f := range facets {
+		d = math.Min(d, polygon(x, y, f))
+	}
+	return d
+}
+
+// polygon is the signed distance to a closed polygon (iq's sdPolygon).
+func polygon(px, py float64, v [][2]float64) float64 {
+	d := (px-v[0][0])*(px-v[0][0]) + (py-v[0][1])*(py-v[0][1])
+	s := 1.0
+	for i, j := 0, len(v)-1; i < len(v); j, i = i, i+1 {
+		ex, ey := v[j][0]-v[i][0], v[j][1]-v[i][1]
+		wx, wy := px-v[i][0], py-v[i][1]
+		t := clamp01((wx*ex + wy*ey) / (ex*ex + ey*ey))
+		bx, by := wx-ex*t, wy-ey*t
+		d = math.Min(d, bx*bx+by*by)
+		c1, c2, c3 := py >= v[i][1], py < v[j][1], ex*wy > ey*wx
+		if (c1 && c2 && c3) || (!c1 && !c2 && !c3) {
+			s = -s
+		}
+	}
+	return s * math.Sqrt(d)
 }
 
 func sign(v float64) float64 {
@@ -46,89 +97,55 @@ type Variant int
 
 // Variants of the tray icon.
 const (
-	Off         Variant = iota // the proxy is off: an outline
-	SystemProxy                // the system proxy is on: filled
-	Tun                        // TUN is on: filled, with a dot
+	Off         Variant = iota // the proxy is off: the compass, faint
+	SystemProxy                // the system proxy is on: the compass
+	Tun                        // TUN is on: the compass, with a dot
 )
 
 // Tray draws the tray icon at size px. A template icon is black on
-// transparent, which macOS tints for the menu bar; otherwise it is colored.
+// transparent, which macOS tints for the menu bar, and faint when off;
+// otherwise it is colored: gray when off, Anon's pink for the system proxy,
+// the band's blue for TUN.
 func Tray(px int, v Variant, template bool) []byte {
 	img := image.NewNRGBA(image.Rect(0, 0, px, px))
-	scale := float64(px) / 2.3 // units of the shape per pixel
+	scale := float64(px) / 2.08 // pixels per unit of the shape
 	var ink color.NRGBA
 	switch {
+	case template && v == Off:
+		ink = color.NRGBA{0, 0, 0, 115}
 	case template:
 		ink = color.NRGBA{0, 0, 0, 255}
 	case v == Off:
-		ink = color.NRGBA{142, 142, 150, 255}
+		ink = color.NRGBA{140, 148, 166, 255}
 	case v == SystemProxy:
-		ink = color.NRGBA{232, 93, 154, 255}
+		ink = color.NRGBA{238, 108, 138, 255}
 	default:
-		ink = color.NRGBA{52, 179, 112, 255}
+		ink = color.NRGBA{58, 143, 200, 255}
 	}
-	stroke := 0.13 * scale // pixels
+	// The light faces of the points need room to show.
+	faces := px >= 30
 	for j := 0; j < px; j++ {
 		for i := 0; i < px; i++ {
-			x := (float64(i)+0.5)/scale - 1.15
-			y := (float64(j)+0.5)/scale - 1.15
-			d := pick(x, y) * scale
-			var a float64
-			if v == Off {
-				a = coverage(math.Abs(d) - stroke/2)
-			} else {
-				a = coverage(d)
-				// A string across the pick, cut out.
-				line := math.Abs(y+0.12) * scale
-				a *= 1 - coverage(line-0.06*scale)*coverage(d+0.22*scale)
+			x := (float64(i)+0.5)/scale - 1.04
+			y := (float64(j)+0.5)/scale - 1.04
+			r := math.Hypot(x, y)
+			d := polygon(x, y, star) * scale
+			points := coverage(d)
+			if faces {
+				points *= 1 - coverage(facet(x, y)*scale+0.03*scale)
 			}
+			// The ring passes under the points, with a pixel's gap.
+			ring := coverage(math.Max(ringInner-r, r-ringOuter)*scale) * clamp01(d-1)
+			var dot float64
 			if v == Tun {
-				dot := (math.Hypot(x-0.78, y-0.78) - 0.3) * scale
-				ring := (math.Hypot(x-0.78, y-0.78) - 0.45) * scale
-				a = a * clamp01(ring) // clear room around the dot
-				a = math.Max(a, coverage(dot))
+				// The ring opens between the east and south points, for a
+				// dot in the corner.
+				u, w := x*tiltCos+y*tiltSin, y*tiltCos-x*tiltSin
+				ring *= 1 - coverage(-math.Min(u, w)*scale)
+				dot = coverage((math.Hypot(x-0.78, y-0.78) - 0.27) * scale)
 			}
+			a := math.Max(points, math.Max(ring, dot))
 			img.SetNRGBA(i, j, color.NRGBA{ink.R, ink.G, ink.B, uint8(a * float64(ink.A))})
-		}
-	}
-	return encode(img)
-}
-
-// AppIcon draws the app's icon at size px: a pick on a rounded square of
-// the brand's gradient.
-func AppIcon(px int) []byte {
-	img := image.NewNRGBA(image.Rect(0, 0, px, px))
-	s := float64(px)
-	top := [3]float64{255, 138, 189}
-	bottom := [3]float64{124, 92, 255}
-	for j := 0; j < px; j++ {
-		for i := 0; i < px; i++ {
-			fx, fy := (float64(i)+0.5)/s, (float64(j)+0.5)/s
-			// A squircle, as macOS draws app icons, inset for the shadow.
-			nx, ny := (fx-0.5)/0.41, (fy-0.5)/0.41
-			sq := math.Pow(math.Pow(math.Abs(nx), 5)+math.Pow(math.Abs(ny), 5), 0.2) - 1
-			bg := coverage(sq * 0.41 * s)
-			if bg == 0 {
-				continue
-			}
-			t := clamp01(fx*0.35 + fy*0.75)
-			var c [3]float64
-			for k := range c {
-				c[k] = top[k] + (bottom[k]-top[k])*t
-			}
-			// The pick, white, with a soft shadow.
-			px := (fx - 0.5) / 0.26
-			py := (fy - 0.49) / 0.26
-			d := pick(px, py) * 0.26 * s
-			shadow := clamp01(0.5-(pick(px, py-0.08)*0.26*s)/(0.05*s)) * 0.2
-			a := coverage(d)
-			line := math.Abs(py+0.12)*0.26*s - 0.012*s
-			a *= 1 - coverage(line)*coverage(d+0.06*s)
-			for k := range c {
-				c[k] = c[k]*(1-shadow) + 0
-				c[k] = c[k]*(1-a) + 255*a
-			}
-			img.SetNRGBA(i, j, color.NRGBA{uint8(c[0]), uint8(c[1]), uint8(c[2]), uint8(255 * bg)})
 		}
 	}
 	return encode(img)

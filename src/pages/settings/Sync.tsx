@@ -101,7 +101,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
       open={open}
       onClose={onClose}
       title={t("sync.setupTitle")}
-      icon={<Cloud size={18} color="var(--accent)" />}
+      icon={<Cloud size={18} color="var(--accent-fg)" />}
       size="wide"
       footer={
         step === 1 ? (

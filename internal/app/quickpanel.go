@@ -222,10 +222,14 @@ func (p *quickPanel) refreshGroups(ctx context.Context, win *mygo.Window) {
 	})
 }
 
+// delayColor colors a delay as the web UI does: untested (-1) muted,
+// failed (0) as danger.
 func delayColor(t *ui.Theme, d int) ui.Color {
 	switch {
-	case d <= 0:
+	case d < 0:
 		return t.TextMuted
+	case d == 0:
+		return t.Danger
 	case d < 200:
 		return t.Success
 	case d < 500:
@@ -234,9 +238,45 @@ func delayColor(t *ui.Theme, d int) ui.Color {
 	return t.Danger
 }
 
+// panelThemes caches panelTheme's light and dark themes.
+var panelThemes [2]*ui.Theme
+
+// panelTheme is mygo/ui's theme in the app's colors, as the web UI has
+// them: MyGO's night blues, Tomori's blue for the accent, the members'
+// hues for the states.
+func panelTheme(dark bool) *ui.Theme {
+	i := 0
+	if dark {
+		i = 1
+	}
+	if panelThemes[i] != nil {
+		return panelThemes[i]
+	}
+	var t *ui.Theme
+	if dark {
+		t = ui.DarkTheme()
+		t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#0f1626"), ui.Hex("#172036"), ui.Hex("#1e2a44"), ui.Hex("#26334f")
+		t.Border, t.Text, t.TextMuted = ui.Hex("#2a3858"), ui.Hex("#e6ecf7"), ui.Hex("#8796b4")
+		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#7cc0e4"), ui.Hex("#93cdeb"), ui.Hex("#66b0d8"), ui.Hex("#08131f")
+		t.Danger, t.Warning, t.Success = ui.Hex("#ff6b61"), ui.Hex("#f3cd72"), ui.Hex("#6bd38e")
+		t.Selection, t.Focus = ui.RGBA(124, 192, 228, 0.22), ui.RGBA(124, 192, 228, 0.55)
+	} else {
+		t = ui.LightTheme()
+		t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#eef2f8"), ui.Hex("#e4eaf3"), ui.Hex("#d9e1ed")
+		t.Border, t.Text, t.TextMuted = ui.Hex("#d3dbe7"), ui.Hex("#121a2b"), ui.Hex("#62708a")
+		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#2a7ab0"), ui.Hex("#236a9a"), ui.Hex("#1d5b85"), ui.Hex("#ffffff")
+		t.Danger, t.Warning, t.Success = ui.Hex("#d63c49"), ui.Hex("#b8770e"), ui.Hex("#1d9a5b")
+		t.Selection, t.Focus = ui.RGBA(42, 122, 176, 0.16), ui.RGBA(42, 122, 176, 0.5)
+	}
+	t.Radius = 7
+	panelThemes[i] = t
+	return t
+}
+
 // view builds the panel.
 func (p *quickPanel) view(c *ui.Context) {
 	a := p.a
+	c.SetTheme(panelTheme(c.Theme().Dark))
 	t := c.Theme()
 	if runtime.GOOS == "darwin" {
 		c.Root().Background(ui.Transparent)
@@ -286,7 +326,7 @@ func (p *quickPanel) view(c *ui.Context) {
 					on := p.sysOn
 					go func() {
 						_, err := a.updateSettings(context.Background(), func(s *config.Settings) { s.SystemProxy.Enabled = on })
-						a.notifyErr(tr(a, "sysproxyFailed"), err)
+						a.notifyErr("settings/network", tr(a, "sysproxyFailed"), err)
 					}()
 				}
 			})
@@ -367,14 +407,14 @@ func (p *quickPanel) view(c *ui.Context) {
 					if member.Delay > 0 {
 						delay = fmt.Sprintf("%d ms", member.Delay)
 					} else if member.Delay == 0 {
-						delay = "timeout"
+						delay = tr(a, "timeout")
 					}
 					ui.Text(c, delay).FontSize(12).FontFeatures("tnum").TextColor(delayColor(t, member.Delay))
 				})
 				if row.Clicked() && selectable && member.Name != cur.Now {
 					group := cur.Name
 					cur.Now = member.Name // at once; the core confirms
-					go func() { a.notifyErr(group, a.selectProxy(context.Background(), group, member.Name)) }()
+					go func() { a.notifyErr("proxies", group, a.selectProxy(context.Background(), group, member.Name)) }()
 				}
 			}
 		})

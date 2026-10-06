@@ -335,7 +335,7 @@ function Peers({ status, mode }: { status: TailscaleStatus; mode: Mode }) {
       }
     >
       {peers.length === 0 ? (
-        <Empty title={t("ts.noPeers")} />
+        <Empty title={t("ts.noPeers")} art />
       ) : (
         <div className="col" style={{ gap: 0 }}>
           {peers.map((p) => (
@@ -483,7 +483,7 @@ export default function Tailscale() {
             <div className="grid-cards">
               <div className="card card-pad col ts-choice">
                 <div className="row">
-                  <Activity size={18} color="var(--accent)" />
+                  <Activity size={18} color="var(--accent-fg)" />
                   <h3 style={{ fontSize: 14 }}>{t("ts.mode.embedded")}</h3>
                   <Badge tone="accent">{t("ts.recommended")}</Badge>
                 </div>
@@ -532,11 +532,11 @@ export default function Tailscale() {
             ) : null}
             {st?.backendState === "Running" && (
               <>
-                <div className="home-grid">
-                  <div className="span-8">
+                <div className="split">
+                  <div>
                     <Self status={st} mode={mode} />
                   </div>
-                  <div className="span-4">
+                  <div>
                     <ExitNode status={st} mode={mode} />
                   </div>
                 </div>
@@ -566,11 +566,11 @@ export default function Tailscale() {
               </Banner>
             ) : (
               <>
-                <div className="home-grid">
-                  <div className="span-8">
+                <div className="split">
+                  <div>
                     <Self status={st} mode={mode} />
                   </div>
-                  <div className="span-4">
+                  <div>
                     <ExitNode status={st} mode={mode} />
                   </div>
                 </div>

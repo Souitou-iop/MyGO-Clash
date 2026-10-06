@@ -196,21 +196,21 @@ func (t *trayUI) build() {
 		item("reapply", func() {
 			go func() {
 				if err := a.applyConfig(context.Background()); err != nil {
-					a.notifyErr(tr(a, "applyFailed"), err)
+					a.notifyErr("profiles", tr(a, "applyFailed"), err)
 				}
 			}()
 		}),
 		item("updateGeo", func() {
 			go func() {
 				if c := a.core.Client(); c != nil {
-					a.notifyErr(tr(a, "updateGeo"), c.UpdateGeo(context.Background()))
+					a.notifyErr("settings/clash", tr(a, "updateGeo"), c.UpdateGeo(context.Background()))
 				}
 			}()
 		}),
 		item("syncNow", func() {
 			go func() {
 				if _, err := a.syncer.run(context.Background()); err != nil {
-					a.notifyErr(tr(a, "syncFailed"), err)
+					a.notifyErr("settings/sync", tr(a, "syncFailed"), err)
 				}
 			}()
 		}),
@@ -263,7 +263,7 @@ func (t *trayUI) groups() []*mygo.MenuItem {
 				Click: func(*mygo.MenuItem, *mygo.Window) {
 					go func() {
 						if err := a.selectProxy(context.Background(), group.Name, member.Name); err != nil {
-							a.notifyErr(group.Name, err)
+							a.notifyErr("proxies", group.Name, err)
 						}
 					}()
 				}})
@@ -286,7 +286,7 @@ func (t *trayUI) profiles() *mygo.MenuItem {
 			Click: func(*mygo.MenuItem, *mygo.Window) {
 				go func() {
 					if err := (Profiles{a}).Activate(context.Background(), uid); err != nil {
-						a.notifyErr(tr(a, "applyFailed"), err)
+						a.notifyErr("profiles", tr(a, "applyFailed"), err)
 					}
 				}()
 			}})
@@ -341,7 +341,7 @@ func (t *trayUI) tailscale() *mygo.MenuItem {
 
 func (t *trayUI) exitNode(id string) {
 	if err := (Tailscale{t.a}).SetExitNode(context.Background(), id); err != nil {
-		t.a.notifyErr(tr(t.a, "exitNode"), err)
+		t.a.notifyErr("tailscale", tr(t.a, "exitNode"), err)
 	}
 }
 

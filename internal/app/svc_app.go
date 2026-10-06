@@ -68,6 +68,16 @@ func (s AppService) State(ctx context.Context) (AppState, error) {
 	return s.a.snapshot(), nil
 }
 
+// TakePage returns, once, the page a window just created should show
+// (the target of a notification or a tray item), or "".
+func (s AppService) TakePage() string {
+	s.a.mu.Lock()
+	defer s.a.mu.Unlock()
+	p := s.a.pendingPage
+	s.a.pendingPage = ""
+	return p
+}
+
 // OpenDir opens a directory of the app: data, core or logs.
 func (s AppService) OpenDir(kind string) error {
 	dir := map[string]string{"data": s.a.dirs.Data, "core": s.a.dirs.Core, "logs": s.a.dirs.Logs}[kind]
@@ -179,10 +189,25 @@ func (s AppService) NetworkInterfaces() []NetIface {
 }
 
 // AutoLaunch reports whether the app starts at login.
-func (s AppService) AutoLaunch() bool { return mygo.App.OpenAtLogin() }
+func (s AppService) AutoLaunch() bool {
+	defer pinThread()()
+	return mygo.App.OpenAtLogin()
+}
 
 // SetAutoLaunch starts the app at login, or not.
-func (s AppService) SetAutoLaunch(on bool) error { return mygo.App.SetOpenAtLogin(on) }
+func (s AppService) SetAutoLaunch(on bool) error {
+	defer pinThread()()
+	return mygo.App.SetOpenAtLogin(on)
+}
+
+// pinThread keeps the goroutine on its thread until unpin. mygo up to
+// v0.2.14 reads the app bundle, for the login item, in an autorelease pool
+// on the calling goroutine, and crashes when the goroutine moves to another
+// thread before popping it (fixed upstream after v0.2.14).
+func pinThread() (unpin func()) {
+	runtime.LockOSThread()
+	return runtime.UnlockOSThread
+}
 
 // Diagnostics returns a report for bug reports, without secrets, and copies
 // it.

@@ -5,9 +5,9 @@ import (
 
 	"github.com/egoist/mygo"
 
+	"github.com/mygo-clash/mygo-clash/internal/config"
 	"github.com/mygo-clash/mygo-clash/internal/coreapi"
 	"github.com/mygo-clash/mygo-clash/internal/coremgr"
-	"github.com/mygo-clash/mygo-clash/internal/config"
 )
 
 // AppState is the state of the app the interface shows everywhere.
@@ -52,6 +52,10 @@ type Notice struct {
 	// Action is what a button of the toast does: install-service,
 	// open-settings, open-sync, ...
 	Action string `json:"action,omitempty"`
+	// Page is where clicking the system notification leads: a page such
+	// as "profiles", or a tab of the settings as "settings/sync". Empty
+	// means home.
+	Page string `json:"page,omitempty"`
 }
 
 // Events sent to the pages.

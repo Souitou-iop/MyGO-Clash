@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ListFilter, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { relative } from "../lib/format";
@@ -68,7 +68,7 @@ export default function Rules() {
               </span>
             </div>
             {rules.length === 0 ? (
-              <Empty title={t("rules.empty")} icon={<ListFilter size={22} />} />
+              <Empty title={t("rules.empty")} art />
             ) : (
               <div className="vlist" ref={scroller}>
                 <div className="table-head" style={{ gridTemplateColumns: COLS }}>

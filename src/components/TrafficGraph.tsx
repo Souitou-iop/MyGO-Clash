@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** rgba turns #rgb or #rrggbb into rgba(), which every canvas understands. */
 function rgba(hex: string, alpha: number): string {
@@ -9,15 +9,45 @@ function rgba(hex: string, alpha: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
-/** TrafficGraph draws upload and download over time on a canvas. */
-export function TrafficGraph({ up, down, height = 140, minimal }: { up: number[]; down: number[]; height?: number; minimal?: boolean }) {
+/** useThemeKey changes when the theme or the accent does, for canvases to redraw. */
+function useThemeKey(): number {
+  const [key, setKey] = useState(0);
+  useEffect(() => {
+    const bump = () => setKey((k) => k + 1);
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", bump);
+    const mo = new MutationObserver(bump);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "style"] });
+    return () => {
+      mq.removeEventListener("change", bump);
+      mo.disconnect();
+    };
+  }, []);
+  return key;
+}
+
+/**
+ * TrafficGraph draws upload and download over time on a canvas. Without a
+ * height it fills its parent, which must have one.
+ */
+export function TrafficGraph({ up, down, height, minimal }: { up: number[]; down: number[]; height?: number; minimal?: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const [size, setSize] = useState(0);
+  const theme = useThemeKey();
+  useEffect(() => {
+    const c = canvas.current;
+    if (!c) return;
+    const ro = new ResizeObserver(() => setSize(c.clientWidth * 10000 + c.clientHeight));
+    ro.observe(c);
+    return () => ro.disconnect();
+  }, []);
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
     const dpr = window.devicePixelRatio || 1;
     const w = c.clientWidth;
     const h = c.clientHeight;
+    if (!w || !h) return;
     if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
       c.width = Math.round(w * dpr);
       c.height = Math.round(h * dpr);
@@ -27,15 +57,15 @@ export function TrafficGraph({ up, down, height = 140, minimal }: { up: number[]
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const style = getComputedStyle(c);
-    const accent = style.getPropertyValue("--accent").trim() || "#7c5cff";
-    const accent2 = style.getPropertyValue("--accent-2").trim() || "#ec6aa6";
+    const down0 = style.getPropertyValue("--graph-down").trim() || style.getPropertyValue("--accent").trim() || "#7c5cff";
+    const up0 = style.getPropertyValue("--graph-up").trim() || style.getPropertyValue("--accent-2").trim() || "#ec6aa6";
     const grid = style.getPropertyValue("--border").trim() || "#ddd";
     const max = Math.max(1024, ...up, ...down) * 1.15;
-    const pad = minimal ? 1 : 4;
+    const pad = minimal ? 1.5 : 3;
     if (!minimal) {
       ctx.strokeStyle = grid;
       ctx.lineWidth = 1;
-      ctx.setLineDash([3, 4]);
+      ctx.setLineDash([2, 4]);
       for (let i = 1; i < 4; i++) {
         const y = Math.round((h * i) / 4) + 0.5;
         ctx.beginPath();
@@ -45,7 +75,7 @@ export function TrafficGraph({ up, down, height = 140, minimal }: { up: number[]
       }
       ctx.setLineDash([]);
     }
-    const draw = (data: number[], color: string, fill: boolean) => {
+    const draw = (data: number[], color: string, width: number, fill: number) => {
       const n = data.length;
       if (n < 2) return;
       const step = w / (n - 1);
@@ -59,21 +89,28 @@ export function TrafficGraph({ up, down, height = 140, minimal }: { up: number[]
         ctx.bezierCurveTo(xm, y(data[i - 1] ?? 0), xm, y(data[i] ?? 0), x1, y(data[i] ?? 0));
       }
       ctx.strokeStyle = color;
-      ctx.lineWidth = minimal ? 1.25 : 1.75;
+      ctx.lineWidth = width;
+      ctx.lineJoin = "round";
       ctx.stroke();
-      if (fill) {
+      if (fill > 0) {
         ctx.lineTo(w, h);
         ctx.lineTo(0, h);
         ctx.closePath();
         const g = ctx.createLinearGradient(0, 0, 0, h);
-        g.addColorStop(0, rgba(color, 0.28));
+        g.addColorStop(0, rgba(color, fill));
         g.addColorStop(1, rgba(color, 0));
         ctx.fillStyle = g;
         ctx.fill();
       }
     };
-    draw(down, accent, true);
-    draw(up, accent2, !minimal);
-  }, [up, down]);
-  return <canvas ref={canvas} className={minimal ? "side-graph" : ""} style={{ width: "100%", height, display: "block" }} />;
+    draw(down, down0, minimal ? 1.25 : 1.75, 0.26);
+    draw(up, up0, minimal ? 1 : 1.4, minimal ? 0 : 0.12);
+  }, [up, down, size, theme, minimal]);
+  return (
+    <canvas
+      ref={canvas}
+      className={minimal ? "side-graph" : "graph"}
+      style={{ width: "100%", height: height ?? "100%", display: "block" }}
+    />
+  );
 }

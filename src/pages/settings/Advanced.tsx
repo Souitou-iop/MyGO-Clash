@@ -1,4 +1,7 @@
-import { Bug, Cpu, ExternalLink, Feather, FolderOpen, Info, KeyRound, LogOut, Power, RefreshCw, ScrollText } from "lucide-react";
+import { Bug, Copy, Cpu, ExternalLink, Feather, FolderOpen, KeyRound, LogOut, Power, RefreshCw, ScrollText } from "lucide-react";
+import iconDark from "../../assets/icon-dark.png";
+import icon from "../../assets/icon.png";
+import { Five } from "../../components/Art";
 import { useT } from "../../lib/i18n";
 import { run, toast, useApp } from "../../lib/store";
 import { App, Core } from "../../mygo";
@@ -98,12 +101,38 @@ export default function Advanced() {
         </Row>
       </Section>
 
-      <Section title={t("adv.about")}>
-        <Row label="MyGO-Clash" desc={`v${info?.version ?? ""} · mihomo ${info?.coreVersion ?? ""} · ${info?.os ?? ""}/${info?.arch ?? ""}`} icon={<Info size={16} />}>
-          <Button size="sm" variant="ghost" onClick={() => App.copyText(`MyGO-Clash v${info?.version} (mihomo ${info?.coreVersion}, ${info?.os}/${info?.arch})`).then(() => toast({ level: "success", message: t("common.copied") }))}>
+      <div className="section">
+        <div className="section-title">{t("adv.about")}</div>
+        <div className="card about-hero">
+          <img className="about-icon light" src={icon} width={64} height={64} alt="" draggable={false} />
+          <img className="about-icon dark" src={iconDark} width={64} height={64} alt="" draggable={false} />
+          <div className="grow">
+            <div className="about-name">
+              <span className="brand-name">
+                <i>MyGO</i>-Clash
+              </span>
+              <Five height={16} />
+            </div>
+            <div className="about-version selectable">
+              v{info?.version ?? ""} · mihomo {info?.coreVersion ?? ""} · {info?.os ?? ""}/{info?.arch ?? ""}
+            </div>
+            <div className="about-motto">
+              <span lang="ja">迷子でもいい、前へ進め。</span>
+              <span className="muted">{t("about.motto")}</span>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            icon={<Copy size={13} />}
+            onClick={() => App.copyText(`MyGO-Clash v${info?.version} (mihomo ${info?.coreVersion}, ${info?.os}/${info?.arch})`).then(() => toast({ level: "success", message: t("common.copied") }))}
+          >
             {t("common.copy")}
           </Button>
-        </Row>
+        </div>
+        <div className="about-note faint">{t("about.homage")}</div>
+      </div>
+
+      <Section title={t("adv.more")}>
         <Row label={t("adv.license")} desc={t("adv.licenseDesc")}>
           <Button size="sm" variant="ghost" icon={<ExternalLink size={13} />} onClick={() => App.openURL("https://github.com/MetaCubeX/mihomo")}>
             mihomo

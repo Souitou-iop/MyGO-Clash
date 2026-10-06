@@ -65,3 +65,37 @@ func TestPatchMergesAndValidates(t *testing.T) {
 		t.Fatalf("file:\n%s", data)
 	}
 }
+
+func TestHomeCardsMigrate(t *testing.T) {
+	d := Defaults().UI.HomeCards
+	old := []HomeCard{
+		{"profile", true}, {"proxy", true}, {"network", false}, {"mode", true},
+		{"traffic", true}, {"tailscale", false}, {"bogus", true}, {"system", true},
+	}
+	got := normalizeHomeCards(old, d)
+	if len(got) != len(d) {
+		t.Fatalf("got %d cards, want %d", len(got), len(d))
+	}
+	want := map[string]bool{"control": true, "tailscale": false, "system": true, "test": true}
+	for i, c := range got {
+		if c.ID != d[i].ID {
+			t.Fatalf("card %d is %q, want the default order (%q)", i, c.ID, d[i].ID)
+		}
+		if v, ok := want[c.ID]; ok && c.Visible != v {
+			t.Errorf("%s visible = %v, want %v", c.ID, c.Visible, v)
+		}
+	}
+
+	// A current layout keeps its order; unknown and repeated cards go,
+	// missing ones come back hidden.
+	cur := []HomeCard{{"traffic", true}, {"control", false}, {"traffic", false}, {"gone", true}}
+	got = normalizeHomeCards(cur, d)
+	if got[0] != (HomeCard{"traffic", true}) || got[1] != (HomeCard{"control", false}) || len(got) != len(d) {
+		t.Fatalf("got %v", got)
+	}
+	for _, c := range got[2:] {
+		if c.Visible {
+			t.Errorf("added card %s is visible", c.ID)
+		}
+	}
+}

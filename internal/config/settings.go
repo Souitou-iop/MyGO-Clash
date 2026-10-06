@@ -91,6 +91,46 @@ type HomeCard struct {
 	Visible bool   `json:"visible"`
 }
 
+// normalizeHomeCards drops unknown cards and adds missing ones, hidden.
+// Layouts from before the control card, which had separate network and
+// mode cards, start over from the default order and keep what was shown.
+func normalizeHomeCards(cards, defaults []HomeCard) []HomeCard {
+	legacy := false
+	shown := map[string]bool{}
+	for _, c := range cards {
+		if c.ID == "network" || c.ID == "mode" {
+			legacy = true
+			shown["control"] = shown["control"] || c.Visible
+			continue
+		}
+		shown[c.ID] = c.Visible
+	}
+	if legacy {
+		cards = nil
+		for _, c := range defaults {
+			if v, ok := shown[c.ID]; ok {
+				c.Visible = v
+			}
+			cards = append(cards, c)
+		}
+		return cards
+	}
+	out := make([]HomeCard, 0, len(defaults))
+	for _, c := range cards {
+		known := slices.ContainsFunc(defaults, func(h HomeCard) bool { return h.ID == c.ID })
+		dup := slices.ContainsFunc(out, func(h HomeCard) bool { return h.ID == c.ID })
+		if known && !dup {
+			out = append(out, c)
+		}
+	}
+	for _, c := range defaults {
+		if !slices.ContainsFunc(out, func(h HomeCard) bool { return h.ID == c.ID }) {
+			out = append(out, HomeCard{ID: c.ID, Visible: false})
+		}
+	}
+	return out
+}
+
 // SystemProxy is the proxy the app sets for the operating system.
 type SystemProxy struct {
 	Enabled bool `json:"enabled"`
@@ -312,9 +352,9 @@ func Defaults() Settings {
 			ProxyLayout:   "card",
 			PauseOnBlur:   true,
 			HomeCards: []HomeCard{
-				{"profile", true}, {"proxy", true}, {"network", true}, {"mode", true},
-				{"traffic", true}, {"tailscale", true}, {"test", true}, {"ip", true},
-				{"core", true}, {"system", false},
+				{"control", true}, {"traffic", true}, {"proxy", true},
+				{"profile", true}, {"ip", true}, {"tailscale", true},
+				{"test", true}, {"core", true}, {"system", false},
 			},
 			Nav: []string{"home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "unlock", "settings"},
 		},
@@ -472,11 +512,7 @@ func (s *Settings) Normalize() error {
 	} else if !slices.Contains(s.UI.Nav, "settings") {
 		s.UI.Nav = append(s.UI.Nav, "settings") // settings cannot be hidden
 	}
-	for _, c := range d.UI.HomeCards {
-		if !slices.ContainsFunc(s.UI.HomeCards, func(h HomeCard) bool { return h.ID == c.ID }) {
-			s.UI.HomeCards = append(s.UI.HomeCards, HomeCard{ID: c.ID, Visible: false})
-		}
-	}
+	s.UI.HomeCards = normalizeHomeCards(s.UI.HomeCards, d.UI.HomeCards)
 
 	sp := &s.SystemProxy
 	sp.Host = strings.TrimSpace(sp.Host)

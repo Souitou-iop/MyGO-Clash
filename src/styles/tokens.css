@@ -1,42 +1,61 @@
+/*
+ * The palette takes after MyGO!!!!!: a deep-blue night for the dark theme
+ * and a rainy morning for the light one, Tomori's blue (#77BBDD, the band's
+ * #3388BB) as the accent and Anon's pink (#FF8899) as the second. The
+ * other members lend the states their hues: Rāna's green (#77DD77) is
+ * success, Soyo's yellow (#FFDD88) warning, Taki's violet (#7777AA) tints
+ * the lines. Every pair is tuned per theme for contrast.
+ */
 :root {
   color-scheme: light dark;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei UI", "Noto Sans CJK SC", "Noto Sans", Ubuntu, Cantarell, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
-  --accent: #7c5cff;
-  --accent-2: #ec6aa6;
+  --accent: #2a7ab0;
+  --accent-2: #e2617f;
   --accent-text: #ffffff;
+  /* accent-fg is the accent as text, readable on the surfaces. */
+  --accent-fg: color-mix(in oklab, var(--accent) 82%, #0b1424);
   --accent-soft: color-mix(in oklab, var(--accent) 12%, transparent);
   --accent-softer: color-mix(in oklab, var(--accent) 7%, transparent);
   --accent-ring: color-mix(in oklab, var(--accent) 45%, transparent);
+  --brand-gradient: linear-gradient(140deg, var(--accent-2), color-mix(in oklab, var(--accent-2) 30%, var(--accent)) 45%, var(--accent));
 
-  --bg: #f5f6f8;
-  --bg-sidebar: #eef0f3;
+  --graph-down: var(--accent);
+  --graph-up: var(--accent-2);
+
+  --bg: #f2f5f9;
+  --bg-sidebar: #e9eef5;
   --surface: #ffffff;
-  --surface-2: #f3f4f7;
-  --surface-3: #e9ebf0;
-  --surface-hover: #f0f1f5;
-  --border: #e3e5ea;
-  --border-strong: #d2d5dc;
-  --text: #17181c;
-  --text-2: #3c3f48;
-  --text-muted: #6b7080;
-  --text-faint: #9a9fac;
+  --surface-2: #f2f5fa;
+  --surface-3: #e4eaf2;
+  --surface-hover: #edf1f7;
+  --border: #dbe2ec;
+  --border-strong: #c6d0de;
+  --text: #121a2b;
+  --text-2: #33405a;
+  --text-muted: #62708a;
+  --text-faint: #96a1b5;
 
-  --success: #1f9d66;
+  --success: #1d9a5b;
   --success-soft: color-mix(in oklab, var(--success) 13%, transparent);
-  --warning: #c98200;
+  --warning: #b8770e;
   --warning-soft: color-mix(in oklab, var(--warning) 15%, transparent);
-  --danger: #e0484e;
+  --danger: #d63c49;
   --danger-soft: color-mix(in oklab, var(--danger) 12%, transparent);
-  --info: #2f7cf6;
+  --info: #2a7ab0;
   --info-soft: color-mix(in oklab, var(--info) 12%, transparent);
 
-  --shadow-sm: 0 1px 2px rgb(15 17 23 / 0.06);
-  --shadow: 0 1px 3px rgb(15 17 23 / 0.07), 0 4px 14px rgb(15 17 23 / 0.05);
-  --shadow-lg: 0 12px 40px rgb(15 17 23 / 0.18), 0 2px 8px rgb(15 17 23 / 0.08);
-  --overlay: rgb(16 17 22 / 0.32);
+  /* Rain: faint streaks for the sidebar and the heroes, and their light. */
+  --rain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg stroke='%2316305a' stroke-opacity='.055' stroke-linecap='round' stroke-width='1'%3E%3Cpath d='M18 6l-6 22M64 30l-5 18M110 4l-7 26M146 40l-5 19M38 70l-6 22M92 64l-5 17M132 96l-7 25M14 112l-5 18M60 118l-6 23M104 138l-5 16'/%3E%3C/g%3E%3C/svg%3E");
+  --glow-a: color-mix(in oklab, var(--accent-2) 10%, transparent);
+  --glow-b: color-mix(in oklab, var(--accent) 12%, transparent);
+
+  --shadow-sm: 0 1px 2px rgb(16 28 52 / 0.06);
+  --shadow: 0 1px 3px rgb(16 28 52 / 0.07), 0 4px 14px rgb(16 28 52 / 0.05);
+  --shadow-lg: 0 12px 40px rgb(16 28 52 / 0.18), 0 2px 8px rgb(16 28 52 / 0.08);
+  --overlay: rgb(14 22 40 / 0.34);
 
   --radius-sm: 6px;
   --radius: 9px;
@@ -47,50 +66,66 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1013;
-    --bg-sidebar: #131418;
-    --surface: #17181d;
-    --surface-2: #1d1f25;
-    --surface-3: #25272f;
-    --surface-hover: #1f2128;
-    --border: #272a32;
-    --border-strong: #353944;
-    --text: #eceef3;
-    --text-2: #c9ccd5;
-    --text-muted: #8c91a1;
-    --text-faint: #636878;
-    --success: #34c27f;
-    --warning: #e3a33a;
-    --danger: #f2646a;
-    --info: #5a9bff;
-    --accent-soft: color-mix(in oklab, var(--accent) 20%, transparent);
-    --accent-softer: color-mix(in oklab, var(--accent) 11%, transparent);
+    --accent: #7cc0e4;
+    --accent-2: #ff8fa3;
+    --accent-text: #08131f;
+    --accent-fg: color-mix(in oklab, var(--accent) 88%, #ffffff);
+    --accent-soft: color-mix(in oklab, var(--accent) 18%, transparent);
+    --accent-softer: color-mix(in oklab, var(--accent) 10%, transparent);
+    --bg: #0a0f1c;
+    --bg-sidebar: #0c1222;
+    --surface: #111a2c;
+    --surface-2: #162036;
+    --surface-3: #1e2a44;
+    --surface-hover: #18233b;
+    --border: #212d48;
+    --border-strong: #2f3d60;
+    --text: #e6ecf7;
+    --text-2: #c2cce0;
+    --text-muted: #8796b4;
+    --text-faint: #5b6886;
+    --success: #6bd38e;
+    --warning: #f3cd72;
+    --danger: #ff6b61;
+    --info: #7cc0e4;
+    --rain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg stroke='%23a9cdf0' stroke-opacity='.065' stroke-linecap='round' stroke-width='1'%3E%3Cpath d='M18 6l-6 22M64 30l-5 18M110 4l-7 26M146 40l-5 19M38 70l-6 22M92 64l-5 17M132 96l-7 25M14 112l-5 18M60 118l-6 23M104 138l-5 16'/%3E%3C/g%3E%3C/svg%3E");
+    --glow-a: color-mix(in oklab, var(--accent-2) 13%, transparent);
+    --glow-b: color-mix(in oklab, var(--accent) 14%, transparent);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px rgb(0 0 0 / 0.25);
     --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
-    --overlay: rgb(0 0 0 / 0.5);
+    --overlay: rgb(2 6 16 / 0.56);
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #0f1013;
-  --bg-sidebar: #131418;
-  --surface: #17181d;
-  --surface-2: #1d1f25;
-  --surface-3: #25272f;
-  --surface-hover: #1f2128;
-  --border: #272a32;
-  --border-strong: #353944;
-  --text: #eceef3;
-  --text-2: #c9ccd5;
-  --text-muted: #8c91a1;
-  --text-faint: #636878;
-  --success: #34c27f;
-  --warning: #e3a33a;
-  --danger: #f2646a;
-  --info: #5a9bff;
-  --accent-soft: color-mix(in oklab, var(--accent) 20%, transparent);
-  --accent-softer: color-mix(in oklab, var(--accent) 11%, transparent);
+  --accent: #7cc0e4;
+  --accent-2: #ff8fa3;
+  --accent-text: #08131f;
+  --accent-fg: color-mix(in oklab, var(--accent) 88%, #ffffff);
+  --accent-soft: color-mix(in oklab, var(--accent) 18%, transparent);
+  --accent-softer: color-mix(in oklab, var(--accent) 10%, transparent);
+  --bg: #0a0f1c;
+  --bg-sidebar: #0c1222;
+  --surface: #111a2c;
+  --surface-2: #162036;
+  --surface-3: #1e2a44;
+  --surface-hover: #18233b;
+  --border: #212d48;
+  --border-strong: #2f3d60;
+  --text: #e6ecf7;
+  --text-2: #c2cce0;
+  --text-muted: #8796b4;
+  --text-faint: #5b6886;
+  --success: #6bd38e;
+  --warning: #f3cd72;
+  --danger: #ff6b61;
+  --info: #7cc0e4;
+  --rain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg stroke='%23a9cdf0' stroke-opacity='.065' stroke-linecap='round' stroke-width='1'%3E%3Cpath d='M18 6l-6 22M64 30l-5 18M110 4l-7 26M146 40l-5 19M38 70l-6 22M92 64l-5 17M132 96l-7 25M14 112l-5 18M60 118l-6 23M104 138l-5 16'/%3E%3C/g%3E%3C/svg%3E");
+  --glow-a: color-mix(in oklab, var(--accent-2) 13%, transparent);
+  --glow-b: color-mix(in oklab, var(--accent) 14%, transparent);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35);
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px rgb(0 0 0 / 0.25);
   --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
-  --overlay: rgb(0 0 0 / 0.5);
+  --overlay: rgb(2 6 16 / 0.56);
 }

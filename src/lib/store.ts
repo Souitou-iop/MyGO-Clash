@@ -33,6 +33,12 @@ export type Page =
 
 export const PAGES: Page[] = ["home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "unlock", "settings"];
 
+/** route reads a page named by the Go side: "proxies", or "settings/sync" for a tab of the settings. */
+function route(target: string): { page: Page; tab?: string } | null {
+  const [page, tab] = target.split("/");
+  return PAGES.includes(page as Page) ? { page: page as Page, tab: tab || undefined } : null;
+}
+
 export interface Toast extends Notice {
   id: number;
 }
@@ -118,13 +124,31 @@ export async function patchSettings(patch: DeepPartial<Settings>): Promise<Setti
   return next;
 }
 
+/** textOn picks the text color that reads best on a #rrggbb background. */
+function textOn(hex: string): string {
+  const n = Number.parseInt(hex.replace("#", "").slice(0, 6), 16);
+  if (Number.isNaN(n)) return "#ffffff";
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  const l = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  // Contrast with white against contrast with the night's navy (#08131f).
+  return (1.05 / (l + 0.05) >= (l + 0.05) / 0.0567 ? "#ffffff" : "#08131f");
+}
+
 /** applyAppearance applies the theme, the accent, the font and custom CSS. */
 export function applyAppearance(s: Settings) {
   const root = document.documentElement;
   if (s.theme === "light" || s.theme === "dark") root.dataset.theme = s.theme;
   else delete root.dataset.theme;
-  if (s.accent) root.style.setProperty("--accent", s.accent);
-  else root.style.removeProperty("--accent");
+  if (s.accent) {
+    root.style.setProperty("--accent", s.accent);
+    root.style.setProperty("--accent-text", textOn(s.accent));
+  } else {
+    root.style.removeProperty("--accent");
+    root.style.removeProperty("--accent-text");
+  }
   if (s.fontFamily) root.style.setProperty("--font", `${s.fontFamily}, ${getComputedStyle(root).getPropertyValue("--font")}`);
   let style = document.getElementById("custom-css") as HTMLStyleElement | null;
   if (s.customCss) {
@@ -188,16 +212,17 @@ export async function boot() {
     useApp.setState({ booted: true, preview: true });
     return;
   }
-  const [info, state, settings, profiles, tailscale, sync] = await Promise.all([
+  const [info, state, settings, profiles, tailscale, sync, target] = await Promise.all([
     App.info(),
     App.state(),
     SettingsAPI.get(),
     Profiles.list(),
     Tailscale.status(),
     Sync.status(),
+    App.takePage(),
   ]);
   applyAppearance(settings);
-  const start = settings.startPage as Page;
+  const start = route(target) ?? route(settings.startPage) ?? { page: "home" };
   useApp.setState({
     booted: true,
     info,
@@ -207,7 +232,8 @@ export async function boot() {
     tailscale,
     sync,
     lang: resolveLang(settings.language, info.locale),
-    page: PAGES.includes(start) ? start : "home",
+    page: start.page,
+    ...(start.tab ? { settingsTab: start.tab } : {}),
   });
   events.state.on((s) => useApp.setState({ state: s }));
   events.settings.on((s) => {
@@ -219,7 +245,8 @@ export async function boot() {
   events.sync.on((s) => useApp.setState({ sync: s }));
   events.notice.on(toast);
   events.navigate.on((p) => {
-    if (PAGES.includes(p as Page)) useApp.getState().navigate(p as Page);
+    const r = route(p);
+    if (r) useApp.getState().navigate(r.page, r.tab);
   });
   events.runtime.on(() => useApp.setState((s) => ({ runtime: s.runtime + 1 })));
   events.selection.on(() => useApp.setState((s) => ({ selection: s.selection + 1 })));

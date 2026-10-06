@@ -98,7 +98,7 @@ function ProfileCard({
         <div className="grow" style={{ minWidth: 0 }}>
           <div className="row" style={{ gap: 6 }}>
             <span className="profile-name ellipsis">{p.name}</span>
-            {current && <CheckCircle2 size={15} color="var(--accent)" style={{ flex: "none" }} />}
+            {current && <CheckCircle2 size={15} color="var(--accent-fg)" style={{ flex: "none" }} />}
           </div>
           <div className="row" style={{ gap: 5, marginTop: 3, flexWrap: "wrap" }}>
             <Badge tone={p.type === "remote" ? "info" : undefined}>{p.type === "remote" ? t("profiles.remote") : t("profiles.local")}</Badge>
@@ -365,7 +365,7 @@ export default function Profiles() {
           <Button size="lg" icon={<FilePlus2 size={15} />} onClick={() => setDialog({ open: true, profile: null })} tip={t("profiles.new")} />
         </div>
         {items.length === 0 ? (
-          <Empty title={t("profiles.empty")} icon={<FileStack size={22} />}>
+          <Empty title={t("profiles.empty")} art>
             {t("profiles.emptyHint")}
           </Empty>
         ) : (

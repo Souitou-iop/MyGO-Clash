@@ -1,3 +1,446 @@
+/* ---------- Home ---------- */
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Cards fill their cell, so the cards of a row are of one height. */
+.home-cell {
+  display: flex;
+  min-width: 0;
+}
+
+.home-cell > .card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-cell > .card > .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  height: 26px;
+  padding: 0 4px 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 560;
+  white-space: nowrap;
+}
+
+.card-link:hover {
+  background: var(--surface-hover);
+  color: var(--accent-fg);
+}
+
+.lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lead-title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.lead-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* The title clips its overflow; a status dot keeps room for its halo. */
+.lead-title .dot {
+  margin-left: 3px;
+}
+
+.lead-figure {
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  flex: none;
+}
+
+.card-error {
+  margin-top: auto;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.card-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card-empty .empty {
+  padding: 14px 8px;
+}
+
+/* The control card: what the app does with traffic, and the switches. */
+.control-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* While traffic is captured, the card is a rainy night: the accents glow
+   and a slow drizzle falls. The rain moves along its own slant, by whole
+   tiles, so it loops without a seam. */
+.control-card.on {
+  border-color: color-mix(in oklab, var(--accent) 32%, var(--border));
+  background:
+    radial-gradient(90% 150% at 0% 0%, var(--glow-a), transparent 58%),
+    radial-gradient(80% 150% at 100% 100%, var(--glow-b), transparent 62%),
+    var(--surface);
+}
+
+.control-card.on::before {
+  content: "";
+  position: absolute;
+  inset: -640px -160px 0 0;
+  background: var(--rain) 0 0 / 160px 160px;
+  pointer-events: none;
+  animation: drizzle 28s linear infinite;
+  will-change: transform;
+}
+
+.control-card > * {
+  position: relative;
+}
+
+@keyframes drizzle {
+  to {
+    transform: translate(-160px, 640px);
+  }
+}
+
+.control-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+
+.control-top > .grow {
+  min-width: 240px;
+}
+
+.status-orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.status-orb.on {
+  background: var(--brand-gradient);
+  color: #fff;
+  border-color: transparent;
+  box-shadow:
+    0 6px 18px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 0 0 4px color-mix(in oklab, var(--accent-2) 12%, transparent);
+}
+
+.status-orb.on svg {
+  filter: drop-shadow(0 0 4px rgb(255 255 255 / 0.6));
+}
+
+.status-orb.warn {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: transparent;
+}
+
+.status-orb.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: transparent;
+}
+
+.control-title {
+  font-size: 16px;
+  font-weight: 680;
+  letter-spacing: -0.01em;
+}
+
+.control-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.control-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.toggle-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 11px 12px 11px 11px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition:
+    border-color 0.12s,
+    background 0.12s,
+    box-shadow 0.12s;
+}
+
+.toggle-tile.clickable:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.toggle-tile.on {
+  border-color: var(--accent);
+  background: var(--accent-softer);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.toggle-tile.error {
+  border-color: color-mix(in oklab, var(--danger) 45%, transparent);
+}
+
+.tile-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  transition:
+    background 0.16s,
+    color 0.16s;
+}
+
+.toggle-tile.on .tile-icon {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-text);
+}
+
+.tile-title {
+  font-weight: 620;
+}
+
+.tile-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Traffic: four figures of one build, then the graph in the rest. */
+.tstats {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+
+.tstats.two {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: 12px;
+}
+
+.tstat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding: 0 14px;
+}
+
+.tstat:first-child,
+.tstats.two .tstat:nth-child(odd) {
+  padding-left: 0;
+}
+
+.tstat + .tstat {
+  border-left: 1px solid var(--border);
+}
+
+.tstats.two .tstat:nth-child(odd) {
+  border-left: 0;
+}
+
+.tstat-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 540;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tstat-value {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tstat-sub {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 136px;
+}
+
+.chart-canvas {
+  position: absolute;
+  inset: 20px 0 0;
+}
+
+.chart-note {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The current proxy: the group's members, filling the card's height. */
+.node-list {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 136px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0 -6px -4px;
+  padding: 0 2px;
+}
+
+.node-list.more {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
+.node-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: 30px;
+  padding: 0 8px 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.node-row:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.node-row.active {
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 620;
+}
+
+.node-type {
+  flex: none;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.node-row .delay {
+  min-width: 46px;
+  text-align: right;
+}
+
+/* Sites: tiles like the proxies page's, or a list in a narrow card. */
+.site-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.site {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.site-grid .site {
+  padding: 8px 10px 8px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 560;
+}
+
+.site-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-list .site {
+  padding: 5px 0;
+  font-size: 12.5px;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+}
+
+.site-list .site:last-child {
+  border-bottom: 0;
+}
+
 /* ---------- Proxies ---------- */
 
 .proxy-group {
@@ -77,7 +520,9 @@
 }
 
 .proxy-item.list.active {
-  box-shadow: inset 3px 0 0 var(--accent);
+  border-color: transparent;
+  background: var(--accent-soft);
+  box-shadow: none;
 }
 
 .proxy-name {
@@ -201,7 +646,9 @@
   gap: 18px;
   padding: 20px;
   background:
-    radial-gradient(120% 140% at 0% 0%, var(--accent-softer), transparent 60%),
+    var(--rain) 0 0 / 160px 160px,
+    radial-gradient(90% 160% at 0% 0%, var(--glow-a), transparent 58%),
+    radial-gradient(80% 160% at 100% 100%, var(--glow-b), transparent 62%),
     var(--surface);
 }
 
@@ -215,7 +662,7 @@
   border-radius: 15px;
   display: grid;
   place-items: center;
-  background: linear-gradient(140deg, var(--accent-2), var(--accent));
+  background: var(--brand-gradient);
   color: #fff;
   flex: none;
   box-shadow: 0 6px 18px color-mix(in oklab, var(--accent) 35%, transparent);
@@ -241,7 +688,7 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: linear-gradient(140deg, var(--accent-2), var(--accent));
+  background: var(--brand-gradient);
   color: #fff;
   font-weight: 700;
   font-size: 18px;
@@ -267,6 +714,7 @@
 }
 
 .swatch {
+  position: relative;
   width: 20px;
   height: 20px;
   border-radius: 999px;
@@ -275,11 +723,17 @@
   padding: 0;
 }
 
+/* MyGO's accent: Anon's pink meeting Tomori's blue. */
+.swatch.mygo {
+  background: linear-gradient(135deg, #ff8fa3 0 50%, #4fa3d1 50% 100%);
+}
+
 .swatch.active {
   box-shadow: 0 0 0 2px var(--text);
 }
 
 .swatch-input {
+  position: relative;
   width: 26px;
   height: 24px;
   border: 0;
@@ -304,7 +758,7 @@
 
 .step.active {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-fg);
   border-color: transparent;
 }
 
@@ -369,4 +823,84 @@
 
 .unlock-card:hover {
   border-color: var(--border-strong);
+}
+
+/* ---------- About ---------- */
+
+.about-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  background:
+    var(--rain) 0 0 / 160px 160px,
+    radial-gradient(70% 160% at 0% 0%, var(--glow-a), transparent 60%),
+    radial-gradient(60% 160% at 100% 100%, var(--glow-b), transparent 64%),
+    var(--surface);
+}
+
+.about-icon {
+  flex: none;
+  user-select: none;
+  filter: drop-shadow(0 6px 14px rgb(10 17 34 / 0.24));
+}
+
+/* The app icon in the theme's appearance, as macOS shows it. */
+.about-icon.dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .about-icon.light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .about-icon.dark {
+    display: block;
+  }
+}
+
+:root[data-theme="dark"] .about-icon.light {
+  display: none;
+}
+
+:root[data-theme="dark"] .about-icon.dark {
+  display: block;
+}
+
+.about-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.about-version {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.about-motto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.about-motto .muted {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.about-note {
+  font-size: 11.5px;
+  margin: 8px 4px 0;
 }

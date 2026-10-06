@@ -314,6 +314,12 @@ export interface Notice {
    * open-settings, open-sync, ...
    */
   action?: string;
+  /**
+   * Page is where clicking the system notification leads: a page such
+   * as "profiles", or a tab of the settings as "settings/sync". Empty
+   * means home.
+   */
+  page?: string;
 }
 
 /** Option configures how a profile updates and which extensions it uses. */
@@ -1006,6 +1012,13 @@ export const App = {
   /** State returns the app's state. */
   state(): Promise<AppState> {
     return call("App.State");
+  },
+  /**
+   * TakePage returns, once, the page a window just created should show
+   * (the target of a notification or a tray item), or "".
+   */
+  takePage(): Promise<string> {
+    return call("App.TakePage");
   },
 } as const;
 

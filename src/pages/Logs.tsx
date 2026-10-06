@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDownToLine, Copy, Pause, Play, ScrollText, Trash2 } from "lucide-react";
+import { ArrowDownToLine, Copy, Pause, Play, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { useStream } from "../lib/hooks";
@@ -92,7 +92,7 @@ export default function Logs() {
           <Button size="sm" variant={follow ? "primary" : "ghost"} icon={<ArrowDownToLine size={14} />} onClick={() => setFollow(!follow)} tip={t("logs.follow")} />
         </div>
         {shown.length === 0 ? (
-          <Empty title={t("logs.empty")} icon={<ScrollText size={22} />} />
+          <Empty title={t("logs.empty")} art />
         ) : (
           <div
             className="vlist"
