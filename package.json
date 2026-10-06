@@ -1,0 +1,39 @@
+{
+  "name": "mygo-clash",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "GOFLAGS=-tags=with_gvisor go tool mygo dev",
+    "build": "GOFLAGS=-tags=with_gvisor go tool mygo build",
+    "generate": "GOFLAGS=-tags=with_gvisor go tool mygo generate",
+    "dev:web": "vite",
+    "build:web": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "latest",
+    "@codemirror/commands": "latest",
+    "@codemirror/lang-css": "latest",
+    "@codemirror/lang-javascript": "latest",
+    "@codemirror/lang-yaml": "latest",
+    "@codemirror/language": "latest",
+    "@codemirror/lint": "latest",
+    "@codemirror/search": "latest",
+    "@codemirror/state": "latest",
+    "@codemirror/view": "latest",
+    "@lezer/highlight": "latest",
+    "@tanstack/react-virtual": "latest",
+    "lucide-react": "latest",
+    "mygo-runtime": "^0.2.11",
+    "react": "^19",
+    "react-dom": "^19",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "latest",
+    "vite": "latest"
+  }
+}

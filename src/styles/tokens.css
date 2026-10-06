@@ -1,0 +1,96 @@
+:root {
+  color-scheme: light dark;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei UI", "Noto Sans CJK SC", "Noto Sans", Ubuntu, Cantarell, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --accent: #7c5cff;
+  --accent-2: #ec6aa6;
+  --accent-text: #ffffff;
+  --accent-soft: color-mix(in oklab, var(--accent) 12%, transparent);
+  --accent-softer: color-mix(in oklab, var(--accent) 7%, transparent);
+  --accent-ring: color-mix(in oklab, var(--accent) 45%, transparent);
+
+  --bg: #f5f6f8;
+  --bg-sidebar: #eef0f3;
+  --surface: #ffffff;
+  --surface-2: #f3f4f7;
+  --surface-3: #e9ebf0;
+  --surface-hover: #f0f1f5;
+  --border: #e3e5ea;
+  --border-strong: #d2d5dc;
+  --text: #17181c;
+  --text-2: #3c3f48;
+  --text-muted: #6b7080;
+  --text-faint: #9a9fac;
+
+  --success: #1f9d66;
+  --success-soft: color-mix(in oklab, var(--success) 13%, transparent);
+  --warning: #c98200;
+  --warning-soft: color-mix(in oklab, var(--warning) 15%, transparent);
+  --danger: #e0484e;
+  --danger-soft: color-mix(in oklab, var(--danger) 12%, transparent);
+  --info: #2f7cf6;
+  --info-soft: color-mix(in oklab, var(--info) 12%, transparent);
+
+  --shadow-sm: 0 1px 2px rgb(15 17 23 / 0.06);
+  --shadow: 0 1px 3px rgb(15 17 23 / 0.07), 0 4px 14px rgb(15 17 23 / 0.05);
+  --shadow-lg: 0 12px 40px rgb(15 17 23 / 0.18), 0 2px 8px rgb(15 17 23 / 0.08);
+  --overlay: rgb(16 17 22 / 0.32);
+
+  --radius-sm: 6px;
+  --radius: 9px;
+  --radius-lg: 13px;
+  --sidebar-w: 216px;
+  --titlebar-h: var(--mygo-titlebar-height, 44px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1013;
+    --bg-sidebar: #131418;
+    --surface: #17181d;
+    --surface-2: #1d1f25;
+    --surface-3: #25272f;
+    --surface-hover: #1f2128;
+    --border: #272a32;
+    --border-strong: #353944;
+    --text: #eceef3;
+    --text-2: #c9ccd5;
+    --text-muted: #8c91a1;
+    --text-faint: #636878;
+    --success: #34c27f;
+    --warning: #e3a33a;
+    --danger: #f2646a;
+    --info: #5a9bff;
+    --accent-soft: color-mix(in oklab, var(--accent) 20%, transparent);
+    --accent-softer: color-mix(in oklab, var(--accent) 11%, transparent);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px rgb(0 0 0 / 0.25);
+    --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
+    --overlay: rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1013;
+  --bg-sidebar: #131418;
+  --surface: #17181d;
+  --surface-2: #1d1f25;
+  --surface-3: #25272f;
+  --surface-hover: #1f2128;
+  --border: #272a32;
+  --border-strong: #353944;
+  --text: #eceef3;
+  --text-2: #c9ccd5;
+  --text-muted: #8c91a1;
+  --text-faint: #636878;
+  --success: #34c27f;
+  --warning: #e3a33a;
+  --danger: #f2646a;
+  --info: #5a9bff;
+  --accent-soft: color-mix(in oklab, var(--accent) 20%, transparent);
+  --accent-softer: color-mix(in oklab, var(--accent) 11%, transparent);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 18px 50px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.3);
+  --overlay: rgb(0 0 0 / 0.5);
+}

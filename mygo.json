@@ -1,0 +1,20 @@
+{
+  "name": "MyGO-Clash",
+  "identifier": "io.mygo.clash",
+  "version": "0.1.0",
+  "copyright": "© 2026 MyGO-Clash contributors. GPL-3.0.",
+  "devUrl": "http://localhost:5173",
+  "devCommand": "bun run dev:web",
+  "buildCommand": "bun run build:web",
+  "frontendDist": "dist",
+  "bindings": "src/mygo.ts",
+  "out": "build",
+  "urlSchemes": ["clash", "mygo-clash"],
+  "linux": {
+    "comment": "A Clash Meta (mihomo) client with Tailscale and encrypted sync",
+    "categories": ["Network", "Utility"]
+  },
+  "macos": {
+    "minimumSystemVersion": "12.0"
+  }
+}
