@@ -1,6 +1,8 @@
 # Builds every platform when a version tag such as v0.2.0 is pushed, and
 # uploads the installers, packages and signed updates to a draft release.
 # Publishing the draft makes it the version that installed apps update to.
+# A pre-release tag such as v0.2.0-beta is published as a pre-release once
+# every platform is built: installed apps are never offered pre-releases.
 #
 # Needs the MYGO_UPDATER_PRIVATE_KEY secret, the key that signs updates:
 #   gh secret set MYGO_UPDATER_PRIVATE_KEY < path/to/mygo-update.key
@@ -20,13 +22,25 @@ jobs:
       - uses: actions/checkout@v7
       - name: Check the version
         run: test "$GITHUB_REF_NAME" = "v$(jq -r .version mygo.json)"
+      - name: Write the release notes
+        # The version's section of CHANGELOG.md, then the downloads and FAQ.
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^## / { if (sec) exit; sec = ($2 == v || $2 == "[" v "]"); next }
+            sec { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "CHANGELOG.md has no section for $version"; exit 1; }
+          sed -e "s/{version}/$version/g" -e "s/{tag}/$GITHUB_REF_NAME/g" .github/release-template.md >> notes.md
       - name: Create the draft release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if ! gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            prerelease=""
+            case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
             gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-              --draft --verify-tag --title "MyGO-Clash $GITHUB_REF_NAME" --generate-notes
+              --draft $prerelease --verify-tag --title "MyGO-Clash $GITHUB_REF_NAME" --notes-file notes.md
           fi
 
   build:
@@ -37,7 +51,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: macOS, os: macos-latest, platform: "darwin/arm64,darwin/amd64" }
+          # One universal disk image: per-architecture ones share a name.
+          - { name: macOS, os: macos-latest, platform: "darwin/universal" }
           - { name: Windows, os: ubuntu-latest, platform: "windows/amd64,windows/arm64" }
           - { name: Linux, os: ubuntu-latest, platform: "linux/amd64,linux/arm64" }
     steps:
@@ -53,16 +68,46 @@ jobs:
       - name: Install squashfs-tools, for the AppImages
         if: matrix.name == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y squashfs-tools
-      - name: Build and upload
+      - name: Build
         env:
-          GH_TOKEN: ${{ github.token }}
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
-        run: bun run build -platform "${{ matrix.platform }}" -upload
-      - name: Make and upload the RPM and Arch packages and the AppImages
+        run: bun run build -platform "${{ matrix.platform }}"
+      - name: Name the Windows installers after their architecture
+        # Both are "<name> Setup <version>.exe" otherwise.
+        if: matrix.name == 'Windows'
+        run: |
+          for dir in build/windows-*; do
+            arch="${dir##*-}"
+            for exe in "$dir"/*" Setup "*.exe; do
+              mv "$exe" "${exe%.exe}-$arch.exe"
+            done
+          done
+      - name: Make the RPM and Arch packages and the AppImages
         if: matrix.name == 'Linux'
+        run: go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"
+      - name: Upload
+        # What mygo build -upload uploads, update manifests last so that they
+        # never point at a file that is not there yet.
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"
-          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber \
-            build/linux-*/*.rpm build/linux-*/*.pkg.tar.zst build/linux-*/*.AppImage
+          shopt -s nullglob
+          files=(build/*/*.dmg build/*/*" Setup "*.exe build/*/*.deb build/*/*.tar.gz build/*/*.delta
+                 build/*/*.rpm build/*/*.pkg.tar.zst build/*/*.AppImage)
+          scripts=(build/*/install.sh)
+          if [ ${#scripts[@]} -gt 0 ]; then files+=("${scripts[0]}"); fi
+          gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
+          manifests=(build/*/update-*.json)
+          if [ ${#manifests[@]} -gt 0 ]; then
+            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --clobber "${manifests[@]}"
+          fi
+
+  publish-prerelease:
+    needs: build
+    if: contains(github.ref_name, '-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false

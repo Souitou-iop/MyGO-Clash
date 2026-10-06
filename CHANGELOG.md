@@ -2,6 +2,41 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.0-beta
+
+MyGO-Clash 的首个公开测试版，基于 mihomo 内核与 MyGo 框架。测试版不会推送给已安装的应用自动更新，欢迎反馈问题。
+The first public beta of MyGO-Clash, built on the mihomo core and the MyGo framework. Installed apps are not offered beta versions as updates.
+
+### ✨ 新增功能
+
+- 内嵌 mihomo 1.19.32 内核，支持规则、全局、直连三种模式，配置仅在内存中传递
+- 订阅与本地配置管理，支持 Merge / Script 扩展与可视化规则、代理组编辑器
+- 代理节点延迟测试、连接管理、实时日志、流量监控与流媒体解锁检测
+- 系统代理（含 PAC 与守护）、TUN 模式与特权服务
+- 内置 Tailscale 节点：浏览器、二维码或 Auth Key 登录，支持 Headscale，也可管理已安装的 Tailscale 应用
+- WebDAV 端到端加密同步配置与设置（Argon2id + XChaCha20-Poly1305，三路合并解决冲突）
+- 配置静态加密存储（macOS 钥匙串 / Linux Secret Service / Windows DPAPI）
+- 系统原生通知、托盘菜单、原生快捷面板、全局快捷键与轻量模式
+- 应用内自动更新（签名校验）
+- 界面支持 15 种语言
+
+#### 🖥️ Windows
+
+- 提供 x64 与 ARM64 的 NSIS 安装包
+
+#### 🍎 macOS
+
+- 提供 Apple 芯片与 Intel 芯片通用的 DMG 安装包，最低支持 macOS 12
+
+#### 🐧 Linux
+
+- 提供 DEB、RPM、Arch 软件包与 AppImage，支持 x64 与 ARM64
+
+### ⚠️ 已知问题
+
+- 测试版尚未在全部平台实机验证 TUN、服务安装与系统代理切换，如遇问题请提交 Issue
+- macOS 版本未经 Apple 公证，首次打开需在「系统设置 → 隐私与安全性」中允许
+
 ## 0.1.0
 
 The first preview of MyGO-Clash.

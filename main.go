@@ -16,7 +16,7 @@ import (
 )
 
 // version is set by the build: mygo build links the configuration's.
-var version = "0.1.0"
+var version = "0.1.0-beta"
 
 func main() {
 	if v := mygo.App.Version(); v != "" {
