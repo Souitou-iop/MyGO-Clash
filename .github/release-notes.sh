@@ -58,7 +58,12 @@ if [ -n "$assets" ]; then
   row '安装版 Installer' "$(link '64 位 x64' '*Setup*-amd64.exe')" "$(link 'ARM64' '*Setup*-arm64.exe')"
 
   printf '\n### macOS\n\n'
-  row 'Apple 芯片与 Intel 芯片通用 Universal' "$(link 'DMG' '*.dmg')"
+  if [ -n "$(link 'DMG' '*-arm64.dmg')" ]; then
+    row 'Apple 芯片 Apple silicon' "$(link 'DMG' '*-arm64.dmg')"
+    row 'Intel 芯片 Intel' "$(link 'DMG' '*-x64.dmg')"
+  else
+    row 'Apple 芯片与 Intel 芯片通用 Universal' "$(link 'DMG' '*.dmg')"
+  fi
 
   printf '\n### Linux\n\n'
   row 'Debian / Ubuntu (DEB)' "$(link 'x64' '*_amd64.deb')" "$(link 'ARM64' '*_arm64.deb')"

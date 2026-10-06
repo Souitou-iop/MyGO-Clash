@@ -60,8 +60,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # One universal disk image: per-architecture ones share a name.
-          - { name: macOS, os: macos-latest, platform: "darwin/universal" }
+          - { name: macOS, os: macos-latest, platform: "darwin/amd64,darwin/arm64" }
           - { name: Windows, os: ubuntu-latest, platform: "windows/amd64,windows/arm64" }
           - { name: Linux, os: ubuntu-latest, platform: "linux/amd64,linux/arm64" }
     steps:
@@ -89,6 +88,17 @@ jobs:
             arch="${dir##*-}"
             for exe in "$dir"/*" Setup "*.exe; do
               mv "$exe" "${exe%.exe}-$arch.exe"
+            done
+          done
+      - name: Name the macOS disk images after their architecture
+        # Both are "<name> <version>.dmg" otherwise.
+        if: matrix.name == 'macOS'
+        run: |
+          for dir in build/darwin-*; do
+            arch="${dir##*-}"
+            if [ "$arch" = amd64 ]; then arch=x64; fi
+            for dmg in "$dir"/*.dmg; do
+              mv "$dmg" "${dmg%.dmg}-$arch.dmg"
             done
           done
       - name: Make the RPM and Arch packages and the AppImages
