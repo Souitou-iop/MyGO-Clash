@@ -9,12 +9,10 @@ import {
   LogOut,
   Monitor,
   Network,
-  Power,
   Radar,
   Router,
   Server,
   Settings2,
-  Share2,
   Smartphone,
   Waypoints,
 } from "lucide-react";
@@ -380,7 +378,7 @@ function EmbeddedSettings() {
       <Row label={t("ts.joinSelector")} desc={t("ts.joinSelectorHint", { name: s.proxyName })}>
         <Switch checked={s.joinSelector} onChange={(v) => patch({ joinSelector: v })} />
       </Row>
-      <Row label={t("ts.shareProxy")} desc={t("ts.shareProxyHint")} icon={<Share2 size={16} />}>
+      <Row label={t("ts.shareProxy")} desc={t("ts.shareProxyHint")}>
         {s.shareProxy && <NumberInput value={s.shareProxyPort} onChange={(v) => patch({ shareProxyPort: v })} min={1} max={65535} width={90} />}
         <Switch checked={s.shareProxy} onChange={(v) => patch({ shareProxy: v })} />
       </Row>
@@ -398,7 +396,7 @@ function SystemSettings({ status }: { status: TailscaleStatus }) {
   const patch = (p: Partial<typeof s>) => run(() => patchSettings({ tailscale: p }), t("common.failed"));
   return (
     <Section title={t("ts.coexistence")}>
-      <Row label={t("ts.connected")} desc={t("ts.connectedHint")} icon={<Power size={16} />}>
+      <Row label={t("ts.connected")} desc={t("ts.connectedHint")}>
         <Switch checked={status.backendState === "Running"} onChange={(v) => run(() => API.setRunning(v), t("common.failed"))} />
       </Row>
       <Row label={t("ts.coexist")} desc={t("ts.coexistHint")}>

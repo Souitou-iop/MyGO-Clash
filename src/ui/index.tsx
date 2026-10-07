@@ -10,7 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { create } from "zustand";
-import { RainyPick } from "../components/Art";
+import { RainyCompass } from "../components/Art";
 import { delayClass, delayText } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { dismiss, useApp } from "../lib/store";
@@ -215,7 +215,7 @@ export function Spinner({ size = 16 }: { size?: number }) {
 export function Empty({ icon, art, title, children }: { icon?: ReactNode; art?: boolean; title: string; children?: ReactNode }) {
   return (
     <div className="empty">
-      {art ? <RainyPick /> : icon && <div className="empty-icon">{icon}</div>}
+      {art ? <RainyCompass /> : icon && <div className="empty-icon">{icon}</div>}
       <h3>{title}</h3>
       {children}
     </div>

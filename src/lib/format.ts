@@ -29,6 +29,24 @@ export function rate(n: number): string {
   return ltr(`${plainBytes(n, 1)}/s`);
 }
 
+/**
+ * shortRate is a rate in at most four characters, such as "512B", "9.9K"
+ * or "120M", for the collapsed sidebar: per second, in units of 1024.
+ */
+export function shortRate(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  const units = ["B", "K", "M", "G", "T"];
+  let i = 0;
+  let v = n;
+  // 1000 and up go to the next unit, which keeps four characters
+  while (v >= 999.5 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  const digits = i > 0 && v < 9.95 ? 1 : 0;
+  return ltr(`${v.toFixed(digits)}${units[i]}`);
+}
+
 export function duration(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
   if (s < 60) return `${s}s`;
