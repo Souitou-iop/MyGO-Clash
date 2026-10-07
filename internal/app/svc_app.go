@@ -21,6 +21,7 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/service"
 	"github.com/mygo-clash/mygo-clash/internal/sysproxy"
 	"github.com/mygo-clash/mygo-clash/internal/tools"
+	"github.com/mygo-clash/mygo-clash/internal/uwp"
 )
 
 // AppInfo describes the app.
@@ -304,12 +305,38 @@ func (s System) UninstallService(ctx context.Context) error {
 	return nil
 }
 
-// UWPLoopback lets Windows Store apps reach the proxy on the loopback.
-func (s System) UWPLoopback(ctx context.Context) error {
+// UWPApps lists the Windows Store apps, and which may reach the proxy on
+// the loopback.
+func (s System) UWPApps(ctx context.Context) ([]uwp.StoreApp, error) {
+	return uwp.List()
+}
+
+// SetUWPLoopback lets the Store apps of sids, among those UWPApps lists,
+// reach the proxy, and no others of them; it asks for an administrator.
+func (s System) SetUWPLoopback(ctx context.Context, sids []string) error {
 	if runtime.GOOS != "windows" {
 		return errors.New("only Windows has this restriction")
 	}
-	return service.Elevate(ctx, tr(s.a, "uwpPrompt"), "uwp-loopback")
+	// The list and the exemptions are the user's: the elevated helper,
+	// perhaps another account, only applies them.
+	listed, err := uwp.List()
+	if err != nil {
+		return err
+	}
+	current, err := uwp.Exempted()
+	if err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(s.a.dirs.Cache, "uwp-*.txt")
+	if err != nil {
+		return err
+	}
+	f.Close()
+	defer os.Remove(f.Name())
+	if err := uwp.WriteList(f.Name(), uwp.Exemptions(current, listed, sids)); err != nil {
+		return err
+	}
+	return service.Elevate(ctx, tr(s.a, "uwpPrompt"), "uwp-loopback", f.Name())
 }
 
 // Tools tests the network through the proxy.

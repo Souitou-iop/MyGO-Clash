@@ -1290,3 +1290,45 @@
 .unlock-stale {
   color: var(--warning);
 }
+
+/* ---------- UWP loopback ---------- */
+
+.uwp-list {
+  height: min(52vh, 420px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.uwp-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.uwp-row:last-child {
+  border-bottom: 0;
+}
+
+.uwp-row:hover {
+  background: var(--surface-hover);
+}
+
+.uwp-row input {
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.uwp-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.uwp-text .mono {
+  font-size: 11px;
+}

@@ -169,7 +169,7 @@ export function Input({ invalid, className = "", ...rest }: InputHTMLAttributes<
   return <input className={`input${invalid ? " invalid" : ""} ${className}`} spellCheck={false} autoComplete="off" {...rest} />;
 }
 
-export function SearchInput({ value, onChange, placeholder, width = 240 }: { value: string; onChange: (v: string) => void; placeholder?: string; width?: number }) {
+export function SearchInput({ value, onChange, placeholder, width = 240 }: { value: string; onChange: (v: string) => void; placeholder?: string; width?: number | string }) {
   return (
     <div className="input-group" style={{ width }}>
       <Search size={14} />

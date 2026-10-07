@@ -3,8 +3,8 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
 import { patchSettings, run, useApp } from "../../lib/store";
-import { App, Core, Settings as SettingsAPI, System, type Clash as ClashSettings, type Controller } from "../../mygo";
-import { Button, Collapse, Dialog, Field, Input, NumberInput, Row, Section, Select, Spinner, Switch } from "../../ui";
+import { App, Core, Settings as SettingsAPI, System, type Clash as ClashSettings, type Controller, type StoreApp } from "../../mygo";
+import { Button, Collapse, Dialog, Empty, Field, Input, NumberInput, Row, SearchInput, Section, Select, Spinner, Switch } from "../../ui";
 import { usePatch } from "./General";
 
 const CodeEditor = lazy(() => import("../../components/CodeEditor"));
@@ -220,12 +220,119 @@ function DNSDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+/**
+ * UwpDialog chooses which Microsoft Store apps may reach the proxy on the
+ * loopback, as Clash Verge's loopback tool does: all, none, or some.
+ */
+function UwpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
+  const [apps, setApps] = useState<StoreApp[] | null>(null);
+  const [error, setError] = useState("");
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    setApps(null);
+    setError("");
+    setFilter("");
+    System.uwpApps()
+      .then((list) => {
+        setApps(list ?? []);
+        setChosen(new Set((list ?? []).filter((a) => a.exempt).map((a) => a.sid)));
+      })
+      .catch((e) => setError(String(e?.message ?? e)));
+  }, [open]);
+  const q = filter.trim().toLowerCase();
+  const shown = (apps ?? []).filter((a) => !q || a.displayName.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
+  const allShown = shown.length > 0 && shown.every((a) => chosen.has(a.sid));
+  // All and none act on what the search shows.
+  const setShown = (on: boolean) =>
+    setChosen((c) => {
+      const next = new Set(c);
+      for (const a of shown) on ? next.add(a.sid) : next.delete(a.sid);
+      return next;
+    });
+  const toggle = (sid: string) =>
+    setChosen((c) => {
+      const next = new Set(c);
+      next.has(sid) ? next.delete(sid) : next.add(sid);
+      return next;
+    });
+  const changed = !!apps && apps.some((a) => a.exempt !== chosen.has(a.sid));
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={t("settings.uwp")}
+      footer={
+        <>
+          <span className="muted grow" style={{ fontSize: 12 }}>
+            {apps && t("settings.uwpCount", { n: chosen.size, total: apps.length })}
+          </span>
+          <Button onClick={onClose}>{t("common.cancel")}</Button>
+          <Button
+            variant="primary"
+            loading={saving}
+            disabled={!changed}
+            onClick={async () => {
+              setSaving(true);
+              const ok = await run(() => System.setUWPLoopback([...chosen]).then(() => true), t("common.failed"), t("settings.uwpDone"));
+              setSaving(false);
+              if (ok) onClose();
+            }}
+          >
+            {t("common.save")}
+          </Button>
+        </>
+      }
+    >
+      <div className="col" style={{ gap: 10 }}>
+        <div className="muted" style={{ fontSize: 12.5 }}>
+          {t("settings.uwpHint")}
+        </div>
+        <div className="row" style={{ gap: 8 }}>
+          <div className="grow">
+            <SearchInput value={filter} onChange={setFilter} placeholder={t("common.search")} width="100%" />
+          </div>
+          <Button size="sm" disabled={!shown.length} onClick={() => setShown(!allShown)}>
+            {allShown ? t("settings.uwpNone") : t("settings.uwpAll")}
+          </Button>
+        </div>
+        <div className="uwp-list">
+          {error ? (
+            <div className="banner danger" style={{ margin: 10 }}>
+              {error}
+            </div>
+          ) : !apps ? (
+            <div className="row" style={{ justifyContent: "center", padding: 28 }}>
+              <Spinner />
+            </div>
+          ) : shown.length === 0 ? (
+            <Empty title={t("settings.uwpEmpty")} />
+          ) : (
+            shown.map((a) => (
+              <label key={a.sid} className="uwp-row">
+                <input type="checkbox" checked={chosen.has(a.sid)} onChange={() => toggle(a.sid)} />
+                <span className="uwp-text">
+                  <span className="ellipsis">{a.displayName}</span>
+                  {a.name !== a.displayName && <span className="ellipsis mono muted">{a.name}</span>}
+                </span>
+              </label>
+            ))
+          )}
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
 export default function Clash() {
   const t = useT();
   const s = useApp((st) => st.settings!);
   const os = useApp((st) => st.info?.os);
   const patch = usePatch();
-  const [dialog, setDialog] = useState<"" | "ports" | "controller" | "dns">("");
+  const [dialog, setDialog] = useState<"" | "ports" | "controller" | "dns" | "uwp">("");
   const [busy, setBusy] = useState("");
   const [testUrl, setTestUrl] = useState(s.latency.url);
   useEffect(() => setTestUrl(s.latency.url), [s.latency.url]);
@@ -335,13 +442,14 @@ export default function Clash() {
         </Row>
         {os === "windows" && (
           <Row label={t("settings.uwp")} desc={t("settings.uwpDesc")}>
-            <Button size="sm" loading={busy === "uwp"} onClick={() => act("uwp", () => System.uwpLoopback(), t("settings.uwpDone"))}>
-              {t("settings.uwpRun")}
+            <Button size="sm" onClick={() => setDialog("uwp")}>
+              {t("common.configure")}
             </Button>
           </Row>
         )}
       </Section>
       <PortsDialog open={dialog === "ports"} onClose={() => setDialog("")} />
+      {os === "windows" && <UwpDialog open={dialog === "uwp"} onClose={() => setDialog("")} />}
       <ControllerDialog open={dialog === "controller"} onClose={() => setDialog("")} />
       <DNSDialog open={dialog === "dns"} onClose={() => setDialog("")} />
     </>

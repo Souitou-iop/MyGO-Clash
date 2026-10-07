@@ -645,6 +645,19 @@ export interface State {
   restarts: number;
 }
 
+/** StoreApp is an app container: a Store app. */
+export interface StoreApp {
+  /** SID identifies it; exemptions are by SID. */
+  sid: string;
+  /**
+   * Name is its package family name, such as
+   * Microsoft.WindowsStore_8wekyb3d8bbwe.
+   */
+  name: string;
+  displayName: string;
+  exempt: boolean;
+}
+
 /** SubscriptionInfo is the traffic and expiry a provider reports. */
 export interface SubscriptionInfo {
   Upload: number;
@@ -1414,9 +1427,19 @@ export const System = {
   serviceStatus(): Promise<ServiceState> {
     return call("System.ServiceStatus");
   },
-  /** UWPLoopback lets Windows Store apps reach the proxy on the loopback. */
-  uwpLoopback(): Promise<void> {
-    return call("System.UWPLoopback");
+  /**
+   * SetUWPLoopback lets the Store apps of sids, among those UWPApps lists,
+   * reach the proxy, and no others of them; it asks for an administrator.
+   */
+  setUWPLoopback(sids: string[]): Promise<void> {
+    return call("System.SetUWPLoopback", sids);
+  },
+  /**
+   * UWPApps lists the Windows Store apps, and which may reach the proxy on
+   * the loopback.
+   */
+  uwpApps(): Promise<StoreApp[]> {
+    return call("System.UWPApps");
   },
   /**
    * UninstallService removes the service; the core moves back to the app,

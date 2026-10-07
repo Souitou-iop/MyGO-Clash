@@ -658,9 +658,13 @@ export const en = {
   "settings.geoDesc": "Download the latest databases",
   "settings.geoUpdated": "GeoData updated",
   "settings.uwp": "UWP loopback",
-  "settings.uwpDesc": "Let Microsoft Store apps reach the proxy",
-  "settings.uwpRun": "Allow",
-  "settings.uwpDone": "Store apps can reach the proxy",
+  "settings.uwpDesc": "Choose which Microsoft Store apps can reach the proxy",
+  "settings.uwpHint": "Windows keeps Store (UWP) apps from connecting to this computer, so they cannot use the proxy. The apps you check are exempted; saving asks for an administrator.",
+  "settings.uwpAll": "Select all",
+  "settings.uwpNone": "Select none",
+  "settings.uwpEmpty": "No Store apps found",
+  "settings.uwpCount": "{n} of {total} selected",
+  "settings.uwpDone": "Saved: the chosen Store apps can reach the proxy",
 
   // Sync
   "sync.heroTitle": "Sync, end-to-end encrypted",

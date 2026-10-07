@@ -5,6 +5,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/app"
 	"github.com/mygo-clash/mygo-clash/internal/corehost"
 	"github.com/mygo-clash/mygo-clash/internal/service"
+	"github.com/mygo-clash/mygo-clash/internal/uwp"
 )
 
 // version is set by the build: mygo build links the configuration's.
@@ -30,8 +32,13 @@ func main() {
 			err = corehost.Run(os.Stdin)
 		case "service":
 			err = service.Main(os.Args[2:])
-		case "uwp-loopback":
-			err = app.UWPLoopback()
+		case "uwp-loopback": // elevated by the app, with the file of SIDs to exempt
+			var sids []string
+			if len(os.Args) < 3 {
+				err = errors.New("usage: uwp-loopback <file of SIDs>")
+			} else if sids, err = uwp.ReadList(os.Args[2]); err == nil {
+				err = uwp.SetExempted(sids)
+			}
 		default:
 			app.Main()
 			return
