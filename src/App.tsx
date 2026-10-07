@@ -23,7 +23,7 @@ import { enableTunWithService, offerServiceUpdate } from "./lib/service";
 import { type Page, PAGES, patchSettings, run, useApp, useTraffic } from "./lib/store";
 import { App as AppAPI, System } from "./mygo";
 import Home from "./pages/Home";
-import { AskHost, Button, Spinner, Toasts } from "./ui";
+import { AskHost, Button, SideTips, Spinner, Toasts } from "./ui";
 
 const Proxies = lazy(() => import("./pages/Proxies"));
 const Profiles = lazy(() => import("./pages/Profiles"));
@@ -109,6 +109,7 @@ function Sidebar() {
           tip={collapsed ? t("nav.expand") : t("nav.collapse")}
         />
       </div>
+      <SideTips />
     </aside>
   );
 }

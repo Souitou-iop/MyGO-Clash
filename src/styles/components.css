@@ -1435,6 +1435,30 @@ kbd {
   animation: fade-in 0.12s ease 0.35s backwards;
 }
 
+/* In the sidebar, SideTips shows the tips beside it instead. */
+.sidebar [data-tip]:hover::after {
+  content: none;
+}
+
+.side-tip {
+  position: fixed;
+  transform: translateY(-50%);
+  background: var(--text);
+  color: var(--bg);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 520;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 90;
+  animation: fade-in 0.12s ease 0.35s backwards;
+}
+
+.side-tip.rtl {
+  transform: translate(-100%, -50%);
+}
+
 /* Icons keep their size inside fixed-width buttons. */
 .btn svg {
   flex: none;
