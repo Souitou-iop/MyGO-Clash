@@ -484,6 +484,8 @@ const ja: Record<Key, string> = {
   "settings.theme": "外観",
   "settings.light": "ライト",
   "settings.dark": "ダーク",
+  "settings.oled": "ピュアブラック（OLED）",
+  "settings.oledDesc": "ダークモードの背景を純黒にします。OLED 画面で省電力・高コントラストに",
   "settings.accent": "アクセントカラー",
   "accent.mygo": "MyGO（テーマに合わせる）",
   "accent.tomori": "燈の青",

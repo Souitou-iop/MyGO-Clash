@@ -484,6 +484,8 @@ const vi: Record<Key, string> = {
   "settings.theme": "Diện mạo",
   "settings.light": "Sáng",
   "settings.dark": "Tối",
+  "settings.oled": "Đen tuyệt đối (OLED)",
+  "settings.oledDesc": "Dùng nền đen tuyệt đối ở chế độ tối: tiết kiệm điện và tương phản cao hơn trên màn hình OLED",
   "settings.accent": "Màu nhấn",
   "accent.mygo": "MyGO (theo chủ đề)",
   "accent.tomori": "Xanh của Tomori",

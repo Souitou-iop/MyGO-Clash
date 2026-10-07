@@ -27,6 +27,8 @@ type Settings struct {
 	Language string `json:"language"`
 	// Theme is system, light or dark.
 	Theme string `json:"theme"`
+	// OLED makes the dark theme pure black.
+	OLED bool `json:"oled"`
 	// Accent is the accent color, #RRGGBB, or "" for the app's.
 	Accent     string `json:"accent"`
 	FontFamily string `json:"fontFamily"`

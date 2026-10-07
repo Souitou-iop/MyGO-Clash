@@ -48,10 +48,16 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 	if old.Theme != cur.Theme {
 		a.applyTheme(cur)
 	}
+	if old.OLED != cur.OLED && a.panel != nil {
+		a.panel.invalidate()
+	}
 	if changed(func(s config.Settings) any { return s.Hotkeys }) {
 		a.registerHotkeys(cur)
 	}
-	if changed(func(s config.Settings) any { return []any{s.Language, s.Tray, s.Tailscale.Mode} }) && a.tray != nil {
+	// The menu shows the mode and the switches with their checkmarks.
+	if changed(func(s config.Settings) any {
+		return []any{s.Language, s.Tray, s.TrayClick, s.Tailscale.Mode, s.Clash.Mode, s.SystemProxy.Enabled, s.Tun.Enabled}
+	}) && a.tray != nil {
 		go a.tray.rebuild()
 	}
 	if a.tray != nil {
@@ -262,6 +268,14 @@ func errString(err error) string {
 		return ""
 	}
 	return err.Error()
+}
+
+// windowBackground is what the main window shows before its page paints.
+func windowBackground(st config.Settings) string {
+	if st.OLED {
+		return "light-dark(#f6f7f9, #000000)"
+	}
+	return "light-dark(#f6f7f9, #101114)"
 }
 
 func (a *App) applyTheme(st config.Settings) {

@@ -484,6 +484,8 @@ const id: Record<Key, string> = {
   "settings.theme": "Tampilan",
   "settings.light": "Terang",
   "settings.dark": "Gelap",
+  "settings.oled": "Hitam pekat (OLED)",
+  "settings.oledDesc": "Latar hitam pekat di mode gelap: lebih hemat daya dan kontras lebih tinggi di layar OLED",
   "settings.accent": "Warna aksen",
   "accent.mygo": "MyGO (mengikuti tema)",
   "accent.tomori": "Biru Tomori",

@@ -484,6 +484,8 @@ const ptBR: Record<Key, string> = {
   "settings.theme": "Aparência",
   "settings.light": "Claro",
   "settings.dark": "Escuro",
+  "settings.oled": "Preto puro (OLED)",
+  "settings.oledDesc": "Fundo preto puro no modo escuro: menos consumo e mais contraste em telas OLED",
   "settings.accent": "Cor de destaque",
   "accent.mygo": "MyGO (segue o tema)",
   "accent.tomori": "Azul da Tomori",

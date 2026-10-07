@@ -344,6 +344,21 @@ func ApplyBuiltins(cfg *yamlx.Map) {
 	}
 }
 
+// geoMirror serves MetaCubeX/meta-rules-dat where GitHub, mihomo's
+// default, is often out of reach.
+const geoMirror = "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/"
+
+// DefaultGeoX points the geo databases the profile has no address for at
+// a mirror, for the updates of GeoData.
+func DefaultGeoX(cfg *yamlx.Map) {
+	urls := cfg.EnsureMap("geox-url")
+	for _, f := range [][2]string{{"geoip", "geoip.dat"}, {"geosite", "geosite.dat"}, {"mmdb", "geoip.metadb"}, {"asn", "GeoLite2-ASN.mmdb"}} {
+		if strings.TrimSpace(urls.String(f[0])) == "" {
+			urls.Set(f[0], geoMirror+f[1])
+		}
+	}
+}
+
 // EnsureLANBind makes allow-lan listen on every interface when the profile
 // pinned bind-address to the loopback.
 func EnsureLANBind(cfg *yamlx.Map) {

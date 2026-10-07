@@ -484,6 +484,8 @@ const fa: Record<Key, string> = {
   "settings.theme": "ظاهر",
   "settings.light": "روشن",
   "settings.dark": "تیره",
+  "settings.oled": "سیاه خالص (OLED)",
+  "settings.oledDesc": "پس\u200cزمینه سیاه خالص در حالت تیره: مصرف کمتر و کنتراست بیشتر در نمایشگرهای OLED",
   "settings.accent": "رنگ تأکید",
   "accent.mygo": "MyGO (همراه با پوسته)",
   "accent.tomori": "آبی توموری",

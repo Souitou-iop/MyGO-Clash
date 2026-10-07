@@ -497,6 +497,8 @@ export const en = {
   "settings.theme": "Appearance",
   "settings.light": "Light",
   "settings.dark": "Dark",
+  "settings.oled": "Pure black (OLED)",
+  "settings.oledDesc": "Use a pure black background in dark mode: less power and more contrast on OLED screens",
   "settings.accent": "Accent color",
   "accent.mygo": "MyGO (follows the theme)",
   "accent.tomori": "Tomori's blue",

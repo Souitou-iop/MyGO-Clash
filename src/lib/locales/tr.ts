@@ -484,6 +484,8 @@ const tr: Record<Key, string> = {
   "settings.theme": "Görünüm",
   "settings.light": "Açık",
   "settings.dark": "Koyu",
+  "settings.oled": "Saf siyah (OLED)",
+  "settings.oledDesc": "Koyu modda saf siyah arka plan: OLED ekranlarda daha az güç ve daha fazla kontrast",
   "settings.accent": "Vurgu rengi",
   "accent.mygo": "MyGO (temayı izler)",
   "accent.tomori": "Tomori'nin mavisi",

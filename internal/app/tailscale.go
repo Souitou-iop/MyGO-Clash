@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -34,6 +35,7 @@ type tailscaleManager struct {
 	state      coreapi.TailscaleState // the embedded node's, persisted sealed
 	cancel     context.CancelFunc
 	routingKey string // what the configuration depends on
+	trayKey    string // what the tray menu shows
 }
 
 func newTailscaleManager(a *App) *tailscaleManager {
@@ -145,6 +147,21 @@ func routing(st config.Settings, s coreapi.TailscaleStatus) string {
 	return key
 }
 
+// trayKey is what the tray's Tailscale menu shows of a status.
+func trayKey(s coreapi.TailscaleStatus) string {
+	var b strings.Builder
+	b.WriteString(s.BackendState + "|" + s.ExitNodeID)
+	if s.Self != nil {
+		b.WriteString("|" + strings.Join(s.Self.TailscaleIPs, ","))
+	}
+	for _, p := range s.Peers {
+		if p.ExitNodeOption {
+			fmt.Fprintf(&b, "|%s %s %t", p.ID, p.HostName, p.Online)
+		}
+	}
+	return b.String()
+}
+
 func (m *tailscaleManager) setStatus(s coreapi.TailscaleStatus) {
 	st := m.a.settings.Get()
 	m.mu.Lock()
@@ -155,11 +172,16 @@ func (m *tailscaleManager) setStatus(s coreapi.TailscaleStatus) {
 	saved := m.state.Version
 	m.mu.Unlock()
 	_ = TailscaleEvent.Broadcast(s)
+	menu := trayKey(s)
+	m.mu.Lock()
+	menuChanged := menu != m.trayKey
+	m.trayKey = menu
+	m.mu.Unlock()
 	if changed {
 		m.a.scheduleApply()
-		if m.a.tray != nil {
-			go m.a.tray.rebuild()
-		}
+	}
+	if (changed || menuChanged) && m.a.tray != nil {
+		go m.a.tray.rebuild()
 	}
 	if m.a.panel != nil {
 		m.a.panel.invalidate()

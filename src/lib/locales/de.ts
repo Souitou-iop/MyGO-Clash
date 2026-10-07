@@ -484,6 +484,8 @@ const de: Record<Key, string> = {
   "settings.theme": "Erscheinungsbild",
   "settings.light": "Hell",
   "settings.dark": "Dunkel",
+  "settings.oled": "Reines Schwarz (OLED)",
+  "settings.oledDesc": "Reines Schwarz als Hintergrund im dunklen Modus: weniger Strom und mehr Kontrast auf OLED-Bildschirmen",
   "settings.accent": "Akzentfarbe",
   "accent.mygo": "MyGO (folgt dem Design)",
   "accent.tomori": "Tomoris Blau",

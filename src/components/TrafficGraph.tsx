@@ -18,7 +18,7 @@ function useThemeKey(): number {
     const mq = matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener("change", bump);
     const mo = new MutationObserver(bump);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "style"] });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-oled", "style"] });
     return () => {
       mq.removeEventListener("change", bump);
       mo.disconnect();

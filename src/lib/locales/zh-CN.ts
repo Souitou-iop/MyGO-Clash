@@ -484,6 +484,8 @@ const zhCN: Record<Key, string> = {
   "settings.theme": "外观",
   "settings.light": "浅色",
   "settings.dark": "深色",
+  "settings.oled": "纯黑（OLED）",
+  "settings.oledDesc": "深色模式使用纯黑背景，OLED 屏幕更省电、对比更强",
   "settings.accent": "强调色",
   "accent.mygo": "MyGO（随主题变化）",
   "accent.tomori": "灯的蓝",

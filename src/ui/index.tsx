@@ -411,19 +411,38 @@ export function Collapse({ open, children, inline }: { open: boolean; children: 
  * reflow, as the ref of a grid of cards, moves its cards to their new places
  * instead of having them jump there: when its columns change, as the page
  * narrows or widens with the sidebar, and when cards come, go or reorder.
- * New cards fade in.
+ * A card that changes width on the way grows or shrinks into its column,
+ * which keeps stretching with the page meanwhile. New cards fade in.
  */
 export function reflow(grid: HTMLElement | null) {
   if (!grid) return;
   const cols = () => getComputedStyle(grid).gridTemplateColumns.split(" ").length;
-  // Places, unmoved by transforms, from the grid's top left.
+  // Places, unmoved by transforms, from the grid's top left, and widths:
+  // a resize under way included, as it shows.
   const place = (el: HTMLElement) => {
     const own = el.offsetParent === grid;
-    return { x: el.offsetLeft - (own ? 0 : grid.offsetLeft), y: el.offsetTop - (own ? 0 : grid.offsetTop) };
+    return { x: el.offsetLeft - (own ? 0 : grid.offsetLeft), y: el.offsetTop - (own ? 0 : grid.offsetTop), w: el.offsetWidth };
   };
   const cards = () => [...grid.children] as HTMLElement[];
   const places = () => new Map(cards().map((c) => [c, place(c)]));
   const motion = { id: "reflow", duration: 320, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" };
+  // An animation starts a frame after it is made, and the layout it starts
+  // from is already gone: its first frame, held in the element's style
+  // meanwhile, keeps the element from flashing to the end for that frame.
+  const running = new WeakMap<HTMLElement, Animation>();
+  const animate = (el: HTMLElement, frames: Keyframe[]) => {
+    const props = Object.keys(frames[0]!).filter((k) => k !== "offset");
+    for (const k of props) el.style.setProperty(k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`), String(frames[0]![k]));
+    const a = el.animate(frames, motion);
+    running.set(el, a);
+    const release = () => {
+      if (running.get(el) !== a) return; // a newer move holds the style
+      running.delete(el);
+      for (const k of props) el.style.removeProperty(k.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`));
+    };
+    a.onfinish = release;
+    a.oncancel = release;
+  };
   let n = cols();
   let last = places();
   let height = grid.offsetHeight;
@@ -431,9 +450,11 @@ export function reflow(grid: HTMLElement | null) {
     if (reducedMotion()) return;
     // Rows come and go: what follows the grid moves with its height
     // instead of jumping.
+    const shownH = running.has(grid) ? grid.offsetHeight : height;
     for (const a of grid.getAnimations()) if (a.id === "reflow") a.cancel();
+    grid.style.removeProperty("height");
     const h = grid.offsetHeight;
-    if (h !== height) grid.animate([{ height: `${height}px`, alignContent: "start" }, { height: `${h}px`, alignContent: "start" }], motion);
+    if (h !== shownH) animate(grid, [{ height: `${shownH}px`, alignContent: "start" }, { height: `${h}px`, alignContent: "start" }]);
     const top = grid.getBoundingClientRect().top;
     for (const [c, to] of now) {
       const from = last.get(c);
@@ -444,33 +465,41 @@ export function reflow(grid: HTMLElement | null) {
         if (arrived) c.animate([{ opacity: 0, transform: "scale(0.97)" }, { opacity: 1, transform: "none" }], { ...motion, id: "arrive" });
         continue;
       }
-      if (from.x === to.x && from.y === to.y) continue;
+      const resized = Math.abs(from.w - to.w) > 1;
+      if (from.x === to.x && from.y === to.y && !resized) continue;
       // From where it shows now, a move already under way included.
       const tf = getComputedStyle(c).transform;
       const shown = new DOMMatrix(tf === "none" ? undefined : tf);
       for (const a of c.getAnimations()) if (a.id === "reflow") a.cancel();
       const dx = from.x + shown.m41 - to.x;
       const dy = from.y + shown.m42 - to.y;
-      c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], motion);
+      // The width ends at its column's, 100%, wherever that is by then.
+      animate(
+        c,
+        resized
+          ? [
+              { transform: `translate(${dx}px, ${dy}px)`, width: `${from.w}px` },
+              { transform: "none", width: "100%" },
+            ]
+          : [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }],
+      );
     }
   };
-  const settle = (now: typeof last) => {
+  const settle = () => {
     n = cols();
-    last = now;
+    last = places();
     height = grid.offsetHeight;
   };
   // Sizes: the grid's, which can change its columns, and each card's, which
   // moves those after it and only needs noting.
   const ro = new ResizeObserver(() => {
-    const now = places();
-    if (cols() !== n) move(now, false);
-    settle(now);
+    if (cols() !== n) move(places(), false);
+    settle();
   });
   // Cards that come, go or change places.
   const mo = new MutationObserver((records) => {
-    const now = places();
-    move(now, true);
-    settle(now);
+    move(places(), true);
+    settle();
     for (const r of records) for (const el of r.addedNodes) if (el instanceof HTMLElement) ro.observe(el);
   });
   ro.observe(grid);

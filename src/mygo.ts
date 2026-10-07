@@ -563,6 +563,8 @@ export interface Settings {
   language: string;
   /** Theme is system, light or dark. */
   theme: string;
+  /** OLED makes the dark theme pure black. */
+  oled: boolean;
   /** Accent is the accent color, #RRGGBB, or "" for the app's. */
   accent: string;
   fontFamily: string;

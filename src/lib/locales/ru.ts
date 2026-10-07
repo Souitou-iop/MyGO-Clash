@@ -484,6 +484,8 @@ const ru: Record<Key, string> = {
   "settings.theme": "Оформление",
   "settings.light": "Светлое",
   "settings.dark": "Тёмное",
+  "settings.oled": "Чистый чёрный (OLED)",
+  "settings.oledDesc": "Чистый чёрный фон в тёмной теме: меньше энергии и больше контраста на OLED-экранах",
   "settings.accent": "Акцентный цвет",
   "accent.mygo": "MyGO (по теме)",
   "accent.tomori": "Синий Томори",

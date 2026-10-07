@@ -238,16 +238,19 @@ func delayColor(t *ui.Theme, d int) ui.Color {
 	return t.Danger
 }
 
-// panelThemes caches panelTheme's light and dark themes.
-var panelThemes [2]*ui.Theme
+// panelThemes caches panelTheme's light, dark and pure black themes.
+var panelThemes [3]*ui.Theme
 
 // panelTheme is mygo/ui's theme in the app's colors, as the web UI has
 // them: MyGO's night blues, Tomori's blue for the accent, the members'
-// hues for the states.
-func panelTheme(dark bool) *ui.Theme {
+// hues for the states. oled turns the dark one pure black.
+func panelTheme(dark, oled bool) *ui.Theme {
 	i := 0
 	if dark {
 		i = 1
+		if oled {
+			i = 2
+		}
 	}
 	if panelThemes[i] != nil {
 		return panelThemes[i]
@@ -260,6 +263,10 @@ func panelTheme(dark bool) *ui.Theme {
 		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#7cc0e4"), ui.Hex("#93cdeb"), ui.Hex("#66b0d8"), ui.Hex("#08131f")
 		t.Danger, t.Warning, t.Success = ui.Hex("#ff6b61"), ui.Hex("#f3cd72"), ui.Hex("#6bd38e")
 		t.Selection, t.Focus = ui.RGBA(124, 192, 228, 0.22), ui.RGBA(124, 192, 228, 0.55)
+		if oled {
+			t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#000000"), ui.Hex("#0d1017"), ui.Hex("#151a24"), ui.Hex("#1d2330")
+			t.Border = ui.Hex("#1f2533")
+		}
 	} else {
 		t = ui.LightTheme()
 		t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#eef2f8"), ui.Hex("#e4eaf3"), ui.Hex("#d9e1ed")
@@ -276,7 +283,7 @@ func panelTheme(dark bool) *ui.Theme {
 // view builds the panel.
 func (p *quickPanel) view(c *ui.Context) {
 	a := p.a
-	c.SetTheme(panelTheme(c.Theme().Dark))
+	c.SetTheme(panelTheme(c.Theme().Dark, a.settings.Get().OLED))
 	t := c.Theme()
 	if runtime.GOOS == "darwin" {
 		c.Root().Background(ui.Transparent)

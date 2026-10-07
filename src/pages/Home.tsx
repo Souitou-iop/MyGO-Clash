@@ -827,6 +827,7 @@ export default function Home() {
   const state = useApp((s) => s.state);
   const navigate = useApp((s) => s.navigate);
   const [editing, setEditing] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [ref, width] = useWidth<HTMLDivElement>();
   const ids = cards.filter((c) => c.visible && CARDS[c.id]).map((c) => c.id);
   const layout = pack(ids, density(width || 1000));
@@ -844,7 +845,19 @@ export default function Home() {
             <span className="grow">
               <b>{t("home.configError")}</b> {state.configError}
             </span>
-            <Button size="sm" onClick={() => navigate("profiles")}>
+            {/* Most failures are downloads (GeoIP, providers) that the next try may get. */}
+            <Button
+              size="sm"
+              loading={retrying}
+              onClick={async () => {
+                setRetrying(true);
+                await run(() => Core.reapply(), t("home.configError"));
+                setRetrying(false);
+              }}
+            >
+              {t("profiles.retry")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => navigate("profiles")}>
               {t("nav.profiles")}
             </Button>
           </div>

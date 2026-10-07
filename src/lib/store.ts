@@ -154,6 +154,8 @@ export function applyAppearance(s: Settings) {
   const root = document.documentElement;
   if (s.theme === "light" || s.theme === "dark") root.dataset.theme = s.theme;
   else delete root.dataset.theme;
+  if (s.oled) root.dataset.oled = "";
+  else delete root.dataset.oled;
   if (s.accent) {
     root.style.setProperty("--accent", s.accent);
     root.style.setProperty("--accent-text", textOn(s.accent));

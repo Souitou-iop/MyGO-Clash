@@ -355,7 +355,7 @@ func (a *App) showMain() {
 		Hidden:          true,
 		TitleBarStyle:   mygo.TitleBarHidden,
 		TitleBarHeight:  44,
-		BackgroundColor: "light-dark(#f6f7f9, #101114)",
+		BackgroundColor: windowBackground(a.settings.Get()),
 	})
 	win.OnReadyToShow(func() {
 		win.Show()

@@ -484,6 +484,8 @@ const ar: Record<Key, string> = {
   "settings.theme": "المظهر",
   "settings.light": "فاتح",
   "settings.dark": "داكن",
+  "settings.oled": "أسود خالص (OLED)",
+  "settings.oledDesc": "خلفية سوداء خالصة في الوضع الداكن: طاقة أقل وتباين أعلى على شاشات OLED",
   "settings.accent": "لون التمييز",
   "accent.mygo": "MyGO (يتبع السمة)",
   "accent.tomori": "أزرق توموري",

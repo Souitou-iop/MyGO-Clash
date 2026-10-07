@@ -484,6 +484,8 @@ const ko: Record<Key, string> = {
   "settings.theme": "모양",
   "settings.light": "라이트",
   "settings.dark": "다크",
+  "settings.oled": "완전한 검정 (OLED)",
+  "settings.oledDesc": "다크 모드에서 순수한 검정 배경을 사용합니다. OLED 화면에서 전력을 덜 쓰고 대비가 높아집니다",
   "settings.accent": "강조 색상",
   "accent.mygo": "MyGO(테마를 따름)",
   "accent.tomori": "토모리의 파랑",

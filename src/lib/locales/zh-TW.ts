@@ -484,6 +484,8 @@ const zhTW: Record<Key, string> = {
   "settings.theme": "外觀",
   "settings.light": "淺色",
   "settings.dark": "深色",
+  "settings.oled": "純黑（OLED）",
+  "settings.oledDesc": "深色模式使用純黑背景，OLED 螢幕更省電、對比更強",
   "settings.accent": "強調色",
   "accent.mygo": "MyGO（隨主題變化）",
   "accent.tomori": "燈的藍",

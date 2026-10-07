@@ -23,9 +23,11 @@ type trayUI struct {
 
 	mu        sync.Mutex
 	variant   art.Variant
+	menuKey   string // the state the menu was built from
 	menu      *mygo.Menu
 	timer     *time.Timer
 	speedStop func()
+	lastClick time.Time
 }
 
 var template = runtime.GOOS == "darwin"
@@ -43,6 +45,12 @@ func newTrayUI(a *App) *trayUI {
 	}
 	t.tray = tray
 	tray.OnClick(func() {
+		// Windows: a double click opens the main window, whatever a
+		// single click does; the first click has already done that.
+		if t.doubleClick() {
+			a.showMain()
+			return
+		}
 		switch a.settings.Get().TrayClick {
 		case "window":
 			a.toggleMain()
@@ -58,6 +66,24 @@ func newTrayUI(a *App) *trayUI {
 	t.rebuild()
 	t.speed(a.settings.Get().Tray.ShowSpeed)
 	return t
+}
+
+// doubleClick reports whether this click is the second of a double click
+// (Windows only).
+func (t *trayUI) doubleClick() bool {
+	d := doubleClickTime()
+	if d == 0 {
+		return false
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	now := time.Now()
+	if now.Sub(t.lastClick) <= d {
+		t.lastClick = time.Time{}
+		return true
+	}
+	t.lastClick = now
+	return false
 }
 
 func trayPx() int {
@@ -93,10 +119,15 @@ func (t *trayUI) refresh() {
 	case s.SystemProxy:
 		v = art.SystemProxy
 	}
+	key := menuKey(s)
 	t.mu.Lock()
 	changed := v != t.variant
 	t.variant = v
+	stale := key != t.menuKey
 	t.mu.Unlock()
+	if stale {
+		t.rebuild()
+	}
 	if changed {
 		_ = t.tray.SetIcon(art.Tray(trayPx(), v, template), template)
 	}
@@ -105,6 +136,11 @@ func (t *trayUI) refresh() {
 		tip += " · " + s.ProfileName
 	}
 	t.tray.SetToolTip(tip)
+}
+
+// menuKey is the part of the state the menu shows, outside the settings.
+func menuKey(s AppState) string {
+	return fmt.Sprint(s.Core.Status, s.TunAvailable, s.Service.Installed, s.Service.Outdated, s.ProfileName)
 }
 
 func statusLabel(a *App, c coremgr.State) string {
@@ -136,6 +172,9 @@ func (t *trayUI) build() {
 	a := t.a
 	st := a.settings.Get()
 	s := a.snapshot()
+	t.mu.Lock()
+	t.menuKey = menuKey(s)
+	t.mu.Unlock()
 	item := func(key string, fn func()) *mygo.MenuItem {
 		return &mygo.MenuItem{Label: tr(a, key), Click: func(*mygo.MenuItem, *mygo.Window) { fn() }}
 	}
@@ -328,7 +367,15 @@ func (t *trayUI) tailscale() *mygo.MenuItem {
 		}
 	}
 	items = append(items, mygo.Separator(), &mygo.MenuItem{Label: tr(a, "adminConsole"), Click: func(*mygo.MenuItem, *mygo.Window) { _ = (Tailscale{a}).OpenAdmin() }})
-	return &mygo.MenuItem{Label: tr(a, "tailscale"), Submenu: items}
+	// A submenu has no checkmark: its label carries the state instead.
+	label := tr(a, "tailscale")
+	switch s.BackendState {
+	case "Running":
+		label += ": " + tr(a, "connected")
+	case "NeedsLogin":
+		label += ": " + tr(a, "tsNeedsLogin")
+	}
+	return &mygo.MenuItem{Label: label, Submenu: items}
 }
 
 func (t *trayUI) exitNode(id string) {

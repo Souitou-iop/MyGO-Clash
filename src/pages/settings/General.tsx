@@ -222,6 +222,9 @@ export default function General() {
             ]}
           />
         </Row>
+        <Row label={t("settings.oled")} desc={t("settings.oledDesc")}>
+          <Switch checked={s.oled} onChange={(v) => patch({ oled: v })} disabled={s.theme === "light"} />
+        </Row>
         <Row label={t("settings.accent")}>
           <div className="row" style={{ gap: 7 }}>
             {ACCENTS.map((c) => (

@@ -277,6 +277,7 @@ func (h *host) apply(w mhttp.ResponseWriter, r *mhttp.Request) {
 	if err := h.node.Configure(req.Tailscale); err != nil {
 		warnings = append(warnings, "tailscale: "+err.Error())
 	}
+	ensureGeo(r.Context(), req.Config)
 	cfg, err := executor.ParseWithBytes([]byte(req.Config))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -346,6 +347,7 @@ func (h *host) validate(w mhttp.ResponseWriter, r *mhttp.Request) {
 	if !readJSON(w, r, &req) {
 		return
 	}
+	ensureGeo(r.Context(), req.Config)
 	cfg, err := executor.ParseWithBytes([]byte(req.Config))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err)
