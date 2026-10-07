@@ -131,7 +131,6 @@ function Self({ status, mode }: { status: TailscaleStatus; mode: Mode }) {
   const t = useT();
   const self = status.self;
   if (!self) return null;
-  const initials = (status.user?.displayName || status.user?.loginName || "?").slice(0, 1).toUpperCase();
   return (
     <Card
       title={t("ts.thisDevice")}
@@ -157,33 +156,30 @@ function Self({ status, mode }: { status: TailscaleStatus; mode: Mode }) {
         </>
       }
     >
-      <div className="row" style={{ gap: 14, alignItems: "flex-start" }}>
-        <div className="ts-avatar">{initials}</div>
-        <dl className="kv grow">
-          <dt>{t("ts.deviceName")}</dt>
-          <dd>{self.hostName}</dd>
-          <dt>{t("ts.address")}</dt>
-          <dd>
-            {self.tailscaleIps.map((ip) => (
-              <button key={ip} className="chip mono" style={{ marginInlineStart: 4 }} onClick={() => copy(ip, t("ts.ipCopied"))}>
-                {ip}
-              </button>
-            ))}
-          </dd>
-          <dt>MagicDNS</dt>
-          <dd className="mono selectable">{self.dnsName || "—"}</dd>
-          <dt>{t("ts.account")}</dt>
-          <dd>{status.user?.loginName ?? "—"}</dd>
-          <dt>{t("ts.tailnet")}</dt>
-          <dd>{status.tailnetName || "—"}</dd>
-          {status.shareProxy && (
-            <>
-              <dt>{t("ts.sharedProxy")}</dt>
-              <dd className="mono">{status.shareProxy}</dd>
-            </>
-          )}
-        </dl>
-      </div>
+      <dl className="kv">
+        <dt>{t("ts.deviceName")}</dt>
+        <dd>{self.hostName}</dd>
+        <dt>{t("ts.address")}</dt>
+        <dd>
+          {self.tailscaleIps.map((ip) => (
+            <button key={ip} className="chip mono" style={{ marginInlineStart: 4 }} onClick={() => copy(ip, t("ts.ipCopied"))}>
+              {ip}
+            </button>
+          ))}
+        </dd>
+        <dt>MagicDNS</dt>
+        <dd className="mono selectable">{self.dnsName || "—"}</dd>
+        <dt>{t("ts.account")}</dt>
+        <dd>{status.user?.loginName ?? "—"}</dd>
+        <dt>{t("ts.tailnet")}</dt>
+        <dd>{status.tailnetName || "—"}</dd>
+        {status.shareProxy && (
+          <>
+            <dt>{t("ts.sharedProxy")}</dt>
+            <dd className="mono">{status.shareProxy}</dd>
+          </>
+        )}
+      </dl>
       {(status.health?.length ?? 0) > 0 && (
         <div className="col" style={{ marginTop: 10, gap: 4 }}>
           {status.health!.map((h, i) => (

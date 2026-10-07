@@ -88,13 +88,17 @@ function Sidebar() {
         <div className="side-traffic">
           <div className="side-rate" title={`${t("common.upload")} ${rate(traffic.now.up)}`}>
             <ArrowUp size={13} color="var(--graph-up)" />
-            <span className="side-traffic-text">{rate(traffic.now.up)}</span>
-            <span className="side-traffic-short">{shortRate(traffic.now.up)}</span>
+            <span className="side-num">
+              <span className="side-traffic-text">{rate(traffic.now.up)}</span>
+              <span className="side-traffic-short">{shortRate(traffic.now.up)}</span>
+            </span>
           </div>
           <div className="side-rate" title={`${t("common.download")} ${rate(traffic.now.down)}`}>
             <ArrowDown size={13} color="var(--graph-down)" />
-            <span className="side-traffic-text">{rate(traffic.now.down)}</span>
-            <span className="side-traffic-short">{shortRate(traffic.now.down)}</span>
+            <span className="side-num">
+              <span className="side-traffic-text">{rate(traffic.now.down)}</span>
+              <span className="side-traffic-short">{shortRate(traffic.now.down)}</span>
+            </span>
           </div>
         </div>
         <Button

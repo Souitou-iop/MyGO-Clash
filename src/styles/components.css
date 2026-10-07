@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
   height: 100%;
-  transition: grid-template-columns 0.18s ease;
+  transition: grid-template-columns 0.3s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 
 .shell.collapsed {
@@ -36,11 +36,16 @@
   --app-region: drag;
 }
 
+/*
+ * Collapsing only narrows the sidebar: every icon keeps its place on one
+ * line, 32px in, the middle of the collapsed bar, and the words fade. So
+ * nothing jumps, either way.
+ */
 .brand {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 6px 16px 14px;
+  padding: 6px 16px 14px 19px;
   font-weight: 700;
   font-size: 14.5px;
   letter-spacing: -0.01em;
@@ -68,15 +73,17 @@
   color: transparent;
 }
 
+.brand-name,
+.nav-label,
+.side-traffic-text,
+.side-traffic-short {
+  transition: opacity 0.2s ease;
+}
+
 .collapsed .brand-name,
 .collapsed .nav-label,
 .collapsed .side-traffic-text {
-  display: none;
-}
-
-.collapsed .brand {
-  padding: 6px 0 14px;
-  justify-content: center;
+  opacity: 0;
 }
 
 .nav {
@@ -94,7 +101,7 @@
   align-items: center;
   gap: 11px;
   height: 36px;
-  padding: 0 11px;
+  padding: 0 11px 0 13px;
   border-radius: 8px;
   color: var(--text-2);
   border: 0;
@@ -117,22 +124,21 @@
 }
 
 .nav-item .nav-dot {
-  margin-inline-start: auto;
+  position: absolute;
+  top: 14.5px;
+  inset-inline-end: 12px;
   width: 7px;
   height: 7px;
   border-radius: 999px;
   background: var(--warning);
-}
-
-.collapsed .nav-item {
-  justify-content: center;
-  padding: 0;
+  transition:
+    top 0.3s cubic-bezier(0.3, 0.7, 0.2, 1),
+    inset-inline-end 0.3s cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 
 .collapsed .nav-item .nav-dot {
-  position: absolute;
   top: 7px;
-  inset-inline-end: 9px;
+  inset-inline-end: 7px;
 }
 
 .side-foot {
@@ -144,13 +150,10 @@
 }
 
 .side-traffic {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.collapsed .side-traffic {
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-inline-start: 4px;
 }
 
 .side-rate {
@@ -168,30 +171,30 @@
   flex: none;
 }
 
-/* Collapsed, the rates are four characters at most, such as "9.9K". */
+/* Collapsed, the rates cross-fade to four characters at most, such as
+   "9.9K", in the same place. */
+.side-num {
+  display: grid;
+}
+
+.side-num > span {
+  grid-area: 1 / 1;
+}
+
 .side-traffic-short {
-  display: none;
-}
-
-.collapsed .side-traffic-short {
-  display: inline;
-}
-
-.collapsed .side-rate {
-  justify-content: center;
-  gap: 2px;
+  opacity: 0;
   font-size: 11px;
   letter-spacing: -0.02em;
 }
 
-.side-graph {
-  height: 34px;
-  width: 100%;
-  display: block;
+.collapsed .side-traffic-short {
+  opacity: 1;
 }
 
-.collapsed .side-graph {
-  display: none;
+/* The collapse button sits on the line of the icons. */
+.side-foot > .btn {
+  align-self: flex-start;
+  margin-inline-start: 9px;
 }
 
 .main {
