@@ -1,7 +1,7 @@
 {
   "name": "MyGO-Clash",
   "identifier": "io.mygo.clash",
-  "version": "0.1.0-beta",
+  "version": "0.1.1-beta",
   "copyright": "© 2026 MyGO-Clash contributors. GPL-3.0.",
   "devUrl": "http://localhost:5173",
   "devCommand": "bun run dev:web",
@@ -9,19 +9,29 @@
   "frontendDist": "dist",
   "bindings": "src/mygo.ts",
   "out": "build",
-  "urlSchemes": ["clash", "mygo-clash"],
+  "urlSchemes": [
+    "clash",
+    "mygo-clash"
+  ],
   "updates": {
     "publicKey": "B4Cn0yDCrLOQ4HQq2O9u7hXbWT2jZ9D0sg4eNxzoJ1c=",
     "github": "Souitou-iop/MyGO-Clash"
   },
   "linux": {
     "comment": "A Clash Meta (mihomo) client with Tailscale and encrypted sync",
-    "categories": ["Network", "Utility"],
-    "depends": ["libayatana-appindicator3-1"],
+    "categories": [
+      "Network",
+      "Utility"
+    ],
+    "depends": [
+      "libayatana-appindicator3-1"
+    ],
     "command": "mygo-clash"
   },
   "macos": {
     "minimumSystemVersion": "12.0",
-    "infoPlist": { "CFBundleIconName": "AppIcon" }
+    "infoPlist": {
+      "CFBundleIconName": "AppIcon"
+    }
   }
 }

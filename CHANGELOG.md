@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.1-beta
+
+图标与侧边栏的打磨版本。/ A polish release for the compass icon and the sidebar.
+
+### ✨ 改进 / Improvements
+
+- 罗盘图标按几何结构整体重画：星芒、M、圆环与凸起全部为精确直线与平滑曲线，不再带有描摹原图时带入的噪点 / The compass icon is rebuilt from fitted geometry: every star ray, the M, the ring and the bumps are precise straight lines and smooth curves, with none of the noise that came from tracing the source image
+- 收起侧边栏时流量以紧凑格式显示（最多 4 字符，如 512B、9.9K、1.0M），完整数值移到悬停提示 / With the sidebar collapsed, traffic shows in a compact format of at most four characters (512B, 9.9K, 1.0M), with the full value in the hover tooltip
+
+### 🐛 修复 / Fixes
+
+- 修复展开侧边栏时闪现横向滚动条的问题 / Fixed a horizontal scrollbar that flashed while the sidebar expanded
+
 ## 0.1.0-beta
 
 MyGO-Clash 的首个公开测试版，基于 mihomo 内核与 MyGo 框架。测试版不会推送给已安装的应用自动更新，欢迎反馈问题。
