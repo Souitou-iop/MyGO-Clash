@@ -348,28 +348,16 @@ export default function SyncTab() {
   return (
     <>
       {!sync.configured ? (
-        <div className="card card-pad sync-hero cloud-upload-hover">
-          <div className="ts-hero-icon">
-            <CloudUpload size={26} />
+        <div className="card sync-intro cloud-upload-hover">
+          <div className="sync-intro-icon">
+            <CloudUpload size={18} strokeWidth={1.8} />
           </div>
-          <div className="grow">
-            <h2 style={{ fontSize: 16 }}>{t("sync.heroTitle")}</h2>
-            <p className="muted" style={{ marginTop: 4, fontSize: 12.5 }}>
-              {t("sync.heroDesc")}
-            </p>
-            <div className="row" style={{ marginTop: 12, gap: 14, flexWrap: "wrap" }}>
-              <span className="sync-point">
-                <Lock size={13} /> {t("sync.point1")}
-              </span>
-              <span className="sync-point">
-                <ShieldCheck size={13} /> {t("sync.point2")}
-              </span>
-              <span className="sync-point">
-                <RefreshCw size={13} /> {t("sync.point3")}
-              </span>
-            </div>
+          <div className="grow sync-intro-text">
+            <h2>{t("sync.heroTitle")}</h2>
+            <p>{t("sync.heroDesc")}</p>
+            <p className="sync-intro-facts">{[t("sync.point1"), t("sync.point2"), t("sync.point3")].join(" · ")}</p>
           </div>
-          <Button variant="primary" size="lg" onClick={() => setSetup(true)}>
+          <Button variant="primary" onClick={() => setSetup(true)}>
             {t("sync.setUp")}
           </Button>
         </div>

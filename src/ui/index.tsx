@@ -343,6 +343,45 @@ export function Tabs<T extends string>({ value, tabs, onChange }: { value: T; ta
   );
 }
 
+/**
+ * SideTips shows the tips of the sidebar beside it. The sidebar clips what
+ * overflows it, so the usual tip above an element would be cut off there;
+ * these float over the page instead, at the element's inline end.
+ */
+export function SideTips() {
+  const [tip, setTip] = useState<{ text: string; x: number; y: number; rtl: boolean } | null>(null);
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>(".sidebar");
+    if (!root) return;
+    const over = (e: MouseEvent) => {
+      const el = (e.target as Element).closest<HTMLElement>("[data-tip]");
+      if (!el || !root.contains(el)) return setTip(null);
+      const r = el.getBoundingClientRect();
+      const rtl = getComputedStyle(el).direction === "rtl";
+      setTip({ text: el.dataset.tip ?? "", x: rtl ? r.left - 8 : r.right + 8, y: r.top + r.height / 2, rtl });
+    };
+    const out = (e: MouseEvent) => {
+      if (!root.contains(e.relatedTarget as Node | null)) setTip(null);
+    };
+    const hide = () => setTip(null);
+    root.addEventListener("mouseover", over);
+    root.addEventListener("mouseout", out);
+    root.addEventListener("mousedown", hide);
+    return () => {
+      root.removeEventListener("mouseover", over);
+      root.removeEventListener("mouseout", out);
+      root.removeEventListener("mousedown", hide);
+    };
+  }, []);
+  if (!tip?.text) return null;
+  return createPortal(
+    <div key={`${tip.text}${tip.y}`} className={`side-tip${tip.rtl ? " rtl" : ""}`} style={{ left: tip.x, top: tip.y }}>
+      {tip.text}
+    </div>,
+    document.body,
+  );
+}
+
 // ---------- Dialog ----------
 
 export function Dialog({
