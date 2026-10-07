@@ -1,10 +1,10 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDownToLine, Copy, Pause, Play, Trash2 } from "lucide-react";
+import { ArrowDownToLine, Copy, Download, Pause, Play, Settings2, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { useStream } from "../lib/hooks";
 import { useT } from "../lib/i18n";
-import { toast, useApp } from "../lib/store";
+import { run, toast, useApp } from "../lib/store";
 import { App, Logs as API, type LogEvent } from "../mygo";
 import { Badge, Button, Empty, SearchInput, Segmented } from "../ui";
 
@@ -17,6 +17,8 @@ const MAX = 5000;
 export default function Logs() {
   const t = useT();
   const preview = useApp((s) => s.preview);
+  const coreLevel = useApp((s) => s.settings?.clash.logLevel ?? "info");
+  const navigate = useApp((s) => s.navigate);
   const [logs, setLogs] = useState<LogEvent[]>([]);
   const [level, setLevel] = useState<Level>("all");
   const [search, setSearch] = useState("");
@@ -48,6 +50,8 @@ export default function Logs() {
     return logs.filter((l) => (level === "all" || (rank[l.type] ?? 1) >= rank[level]!) && (!q || l.payload.toLowerCase().includes(q)));
   }, [logs, level, search]);
   const scroller = useRef<HTMLDivElement>(null);
+  const text = () => shown.map((l) => `${new Date(l.time).toISOString()} [${l.type}] ${l.payload}`).join("\n");
+  const label = (type: string) => ((LEVELS as readonly string[]).includes(type) ? t(`logs.${type as (typeof LEVELS)[number]}`) : type);
   const virt = useVirtualizer({ count: shown.length, getScrollElement: () => scroller.current, estimateSize: () => 30, overscan: 20 });
   useEffect(() => {
     if (follow && shown.length) virt.scrollToIndex(shown.length - 1, { align: "end" });
@@ -62,11 +66,22 @@ export default function Logs() {
           size="sm"
           variant="ghost"
           icon={<Copy size={14} />}
-          onClick={() =>
-            App.copyText(shown.map((l) => `${new Date(l.time).toISOString()} [${l.type}] ${l.payload}`).join("\n")).then(() => toast({ level: "success", message: t("common.copied") }))
-          }
+          disabled={shown.length === 0}
+          onClick={() => App.copyText(text()).then(() => toast({ level: "success", message: t("common.copied") }))}
         >
           {t("common.copy")}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={<Download size={14} />}
+          disabled={shown.length === 0}
+          onClick={async () => {
+            const path = await run(() => API.export(text()), t("common.failed"));
+            if (path) toast({ level: "success", message: t("logs.exported"), detail: path });
+          }}
+        >
+          {t("logs.export")}
         </Button>
         <Button
           size="sm"
@@ -92,7 +107,18 @@ export default function Logs() {
           <Button size="sm" variant={follow ? "primary" : "ghost"} icon={<ArrowDownToLine size={14} />} onClick={() => setFollow(!follow)} tip={t("logs.follow")} />
         </div>
         {shown.length === 0 ? (
-          <Empty title={t("logs.empty")} art />
+          <Empty title={t("logs.empty")} art>
+            {logs.length === 0 && (
+              <>
+                <p className="muted" style={{ maxWidth: 420, textAlign: "center" }}>
+                  {coreLevel === "silent" ? t("logs.silentHint") : t("logs.levelHint", { level: t(`logs.${coreLevel}` as never) })}
+                </p>
+                <Button icon={<Settings2 size={14} />} onClick={() => navigate("settings", "clash")}>
+                  {t("logs.levelSetting")}
+                </Button>
+              </>
+            )}
+          </Empty>
         ) : (
           <div
             className="vlist"
@@ -115,7 +141,7 @@ export default function Logs() {
                     <span className="faint tnum mono" style={{ fontSize: 11.5 }}>
                       {new Date(l.time).toLocaleTimeString()}
                     </span>
-                    <Badge tone={tone[l.type]}>{l.type}</Badge>
+                    <Badge tone={tone[l.type]}>{label(l.type)}</Badge>
                     <span className="mono selectable log-text">{l.payload}</span>
                   </div>
                 );

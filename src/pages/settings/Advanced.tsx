@@ -7,7 +7,7 @@ import { ltr, relative } from "../../lib/format";
 import { useT } from "../../lib/i18n";
 import { run, toast, useApp } from "../../lib/store";
 import { App, Core, events, Updates, type UpdateState } from "../../mygo";
-import { Badge, Button, NumberInput, Row, Section, Select, Switch } from "../../ui";
+import { Badge, Button, Collapse, confirm, NumberInput, Row, Section, Select, Switch } from "../../ui";
 import { usePatch } from "./General";
 
 export default function Advanced() {
@@ -40,12 +40,10 @@ export default function Advanced() {
 
       <Section title={t("adv.lightweight")}>
         <Row label={t("adv.lightAuto")} desc={t("adv.lightAutoDesc")} icon={<Feather size={16} />}>
-          {s.lightweight.autoEnter && (
-            <>
-              <NumberInput value={s.lightweight.delayMinutes} onChange={(v) => patch({ lightweight: { delayMinutes: v } })} min={1} max={1440} width={80} />
-              <span className="muted">{t("common.minutes")}</span>
-            </>
-          )}
+          <Collapse inline open={s.lightweight.autoEnter}>
+            <NumberInput value={s.lightweight.delayMinutes} onChange={(v) => patch({ lightweight: { delayMinutes: v } })} min={1} max={1440} width={80} />
+            <span className="muted">{t("common.minutes")}</span>
+          </Collapse>
           <Switch checked={s.lightweight.autoEnter} onChange={(v) => patch({ lightweight: { autoEnter: v } })} />
         </Row>
         <Row label={t("adv.lightNow")} desc={t("adv.lightNowDesc")}>
@@ -56,15 +54,15 @@ export default function Advanced() {
       </Section>
 
       <Section title={t("adv.logs")}>
-        <Row label={t("adv.appLogLevel")} icon={<ScrollText size={16} />}>
-          <Select value={s.logs.level} onChange={(v) => patch({ logs: { level: v } })} options={["debug", "info", "warn", "error"].map((l) => ({ value: l, label: l }))} width={120} />
+        <Row label={t("adv.appLogLevel")} desc={t("adv.appLogLevelDesc")} icon={<ScrollText size={16} />}>
+          <Select value={s.logs.level} onChange={(v) => patch({ logs: { level: v } })} options={["debug", "info", "warn", "error"].map((l) => ({ value: l, label: t(`logs.${l === "warn" ? "warning" : l}` as never) }))} width={120} />
         </Row>
-        <Row label={t("adv.logSize")}>
+        <Row label={t("adv.logSize")} desc={t("adv.logSizeDesc")}>
           <NumberInput value={s.logs.maxSizeMb} onChange={(v) => patch({ logs: { maxSizeMb: v } })} min={1} max={512} width={80} />
           <span className="muted">MB ×</span>
           <NumberInput value={s.logs.maxFiles} onChange={(v) => patch({ logs: { maxFiles: v } })} min={1} max={50} width={70} />
         </Row>
-        <Row label={t("adv.logClean")}>
+        <Row label={t("adv.logClean")} desc={t("adv.logCleanDesc")}>
           <Select
             value={s.logs.autoCleanDays}
             onChange={(v) => patch({ logs: { autoCleanDays: v } })}
@@ -145,11 +143,18 @@ export default function Advanced() {
             MyGo
           </Button>
         </Row>
-        <Row label={t("adv.restartApp")} icon={<Power size={16} />}>
+        <Row label={t("adv.restartApp")} desc={t("adv.restartAppDesc")} icon={<Power size={16} />}>
           <Button size="sm" onClick={() => App.relaunch()}>
             {t("adv.restart")}
           </Button>
-          <Button size="sm" variant="danger" icon={<LogOut size={13} />} onClick={() => App.quit()}>
+          <Button
+            size="sm"
+            variant="danger"
+            icon={<LogOut size={13} />}
+            onClick={async () => {
+              if (await confirm({ title: t("adv.quitTitle"), message: t("adv.quitMsg"), confirm: t("adv.quit"), danger: true })) void App.quit();
+            }}
+          >
             {t("adv.quit")}
           </Button>
         </Row>

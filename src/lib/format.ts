@@ -1,5 +1,7 @@
 // Formatting of sizes, rates, durations and delays.
 
+import type { Key } from "./locales/en";
+
 const UNITS = ["B", "KB", "MB", "GB", "TB", "PB"];
 
 /**
@@ -118,4 +120,54 @@ export function errorText(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (typeof e === "string") return e;
   return String(e);
+}
+
+/** SYNTAX spells the core's rule types as configurations write them. */
+const SYNTAX: Record<string, string> = {
+  Domain: "DOMAIN",
+  DomainSuffix: "DOMAIN-SUFFIX",
+  DomainKeyword: "DOMAIN-KEYWORD",
+  DomainRegex: "DOMAIN-REGEX",
+  DomainWildcard: "DOMAIN-WILDCARD",
+  GeoSite: "GEOSITE",
+  GeoIP: "GEOIP",
+  SrcGeoIP: "SRC-GEOIP",
+  IPASN: "IP-ASN",
+  SrcIPASN: "SRC-IP-ASN",
+  IPCIDR: "IP-CIDR",
+  SrcIPCIDR: "SRC-IP-CIDR",
+  IPSuffix: "IP-SUFFIX",
+  SrcIPSuffix: "SRC-IP-SUFFIX",
+  SrcPort: "SRC-PORT",
+  DstPort: "DST-PORT",
+  InPort: "IN-PORT",
+  InUser: "IN-USER",
+  InName: "IN-NAME",
+  InType: "IN-TYPE",
+  ProcessName: "PROCESS-NAME",
+  ProcessPath: "PROCESS-PATH",
+  ProcessNameRegex: "PROCESS-NAME-REGEX",
+  ProcessPathRegex: "PROCESS-PATH-REGEX",
+  ProcessNameWildcard: "PROCESS-NAME-WILDCARD",
+  ProcessPathWildcard: "PROCESS-PATH-WILDCARD",
+  Match: "MATCH",
+  RuleSet: "RULE-SET",
+  Network: "NETWORK",
+  DSCP: "DSCP",
+  Uid: "UID",
+  SubRules: "SUB-RULE",
+};
+
+/** ruleType spells a rule type of the core (DomainSuffix) as configurations
+ * write it (DOMAIN-SUFFIX). */
+export function ruleType(type: string, payload = ""): string {
+  const s = SYNTAX[type] ?? type.toUpperCase();
+  return s === "IP-CIDR" && payload.includes(":") ? "IP-CIDR6" : s;
+}
+
+const GROUP_TYPES = ["Selector", "URLTest", "Fallback", "LoadBalance", "Relay"] as const;
+
+/** groupType names a kind of proxy group in the interface's language. */
+export function groupType(t: (key: Key) => string, type: string): string {
+  return (GROUP_TYPES as readonly string[]).includes(type) ? t(`proxies.type.${type}` as Key) : type;
 }

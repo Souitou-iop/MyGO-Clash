@@ -63,6 +63,27 @@ type Profile struct {
 	// Converted reports a subscription of share links that the app turned
 	// into a configuration.
 	Converted bool `json:"converted,omitempty"`
+	// Suggested is the update interval the provider suggested at the last
+	// download, in minutes; 0 when it suggested none.
+	Suggested int `json:"suggestedInterval,omitempty"`
+}
+
+// DefaultInterval is how often a subscription updates when neither its
+// option nor its provider says, in minutes.
+const DefaultInterval = 24 * 60
+
+// Interval is how often a remote profile updates, in minutes: its option,
+// else its provider's suggestion, else a day; 0 for never.
+func (p Profile) Interval() int {
+	switch {
+	case p.Option.NoAutoUpdate || p.Option.UpdateInterval < 0:
+		return 0
+	case p.Option.UpdateInterval > 0:
+		return p.Option.UpdateInterval
+	case p.Suggested > 0:
+		return p.Suggested
+	}
+	return DefaultInterval
 }
 
 // Usage is the traffic and expiry a subscription reports.

@@ -17,6 +17,7 @@ import {
   MonitorSmartphone,
   Power,
   RefreshCw,
+  RotateCw,
   ShieldCheck,
   Timer,
   Waypoints,
@@ -27,7 +28,7 @@ import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useMemo
 import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
 import { TrafficGraph } from "../components/TrafficGraph";
-import { bytes, dateOnly, duration, flag, percent, rate, relative } from "../lib/format";
+import { bytes, dateOnly, duration, flag, groupType, percent, rate, relative } from "../lib/format";
 import { density, pack } from "../lib/homeLayout";
 import { useAsync, useNow, useWidth } from "../lib/hooks";
 import { useT } from "../lib/i18n";
@@ -136,6 +137,20 @@ function ControlCard() {
           <div className="control-title">{title}</div>
           <div className="control-sub">{sub}</div>
         </div>
+        {(s.core.status === "stopped" || s.core.status === "error") && (
+          <Button
+            variant="primary"
+            icon={<RotateCw size={14} />}
+            loading={busy === "core"}
+            onClick={async () => {
+              setBusy("core");
+              await run(() => Core.restart(), t("common.failed"));
+              setBusy("");
+            }}
+          >
+            {s.core.status === "error" ? t("core.restart") : t("core.start")}
+          </Button>
+        )}
         <Segmented
           value={mode}
           onChange={(m) => run(() => Core.setMode(m), t("common.failed"))}
@@ -390,10 +405,10 @@ function ProxyCard() {
         <>
           <Lead
             title={exit || "—"}
-            sub={path.length > 2 ? path.slice(0, -1).join(" → ") : `${g.name} · ${exitItem?.type ?? g.type}`}
+            sub={path.length > 2 ? path.slice(0, -1).join(" → ") : `${g.name} · ${exitItem?.type ?? groupType(t, g.type)}`}
             extra={<Delay value={delays[now] ?? exitItem?.delay} loading={testing} />}
           />
-          {groups.length > 1 && <Select value={g.name} onChange={choose} options={groups.map((x) => ({ value: x.name, label: `${x.name} · ${x.type}` }))} />}
+          {groups.length > 1 && <Select value={g.name} onChange={choose} options={groups.map((x) => ({ value: x.name, label: `${x.name} · ${groupType(t, x.type)}` }))} />}
           <div className={`node-list${more ? " more" : ""}`} ref={listRef} role="listbox" aria-label={g.name} onScroll={measure}>
             {g.all.map((m) => (
               <button

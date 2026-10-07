@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useT } from "../../lib/i18n";
 import { toastError } from "../../lib/store";
 import { Profiles, type Option, type Profile } from "../../mygo";
-import { Button, Dialog, Field, Input, NumberInput, Segmented, Switch } from "../../ui";
+import { Button, Collapse, Dialog, Field, Input, NumberInput, Segmented, Switch } from "../../ui";
 
 /** ProfileDialog creates a profile, or edits one's properties. */
 export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClose: () => void; profile?: Profile | null }) {
@@ -72,8 +72,8 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
             <Input value={desc} onChange={(e) => setDesc(e.target.value)} />
           </Field>
         </div>
-        {type === "remote" && (
-          <>
+        <Collapse open={type === "remote"}>
+          <div className="form">
             <Field label={t("profiles.url")} error={url && !validURL ? t("profiles.badUrl") : undefined}>
               <textarea className="textarea mono" rows={3} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" spellCheck={false} />
             </Field>
@@ -81,8 +81,11 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
               <Field label={t("profiles.userAgent")} hint={t("profiles.userAgentHint")}>
                 <Input value={opt.userAgent ?? ""} onChange={(e) => set("userAgent", e.target.value)} placeholder="mihomo/1.19 clash-verge/v2.4 MyGO-Clash" />
               </Field>
-              <Field label={t("profiles.interval")} hint={t("profiles.intervalHint")}>
-                <NumberInput value={opt.updateInterval ?? 0} onChange={(v) => set("updateInterval", v)} min={0} max={525600} width={140} />
+              <Field
+                label={t("profiles.interval")}
+                hint={!opt.updateInterval && profile?.suggestedInterval ? t("profiles.intervalFollow", { n: profile.suggestedInterval }) : t("profiles.intervalHint")}
+              >
+                <NumberInput value={opt.updateInterval ?? 0} onChange={(v) => set("updateInterval", v)} min={0} max={525600} width={140} disabled={!!opt.noAutoUpdate} />
               </Field>
             </div>
             <div className="form-row">
@@ -102,6 +105,7 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
               <div className="setting">
                 <div className="setting-text">
                   <div className="setting-label">{t("profiles.autoUpdate")}</div>
+                  <div className="setting-desc">{t("profiles.autoUpdateHint")}</div>
                 </div>
                 <Switch checked={!opt.noAutoUpdate} onChange={(v) => set("noAutoUpdate", !v)} />
               </div>
@@ -115,8 +119,8 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
                 <Switch checked={!!opt.insecure} onChange={(v) => set("insecure", v)} />
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </Collapse>
       </div>
     </Dialog>
   );

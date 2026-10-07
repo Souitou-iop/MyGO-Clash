@@ -60,6 +60,8 @@ interface AppStore {
   /** selection counts selections made outside the page. */
   selection: number;
   toasts: Toast[];
+  /** focusGroup is a proxy group for the proxies page to show, once. */
+  focusGroup: string | null;
   navigate: (page: Page, tab?: string) => void;
 }
 
@@ -78,6 +80,7 @@ export const useApp = create<AppStore>((set) => ({
   runtime: 0,
   selection: 0,
   toasts: [],
+  focusGroup: null,
   navigate: (page, tab) => set((s) => ({ page, settingsTab: tab ?? s.settingsTab })),
 }));
 

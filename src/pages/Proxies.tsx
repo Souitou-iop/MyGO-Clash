@@ -1,12 +1,13 @@
-import { ChevronDown, ChevronRight, LayoutGrid, List, Pin, PinOff, RefreshCw, Server, Stethoscope, Zap } from "lucide-react";
+import { ChevronRight, EyeOff, LayoutGrid, List, Pin, PinOff, RefreshCw, Server, Stethoscope, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
-import { bytes, dateOnly, percent, relative } from "../lib/format";
+import { bytes, dateOnly, groupType, percent, relative } from "../lib/format";
 import { useAsync } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, useApp } from "../lib/store";
 import { Core, Proxies as API, type ProxyGroup, type ProxyItem } from "../mygo";
-import { Badge, Banner, Button, Delay, Empty, Progress, reflow, SearchInput, Segmented, Select, Spinner } from "../ui";
+import { Badge, Banner, Button, Collapse, Delay, Empty, Progress, reflow, SearchInput, Segmented, Select, Spinner } from "../ui";
+import { CoreDown } from "../components/CoreDown";
 
 type Sort = "default" | "delay" | "name";
 
@@ -96,6 +97,8 @@ function Group({
   columns,
   reload,
   showIcon,
+  flash,
+  hideDead,
 }: {
   group: ProxyGroup;
   open: boolean;
@@ -106,6 +109,8 @@ function Group({
   columns: number;
   reload: () => void;
   showIcon: boolean;
+  flash?: boolean;
+  hideDead: boolean;
 }) {
   const t = useT();
   const [delays, setDelays] = useState<Record<string, number>>({});
@@ -118,14 +123,17 @@ function Group({
   const selectable = group.type === "Selector" || group.type === "URLTest" || group.type === "Fallback";
   const items = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = q ? group.all.filter((m) => m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q)) : group.all;
+    // Hiding the unavailable keeps the selected one, so the group still shows where it goes.
+    const dead = (m: ProxyItem) => m.name !== group.now && (delays[m.name] === 0 || (delays[m.name] === undefined && !m.alive));
+    const list = group.all.filter((m) => (!q || m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q)) && !(hideDead && dead(m)));
     return sortItems(list, sort, delays);
-  }, [group.all, search, sort, delays]);
+  }, [group.all, group.now, search, sort, delays, hideDead]);
   if (search && items.length === 0) return null;
   const testOne = async (name: string) => {
     setTesting((s) => ({ ...s, [name]: true }));
-    const d = await API.delay(name, group.testUrl ?? "").catch(() => 0);
-    setDelays((s) => ({ ...s, [name]: d }));
+    // A node that does not answer gives 0, a timeout; an error is the app's.
+    const d = await run(() => API.delay(name, group.testUrl ?? ""), t("proxies.testFailed"));
+    if (d !== undefined) setDelays((s) => ({ ...s, [name]: d }));
     setTesting((s) => ({ ...s, [name]: false }));
   };
   const testAll = async () => {
@@ -147,16 +155,16 @@ function Group({
   };
   const current = group.all.find((m) => m.name === group.now);
   return (
-    <section className="card proxy-group">
+    <section className={`card proxy-group${open ? " open" : ""}${flash ? " flash" : ""}`} data-group={group.name}>
       <div className="proxy-group-head" onClick={onToggle}>
-        {open ? <ChevronDown size={16} className="muted" /> : <ChevronRight size={16} className="muted flip-rtl" />}
+        <ChevronRight size={16} className="muted group-chev" />
         {showIcon && group.icon && <img src={group.icon} alt="" className="group-icon" />}
         <div className="grow" style={{ minWidth: 0 }}>
           <div className="row" style={{ gap: 7 }}>
             <span style={{ fontWeight: 650 }} className="ellipsis">
               {group.name}
             </span>
-            <Badge>{group.type}</Badge>
+            <Badge tip={group.type}>{groupType(t, group.type)}</Badge>
             {group.fixed && (
               <Badge tone="info" tip={t("proxies.fixedTip")}>
                 <Pin size={10} /> {t("proxies.fixed")}
@@ -176,7 +184,7 @@ function Group({
           <Button size="sm" variant="ghost" icon={<Zap size={14} />} loading={groupTesting} onClick={testAll} tip={t("proxies.testGroup")} />
         </div>
       </div>
-      {open && (
+      <Collapse open={open}>
         <div className={`proxy-grid ${layout}`} ref={reflow} style={layout === "card" && columns > 0 ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}>
           {items.map((m) => (
             <Member
@@ -192,7 +200,7 @@ function Group({
             />
           ))}
         </div>
-      )}
+      </Collapse>
     </section>
   );
 }
@@ -272,10 +280,11 @@ export default function Proxies() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<Sort>(() => (localStorage.getItem("proxies.sort") as Sort) || "default");
   const [open, setOpen] = useState<Record<string, boolean>>(loadOpen);
+  const [hideDead, setHideDead] = useState(() => localStorage.getItem("proxies.hideDead") === "1");
   const layout = settings?.ui.proxyLayout ?? "card";
   const mode = settings?.clash.mode ?? "rule";
   const toggle = (name: string) => {
-    const next = { ...open, [name]: !(open[name] ?? false) };
+    const next = { ...open, [name]: !isOpen(name) };
     setOpen(next);
     localStorage.setItem("proxies.open", JSON.stringify(next));
   };
@@ -286,6 +295,20 @@ export default function Proxies() {
     return data.groups.filter((g) => !g.hidden);
   }, [data, mode]);
   const isOpen = (name: string) => open[name] ?? (groups.length <= 3 || !!search);
+  // A group another page pointed to, such as the target of a rule: open it,
+  // bring it into view, and light it up for a moment.
+  const focus = useApp((s) => s.focusGroup);
+  const [flash, setFlash] = useState<string | null>(null);
+  useEffect(() => {
+    if (!focus || !groups.some((g) => g.name === focus)) return;
+    useApp.setState({ focusGroup: null });
+    setSearch("");
+    if (!isOpen(focus)) toggle(focus);
+    setFlash(focus);
+    requestAnimationFrame(() => document.querySelector(`[data-group="${CSS.escape(focus)}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+    setTimeout(() => setFlash(null), 1400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, groups]);
   return (
     <>
       <PageHeader title={t("nav.proxies")}>
@@ -315,6 +338,18 @@ export default function Proxies() {
             ]}
             width={130}
           />
+          <Button
+            size="sm"
+            variant={hideDead ? "primary" : "ghost"}
+            icon={<EyeOff size={14} />}
+            tip={t("proxies.hideDeadTip")}
+            onClick={() => {
+              setHideDead(!hideDead);
+              localStorage.setItem("proxies.hideDead", hideDead ? "0" : "1");
+            }}
+          >
+            {t("proxies.hideDead")}
+          </Button>
           <div className="spacer" />
           <Segmented
             value={layout}
@@ -327,7 +362,7 @@ export default function Proxies() {
           <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={reload} tip={t("common.refresh")} />
         </div>
         {!running ? (
-          <Empty title={t("common.coreNotRunning")} />
+          <CoreDown />
         ) : loading && !data ? (
           <div className="empty">
             <Spinner />
@@ -352,6 +387,8 @@ export default function Proxies() {
                 columns={settings?.ui.proxyColumns ?? 0}
                 reload={reload}
                 showIcon={settings?.ui.groupIcons ?? true}
+                flash={flash === g.name}
+                hideDead={hideDead}
               />
             ))}
           </div>

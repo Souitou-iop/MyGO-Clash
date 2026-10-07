@@ -384,6 +384,11 @@ export interface Profile {
    * into a configuration.
    */
   converted?: boolean;
+  /**
+   * Suggested is the update interval the provider suggested at the last
+   * download, in minutes; 0 when it suggested none.
+   */
+  suggestedInterval?: number;
 }
 
 /** ProfilesView is the list of profiles the page shows. */
@@ -1282,6 +1287,13 @@ export const Connections = {
 
 /** Rules is the rules page. */
 export const Rules = {
+  /**
+   * EnableAll enables the rules disabled since the last reload, and returns
+   * how many there were.
+   */
+  enableAll(): Promise<number> {
+    return call("Rules.EnableAll");
+  },
   /** List returns the running rules and rule providers. */
   list(): Promise<RulesView> {
     return call("Rules.List");
@@ -1301,6 +1313,13 @@ export const Logs = {
   /** Clear forgets the logs kept. */
   clear(): Promise<void> {
     return call("Logs.Clear");
+  },
+  /**
+   * Export saves logs, as the page shows them, to a file the user picks, and
+   * returns its path, "" when cancelled.
+   */
+  export(text: string): Promise<string> {
+    return call("Logs.Export", text);
   },
   /** Recent returns the logs kept, oldest first. */
   recent(): Promise<LogEvent[]> {

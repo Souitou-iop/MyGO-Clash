@@ -96,13 +96,13 @@ function Layout({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Dialog open={open} onClose={onClose} title={t("settings.layout")}>
       <div className="rows">
-        <Row label={t("settings.trafficGraph")}>
+        <Row label={t("settings.trafficGraph")} desc={t("settings.trafficGraphDesc")}>
           <Switch checked={s.ui.trafficGraph} onChange={(v) => patch({ ui: { trafficGraph: v } })} />
         </Row>
-        <Row label={t("settings.memoryUsage")}>
+        <Row label={t("settings.memoryUsage")} desc={t("settings.memoryUsageDesc")}>
           <Switch checked={s.ui.memoryUsage} onChange={(v) => patch({ ui: { memoryUsage: v } })} />
         </Row>
-        <Row label={t("settings.groupIcons")}>
+        <Row label={t("settings.groupIcons")} desc={t("settings.groupIconsDesc")}>
           <Switch checked={s.ui.groupIcons} onChange={(v) => patch({ ui: { groupIcons: v } })} />
         </Row>
         <Row label={t("settings.collapseNav")}>
@@ -119,7 +119,7 @@ function Layout({ open, onClose }: { open: boolean; onClose: () => void }) {
             width={140}
           />
         </Row>
-        <Row label={t("settings.pauseOnBlur")}>
+        <Row label={t("settings.pauseOnBlur")} desc={t("settings.pauseOnBlurDesc")}>
           <Switch checked={s.ui.pauseOnBlur} onChange={(v) => patch({ ui: { pauseOnBlur: v } })} />
         </Row>
       </div>
@@ -301,7 +301,7 @@ export default function General() {
             width={170}
           />
         </Row>
-        <Row label={t("settings.trayModes")}>
+        <Row label={t("settings.trayModes")} desc={t("settings.trayModesDesc")}>
           <Switch checked={s.tray.inlineModes} onChange={(v) => patch({ tray: { inlineModes: v } })} />
         </Row>
         {info?.os === "darwin" && (

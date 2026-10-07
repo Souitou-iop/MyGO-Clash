@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"slices"
 	"sort"
 	"strconv"
@@ -334,6 +335,29 @@ func (s Rules) SetDisabled(ctx context.Context, index int, disabled bool) error 
 	return c.DisableRules(ctx, map[int]bool{index: disabled})
 }
 
+// EnableAll enables the rules disabled since the last reload, and returns
+// how many there were.
+func (s Rules) EnableAll(ctx context.Context) (int, error) {
+	c, err := s.a.core.Must()
+	if err != nil {
+		return 0, err
+	}
+	rules, err := c.Rules(ctx)
+	if err != nil {
+		return 0, err
+	}
+	off := map[int]bool{}
+	for _, r := range rules {
+		if r.Extra != nil && r.Extra.Disabled {
+			off[r.Index] = false
+		}
+	}
+	if len(off) == 0 {
+		return 0, nil
+	}
+	return len(off), c.DisableRules(ctx, off)
+}
+
 // Logs is the logs page.
 type Logs struct{ a *App }
 
@@ -358,6 +382,17 @@ func (s Logs) Stream(ctx context.Context, ch *mygo.Channel[coreapi.LogEvent]) er
 
 // Clear forgets the logs kept.
 func (s Logs) Clear() { s.a.logs.clear() }
+
+// Export saves logs, as the page shows them, to a file the user picks, and
+// returns its path, "" when cancelled.
+func (s Logs) Export(ctx context.Context, text string) (string, error) {
+	name := "MyGO-Clash-logs-" + time.Now().Format("20060102-150405") + ".log"
+	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{Parent: mygo.CallerWindow(ctx), DefaultPath: name})
+	if err != nil || path == "" {
+		return "", err
+	}
+	return path, os.WriteFile(path, []byte(text), 0o600)
+}
 
 // Core is the core itself.
 type Core struct{ a *App }
@@ -467,7 +502,7 @@ func (s Core) OpenWebUI(template string) error {
 // PortInUse reports whether a TCP port of the loopback is taken by
 // another program.
 func (s Core) PortInUse(port int) bool {
-	if port == s.a.settings.Get().Clash.MixedPort && s.a.core.Client() != nil {
+	if c := s.a.settings.Get().Clash; s.a.core.Client() != nil && port > 0 && slices.Contains([]int{c.MixedPort, c.SocksPort, c.HTTPPort, c.RedirPort, c.TProxyPort}, port) {
 		return false // ours
 	}
 	ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))

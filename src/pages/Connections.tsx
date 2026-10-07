@@ -2,12 +2,13 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Pause, Play, X, XCircle } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
-import { bytes, duration, rate } from "../lib/format";
+import { bytes, duration, rate, ruleType } from "../lib/format";
 import { useStream } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { run, useApp } from "../lib/store";
 import { Connections as API, type Connection, type Connections as Snapshot } from "../mygo";
 import { Badge, Button, confirm, Dialog, Empty, SearchInput, Segmented } from "../ui";
+import { CoreDown } from "../components/CoreDown";
 
 type SortKey = "start" | "host" | "down" | "up" | "downTotal" | "upTotal";
 type View = "active" | "closed";
@@ -24,7 +25,7 @@ function chain(c: Connection): string {
 
 const COLS = "minmax(200px, 2.2fr) 74px minmax(110px, 1fr) minmax(130px, 1.2fr) minmax(140px, 1.4fr) 82px 82px 80px 80px 66px 30px";
 
-function Detail({ c, onClose }: { c: Connection | null; onClose: () => void }) {
+function Detail({ c, active, onClose }: { c: Connection | null; active: boolean; onClose: () => void }) {
   const t = useT();
   if (!c) return null;
   const m = c.metadata;
@@ -36,7 +37,7 @@ function Detail({ c, onClose }: { c: Connection | null; onClose: () => void }) {
     ["SNI", m.sniffHost || "—"],
     [t("conn.process"), m.process || "—"],
     [t("conn.processPath"), m.processPath || "—"],
-    [t("conn.rule"), `${c.rule}${c.rulePayload ? ` (${c.rulePayload})` : ""}`],
+    [t("conn.rule"), `${ruleType(c.rule, c.rulePayload)}${c.rulePayload ? ` (${c.rulePayload})` : ""}`],
     [t("conn.chain"), chain(c)],
     [t("conn.inbound"), [m.inboundName, m.inboundIP && `${m.inboundIP}:${m.inboundPort}`].filter(Boolean).join(" · ") || "—"],
     [t("conn.dnsMode"), m.dnsMode || "—"],
@@ -50,12 +51,18 @@ function Detail({ c, onClose }: { c: Connection | null; onClose: () => void }) {
     <Dialog
       open
       onClose={onClose}
-      title={t("conn.details")}
+      title={
+        <>
+          {t("conn.details")} {!active && <Badge>{t("conn.closed")}</Badge>}
+        </>
+      }
       size="wide"
       footer={
-        <Button variant="danger" icon={<XCircle size={14} />} onClick={() => run(() => API.close([c.id]), t("common.failed")).then(onClose)}>
-          {t("conn.close")}
-        </Button>
+        active ? (
+          <Button variant="danger" icon={<XCircle size={14} />} onClick={() => run(() => API.close([c.id]), t("common.failed")).then(onClose)}>
+            {t("conn.close")}
+          </Button>
+        ) : undefined
       }
     >
       <dl className="kv" style={{ gridTemplateColumns: "140px 1fr" }}>
@@ -82,7 +89,9 @@ export default function Connections() {
   const [net, setNet] = useState<"all" | "tcp" | "udp">("all");
   const [view, setView] = useState<View>("active");
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "start", desc: true });
+  // The connection shown in detail, kept up to date while it lasts.
   const [detail, setDetail] = useState<Connection | null>(null);
+  const live = detail && snap?.connections.find((c) => c.id === detail.id);
   const prev = useRef<Map<string, Connection>>(new Map());
   useStream<Snapshot>(
     (ch) => API.stream(ch),
@@ -100,7 +109,7 @@ export default function Connections() {
   const list = useMemo(() => {
     const src = view === "active" ? (snap?.connections ?? []) : closed;
     const q = search.trim().toLowerCase();
-    let out = src.filter((c) => (net === "all" || c.metadata.network === net) && (!q || [host(c), c.metadata.process, c.rule, c.rulePayload, chain(c), c.metadata.sourceIP].some((v) => v?.toLowerCase().includes(q))));
+    let out = src.filter((c) => (net === "all" || c.metadata.network === net) && (!q || [host(c), c.metadata.process, ruleType(c.rule, c.rulePayload), c.rulePayload, chain(c), c.metadata.sourceIP].some((v) => v?.toLowerCase().includes(q))));
     const key = (c: Connection): number | string => {
       switch (sort.key) {
         case "host":
@@ -179,7 +188,7 @@ export default function Connections() {
           <SearchInput value={search} onChange={setSearch} placeholder={t("conn.search")} width={280} />
         </div>
         {!running ? (
-          <Empty title={t("common.coreNotRunning")} />
+          <CoreDown />
         ) : list.length === 0 ? (
           <Empty title={t("conn.empty")} art />
         ) : (
@@ -218,7 +227,7 @@ export default function Connections() {
                         {c.metadata.process || "—"}
                       </span>
                       <span className="cell" title={c.rulePayload}>
-                        {c.rule}
+                        {ruleType(c.rule, c.rulePayload)}
                         {c.rulePayload && <span className="faint"> {c.rulePayload}</span>}
                       </span>
                       <span className="cell" title={chain(c)}>
@@ -240,7 +249,7 @@ export default function Connections() {
           </div>
         )}
       </div>
-      <Detail c={detail} onClose={() => setDetail(null)} />
+      <Detail c={live ?? closed.find((c) => c.id === detail?.id) ?? detail} active={!!live} onClose={() => setDetail(null)} />
     </>
   );
 }

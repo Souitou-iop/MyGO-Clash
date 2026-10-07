@@ -191,3 +191,21 @@ func readAll(dir string) (map[string][]byte, error) {
 	}
 	return out, nil
 }
+
+func TestIntervalFollowsOptionThenProvider(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		p    Profile
+		want int
+	}{
+		{"option", Profile{Option: Option{UpdateInterval: 90}, Suggested: 720}, 90},
+		{"provider", Profile{Suggested: 720}, 720},
+		{"default", Profile{}, DefaultInterval},
+		{"never", Profile{Option: Option{UpdateInterval: -1}, Suggested: 720}, 0},
+		{"off", Profile{Option: Option{NoAutoUpdate: true, UpdateInterval: 90}}, 0},
+	} {
+		if got := c.p.Interval(); got != c.want {
+			t.Errorf("%s: Interval() = %d, want %d", c.name, got, c.want)
+		}
+	}
+}

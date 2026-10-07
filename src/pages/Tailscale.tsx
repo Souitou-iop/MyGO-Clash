@@ -25,6 +25,7 @@ import { useT } from "../lib/i18n";
 import { patchSettings, run, toast, toastError, useApp } from "../lib/store";
 import { App, Proxies, Tailscale as API, type TailscalePeer, type TailscalePingResult, type TailscaleStatus } from "../mygo";
 import { Badge, Banner, Button, Card, confirm, Empty, Field, Input, NumberInput, reflow, Row, SearchInput, Section, Segmented, Select, Switch } from "../ui";
+import { CoreDown } from "../components/CoreDown";
 
 type Mode = "off" | "embedded" | "system";
 
@@ -517,7 +518,7 @@ export default function Tailscale() {
 
         {mode === "embedded" && (
           <div className="col" style={{ gap: 12 }}>
-            {!coreRunning && <Banner tone="warning">{t("common.coreNotRunning")}</Banner>}
+            {!coreRunning && <CoreDown banner />}
             {st && (st.backendState === "NeedsLogin" || st.backendState === "NeedsMachineAuth") && <Login status={st} />}
             {st?.backendState === "Starting" || (!st && coreRunning) ? (
               <Card title={t("ts.starting")} icon={<Settings2 size={15} className="spin" />}>
@@ -556,7 +557,7 @@ export default function Tailscale() {
               </Card>
             ) : st.backendState !== "Running" ? (
               <Banner tone="warning" action={<Button size="sm" onClick={() => run(() => API.setRunning(true), t("common.failed"))}>{t("ts.connect")}</Button>}>
-                {t("ts.systemNotRunning", { state: st.backendState })}
+                {t("ts.systemNotRunning", { state: t(`ts.state.${st.backendState}` as never) })}
               </Banner>
             ) : (
               <>

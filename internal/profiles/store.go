@@ -188,12 +188,6 @@ func (m *Manager) Create(ctx context.Context, np NewProfile) (Profile, error) {
 		if p.Name == "" {
 			p.Name = f.Name
 		}
-		if p.Option.UpdateInterval == 0 {
-			p.Option.UpdateInterval = f.UpdateInterval
-			if p.Option.UpdateInterval == 0 {
-				p.Option.UpdateInterval = 24 * 60
-			}
-		}
 		content = f.Content
 	case TypeLocal:
 		content = []byte(np.Content)
@@ -244,6 +238,7 @@ func applyFetched(p *Profile, f *Fetched) {
 	p.Size = len(f.Content)
 	p.Proxies, p.Groups = f.Proxies, f.Groups
 	p.Converted = f.Converted
+	p.Suggested = f.UpdateInterval
 	p.LastError = ""
 }
 
@@ -323,13 +318,14 @@ func (m *Manager) Due(now time.Time) []string {
 	defer m.mu.Unlock()
 	var due []string
 	for _, p := range m.index.Items {
-		if p.Type != TypeRemote || p.Option.NoAutoUpdate || p.Option.UpdateInterval <= 0 {
+		every := time.Duration(p.Interval()) * time.Minute
+		if p.Type != TypeRemote || every <= 0 {
 			continue
 		}
-		next := time.Unix(p.Updated, 0).Add(time.Duration(p.Option.UpdateInterval) * time.Minute)
+		next := time.Unix(p.Updated, 0).Add(every)
 		if p.LastError != "" {
 			// Retry failed updates sooner, but not in a tight loop.
-			next = time.Unix(p.Updated, 0).Add(min(time.Duration(p.Option.UpdateInterval)*time.Minute, 30*time.Minute))
+			next = time.Unix(p.Updated, 0).Add(min(every, 30*time.Minute))
 		}
 		if !now.Before(next) {
 			due = append(due, p.UID)
@@ -341,10 +337,10 @@ func (m *Manager) Due(now time.Time) []string {
 // NextUpdate returns when a profile updates next, or zero.
 func (m *Manager) NextUpdate(uid string) time.Time {
 	p, err := m.Get(uid)
-	if err != nil || p.Type != TypeRemote || p.Option.NoAutoUpdate || p.Option.UpdateInterval <= 0 {
+	if err != nil || p.Type != TypeRemote || p.Interval() <= 0 {
 		return time.Time{}
 	}
-	return time.Unix(p.Updated, 0).Add(time.Duration(p.Option.UpdateInterval) * time.Minute)
+	return time.Unix(p.Updated, 0).Add(time.Duration(p.Interval()) * time.Minute)
 }
 
 // RunScheduler updates due profiles every minute until ctx ends. report

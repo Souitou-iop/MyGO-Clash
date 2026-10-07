@@ -515,6 +515,20 @@
 
 .proxy-group {
   overflow: hidden;
+  scroll-margin-top: 12px;
+}
+
+/* A group shown from another page, such as the target of a rule. */
+.proxy-group.flash {
+  animation: group-flash 1.4s ease;
+}
+
+@keyframes group-flash {
+  0%,
+  45% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
 }
 
 .proxy-group-head {
@@ -527,6 +541,20 @@
 
 .proxy-group-head:hover {
   background: var(--surface-hover);
+}
+
+/* The arrow turns to point down as the group opens. */
+.group-chev {
+  flex: none;
+  transition: transform 0.3s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+[dir="rtl"] .group-chev {
+  transform: rotate(180deg);
+}
+
+.proxy-group.open .group-chev {
+  transform: rotate(90deg);
 }
 
 .group-icon {
@@ -836,6 +864,11 @@
 
 .settings-wrap {
   max-width: 900px;
+}
+
+.tab-pane {
+  --rise: 4px;
+  animation: rise-in 0.2s ease;
 }
 
 .swatch {
@@ -1172,4 +1205,88 @@
 .about-note {
   font-size: 11.5px;
   margin: 8px 4px 0;
+}
+
+/* ---------- Rules ---------- */
+
+.rules-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.rules-intro > svg {
+  flex: none;
+  margin-top: 2.5px;
+}
+
+.page-body.flush > .banner {
+  margin-bottom: 10px;
+}
+
+/* A rule turned off fades, but not its switch and actions. */
+.table-row.off > .cell:nth-child(-n + 5) {
+  opacity: 0.45;
+}
+
+.rule-target {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline dotted color-mix(in oklab, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+.rule-target:hover {
+  color: var(--accent-fg);
+  text-decoration-color: currentColor;
+}
+
+/* Why a subscription's last update failed, and a way to try again. */
+.profile-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 4px 6px 9px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--danger) 9%, transparent);
+}
+
+.profile-error-text {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 2px 0 0;
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--danger);
+  text-align: start;
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.profile-error-text.open {
+  -webkit-line-clamp: unset;
+}
+
+/* An unlock result from a node no longer in use. */
+.unlock-stale {
+  color: var(--warning);
 }

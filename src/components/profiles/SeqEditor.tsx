@@ -3,11 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useT } from "../../lib/i18n";
 import { toast, toastError } from "../../lib/store";
 import { Profiles, type NameLists, type SeqPatch } from "../../mygo";
-import { Badge, Button, Dialog, Empty, Field, Input, SearchInput, Select, Spinner, Tabs } from "../../ui";
+import { Badge, Button, confirm, Dialog, Empty, Field, Input, reflow, SearchInput, Select, Spinner, Tabs } from "../../ui";
 
 export type SeqKind = "rules" | "proxies" | "groups";
 
-const RULE_TYPES = [
+export const RULE_TYPES = [
   "DOMAIN",
   "DOMAIN-SUFFIX",
   "DOMAIN-KEYWORD",
@@ -58,10 +58,16 @@ function sub(it: Item): string {
   return "";
 }
 
-function RuleForm({ names, onAdd }: { names: NameLists; onAdd: (rule: string) => void }) {
+/** RuleDraft is a rule to start from: a type of RULE_TYPES and its payload. */
+export interface RuleDraft {
+  type: string;
+  payload: string;
+}
+
+function RuleForm({ names, onAdd, draft }: { names: NameLists; onAdd: (rule: string) => void; draft?: RuleDraft }) {
   const t = useT();
-  const [type, setType] = useState("DOMAIN-SUFFIX");
-  const [payload, setPayload] = useState("");
+  const [type, setType] = useState(draft?.type ?? "DOMAIN-SUFFIX");
+  const [payload, setPayload] = useState(draft?.payload ?? "");
   const [target, setTarget] = useState("DIRECT");
   const [noResolve, setNoResolve] = useState(false);
   const targets = [...names.groups, ...names.builtin, ...names.proxies];
@@ -177,6 +183,7 @@ export function SeqEditor({
   title,
   onClose,
   onRaw,
+  draft,
 }: {
   uid: string | null;
   profileUid: string;
@@ -184,9 +191,12 @@ export function SeqEditor({
   title: string;
   onClose: () => void;
   onRaw: () => void;
+  /** draft fills the form of a new rule. */
+  draft?: RuleDraft;
 }) {
   const t = useT();
   const [patch, setPatch] = useState<SeqPatch | null>(null);
+  const [orig, setOrig] = useState("");
   const [names, setNames] = useState<NameLists>({ proxies: [], groups: [], builtin: [] });
   const [own, setOwn] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("prepend");
@@ -199,12 +209,24 @@ export function SeqEditor({
     Promise.all([Profiles.seq(uid), Profiles.names(profileUid), kind === "rules" ? Profiles.rulesOf(profileUid) : Promise.resolve([])])
       .then(([p, n, r]) => {
         setPatch(p);
+        setOrig(JSON.stringify(p));
         setNames(n);
         setOwn(kind === "rules" ? r : kind === "proxies" ? n.proxies : n.groups);
       })
       .catch((e) => toastError(t("profiles.readFailed"), e));
   }, [uid, profileUid, kind, t]);
   const list = patch ? (tab === "delete" ? patch.delete : patch[tab]) : [];
+  // Keys that follow an item as it moves, so moving it shows: what it reads,
+  // and which of the alike it is.
+  const keys = useMemo(() => {
+    const seen = new Map<string, number>();
+    return list.map((it) => {
+      const k = label(kind, it);
+      const n = seen.get(k) ?? 0;
+      seen.set(k, n + 1);
+      return `${k}\u0000${n}`;
+    });
+  }, [list, kind]);
   const update = (fn: (p: SeqPatch) => SeqPatch) => setPatch((p) => (p ? fn(p) : p));
   const addItems = (items: Item[]) => update((p) => (tab === "append" ? { ...p, append: [...p.append, ...items] } : { ...p, prepend: [...p.prepend, ...items] }));
   const move = (i: number, d: number) =>
@@ -218,6 +240,12 @@ export function SeqEditor({
     });
   const remove = (i: number) => update((p) => (tab === "delete" ? { ...p, delete: p.delete.filter((_, k) => k !== i) } : { ...p, [tab]: p[tab].filter((_, k) => k !== i) }));
   const deletable = useMemo(() => own.filter((n) => n.toLowerCase().includes(filter.toLowerCase())), [own, filter]);
+  const dirty = !!patch && JSON.stringify(patch) !== orig;
+  // Leaving with changes not saved asks first, as the YAML editor does.
+  const leave = (then: () => void) => async () => {
+    if (dirty && !(await confirm({ title: t("profiles.discardTitle"), message: t("profiles.discard"), confirm: t("profiles.discardOk"), danger: true }))) return;
+    then();
+  };
   const save = async () => {
     if (!uid || !patch) return;
     setBusy(true);
@@ -233,15 +261,15 @@ export function SeqEditor({
   return (
     <Dialog
       open={!!uid}
-      onClose={onClose}
+      onClose={leave(onClose)}
       title={title}
       size="wide"
       footer={
         <>
-          <Button variant="ghost" icon={<Code2 size={14} />} onClick={onRaw} style={{ marginInlineEnd: "auto" }}>
+          <Button variant="ghost" icon={<Code2 size={14} />} onClick={leave(onRaw)} style={{ marginInlineEnd: "auto" }}>
             {t("editor.editYaml")}
           </Button>
-          <Button onClick={onClose}>{t("common.cancel")}</Button>
+          <Button onClick={leave(onClose)}>{t("common.cancel")}</Button>
           <Button variant="primary" loading={busy} onClick={save} disabled={!patch}>
             {t("common.save")}
           </Button>
@@ -267,7 +295,7 @@ export function SeqEditor({
             {t(`editor.${tab}Hint` as never)}
           </div>
           {tab !== "delete" &&
-            (kind === "rules" ? <RuleForm names={names} onAdd={(r) => addItems([r])} /> : kind === "proxies" ? <ProxyForm onAdd={addItems} /> : <GroupForm names={names} onAdd={(g) => addItems([g])} />)}
+            (kind === "rules" ? <RuleForm key={draft ? `${draft.type},${draft.payload}` : ""} names={names} onAdd={(r) => addItems([r])} draft={draft} /> : kind === "proxies" ? <ProxyForm onAdd={addItems} /> : <GroupForm names={names} onAdd={(g) => addItems([g])} />)}
           {tab === "delete" && (
             <div className="col" style={{ gap: 8 }}>
               <SearchInput value={filter} onChange={setFilter} placeholder={t("common.search")} />
@@ -291,9 +319,9 @@ export function SeqEditor({
             {list.length === 0 ? (
               <Empty title={t("editor.empty")} />
             ) : (
-              <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+              <div ref={reflow} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
                 {list.map((it, i) => (
-                  <div key={i} className="row table-row" style={{ display: "flex", height: "auto", minHeight: 36, padding: "6px 10px" }}>
+                  <div key={keys[i]} className="row table-row seq-row" style={{ display: "flex", height: "auto", minHeight: 36, padding: "6px 10px" }}>
                     <Badge>{i + 1}</Badge>
                     <div className="grow">
                       <div className="ellipsis mono" style={{ fontSize: 12 }}>
