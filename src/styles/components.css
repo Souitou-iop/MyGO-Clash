@@ -241,6 +241,24 @@
   scrollbar-gutter: stable;
 }
 
+/* A page eases in when the sidebar opens it. */
+.main > .page-body {
+  animation: rise-in 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Content that replaces a skeleton fades in over it. */
+.reveal {
+  --rise: 3px;
+  animation: rise-in 0.3s ease-out;
+}
+
+.reveal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-width: 0;
+}
+
 .page-body.flush {
   overflow: hidden;
   display: flex;
@@ -502,6 +520,7 @@
 }
 
 .segmented {
+  position: relative;
   display: inline-flex;
   padding: 3px;
   gap: 2px;
@@ -511,6 +530,9 @@
 }
 
 .segmented button {
+  position: relative;
+  z-index: 1;
+  transition: color 0.2s;
   border: 0;
   background: transparent;
   border-radius: 6px;
@@ -530,9 +552,33 @@
 }
 
 .segmented button.active {
-  background: var(--surface);
   color: var(--text);
+}
+
+/* The highlight slides to the chosen option (useIndicator). */
+.segmented::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--ind-w, 0);
+  height: var(--ind-h, 0);
+  transform: translate(var(--ind-x, 0), var(--ind-y, 0));
+  border-radius: 6px;
+  background: var(--surface);
   box-shadow: var(--shadow-sm), 0 0 0 1px var(--border);
+  opacity: 0;
+}
+
+.segmented.ind-on::before {
+  opacity: 1;
+}
+
+.segmented.ind-ready::before,
+.tabs.ind-ready::after {
+  transition:
+    transform 0.26s cubic-bezier(0.3, 0.7, 0.3, 1),
+    width 0.26s cubic-bezier(0.3, 0.7, 0.3, 1);
 }
 
 .segmented.full {
@@ -733,6 +779,20 @@
   font-size: 11.5px;
   font-weight: 650;
   white-space: nowrap;
+}
+
+/* A figure that a test just gave lights up, even when it did not change. */
+.delay.fresh {
+  display: inline-block;
+  animation: delay-fresh 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes delay-fresh {
+  from {
+    opacity: 0.2;
+    transform: translateY(-4px) scale(1.15);
+    filter: brightness(1.4);
+  }
 }
 
 .delay.good {
@@ -1092,6 +1152,7 @@
 /* ---------- Tabs ---------- */
 
 .tabs {
+  position: relative;
   display: flex;
   gap: 2px;
   border-bottom: 1px solid var(--border);
@@ -1099,6 +1160,7 @@
 }
 
 .tab {
+  transition: color 0.2s;
   border: 0;
   background: transparent;
   padding: 7px 12px 9px;
@@ -1117,7 +1179,24 @@
 
 .tab.active {
   color: var(--accent-fg);
-  border-bottom-color: var(--accent);
+}
+
+/* The underline slides to the chosen tab (useIndicator). */
+.tabs::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: var(--ind-w, 0);
+  height: 2px;
+  transform: translateX(var(--ind-x, 0));
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+}
+
+.tabs.ind-on::after {
+  opacity: 1;
 }
 
 /* ---------- Empty & loading ---------- */
@@ -1412,4 +1491,301 @@ kbd {
   .cloud-upload-arrow {
     transition: none;
   }
+}
+
+
+/*
+ * Lucide icons that move when what holds them is hovered or becomes active:
+ * the motions of lucide-animated and movingicons.dev, in CSS on the icons
+ * lucide-react draws. Each plays once and ends where it began, so leaving
+ * early never leaves an icon out of shape.
+ */
+
+svg.lucide {
+  overflow: visible;
+}
+
+svg.lucide > * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes icon-nudge {
+  45% {
+    transform: translate(var(--dx, 0), var(--dy, 0)) rotate(var(--rot, 0deg))
+      scale(var(--sx, var(--s, 1)), var(--sy, var(--s, 1)));
+  }
+}
+
+@keyframes icon-turn {
+  to {
+    transform: rotate(var(--turn, 180deg));
+  }
+}
+
+@keyframes icon-wiggle {
+  25% {
+    transform: rotate(-12deg);
+  }
+  55% {
+    transform: rotate(9deg);
+  }
+  80% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes icon-draw {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+}
+
+@keyframes icon-flash {
+  20%,
+  60% {
+    opacity: 0.3;
+  }
+  40%,
+  80% {
+    opacity: 1;
+  }
+}
+
+/* Sidebar */
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-layout-dashboard > * {
+  --s: 0.78;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-layout-dashboard > :nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-layout-dashboard > :nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-layout-dashboard > :nth-child(4) {
+  animation-delay: 0.18s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-earth > path {
+  --len: 30;
+  stroke-dasharray: var(--len);
+  animation: icon-draw 0.7s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-earth > :nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-earth > :nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-file-stack > :nth-child(3) {
+  --dx: 2.5px;
+  --dy: -2.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-file-stack > :nth-child(1) {
+  --dx: -1.5px;
+  --dy: 1.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-cable > :is(:nth-child(1), :nth-child(2), :nth-child(4)) {
+  --dy: 2px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-cable > :is(:nth-child(5), :nth-child(6), :nth-child(7)) {
+  --dy: -2px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-list-filter > * {
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-list-filter > :nth-child(1) {
+  --sx: 0.55;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-list-filter > :nth-child(2) {
+  --sx: 1.3;
+  animation-delay: 0.05s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-list-filter > :nth-child(3) {
+  --sx: 2;
+  animation-delay: 0.1s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-scroll-text > :is(:nth-child(1), :nth-child(2)) {
+  --len: 6;
+  stroke-dasharray: var(--len);
+  animation: icon-draw 0.45s ease-out backwards;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-scroll-text > :nth-child(1) {
+  animation-delay: 0.15s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-waypoints > circle {
+  --s: 1.4;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-waypoints > :nth-child(6) {
+  animation-delay: 0.07s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-waypoints > :nth-child(4) {
+  animation-delay: 0.14s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-waypoints > :nth-child(7) {
+  animation-delay: 0.21s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-activity > path {
+  --len: 64;
+  stroke-dasharray: var(--len);
+  animation: icon-draw 0.8s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-settings {
+  animation: icon-turn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* Settings tabs */
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-settings-2,
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-wrench {
+  animation: icon-wiggle 0.6s ease-in-out;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-network > :nth-child(3) {
+  --dy: -3px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-sliders-horizontal > :nth-child(3) {
+  --dx: -4px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-sliders-horizontal > :nth-child(4) {
+  --dx: -3px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-sliders-horizontal > :nth-child(8) {
+  --dx: 4px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-cloud {
+  --dx: 2px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* Buttons; the motions of whole icons are in pixels, of their parts in icon units. */
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-refresh-cw:not(.spin) {
+  animation: icon-turn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-plus,
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-x {
+  --turn: 90deg;
+  animation: icon-turn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-copy > :nth-child(1) {
+  --dx: 2.5px;
+  --dy: 2.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-trash > :is(:nth-child(4), :nth-child(5)) {
+  --dy: -3px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-external-link > :is(:nth-child(1), :nth-child(2)) {
+  --dx: 2.5px;
+  --dy: -2.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-download > :is(:nth-child(1), :nth-child(3)),
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-arrow-down-to-line > :is(:nth-child(1), :nth-child(2)) {
+  --dy: 3px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-log-out > :is(:nth-child(1), :nth-child(2)) {
+  --dx: 2.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-panel-left-close > :nth-child(3) {
+  --dx: -2px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-panel-left-open > :nth-child(3) {
+  --dx: 2px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-play {
+  --dx: 1.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-pause > * {
+  --sy: 0.7;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-pause > :nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-zap {
+  animation: icon-flash 0.6s linear;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-stethoscope > :nth-child(5) {
+  --s: 1.6;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-dices {
+  animation: icon-wiggle 0.6s ease-in-out;
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-search {
+  --dx: -1.5px;
+  --dy: -1.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-folder-open {
+  --dy: -1.5px;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-pin,
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-pin-off {
+  --rot: -20deg;
+  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
 }

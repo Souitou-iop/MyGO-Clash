@@ -223,6 +223,8 @@ export interface IPInfo {
   timezone: string;
   latitude: number;
   longitude: number;
+  /** the Cloudflare data center */
+  colo?: string;
   source: string;
 }
 
@@ -603,11 +605,13 @@ export interface Settings {
   updates: Updates;
 }
 
-/** Site is a site whose delay the home page tests. */
+/** Site is a site whose delay is tested. */
 export interface Site {
   id: string;
   name: string;
   url: string;
+  /** global or domestic */
+  group?: string;
 }
 
 /** SiteResult is the delay of a site, 0 when it failed. */
@@ -1527,6 +1531,18 @@ export const Tools = {
   checkUnlock(ids: string[], ch: Channel<Unlock>): Promise<void> {
     return call("Tools.CheckUnlock", ids, ch);
   },
+  /** ConnectivitySites returns the sites the connectivity page tests. */
+  connectivitySites(): Promise<Site[]> {
+    return call("Tools.ConnectivitySites");
+  },
+  /**
+   * ExitIP returns the address that a kind of site sees through the proxy:
+   * "domestic" for sites in mainland China, "global" for sites abroad, or
+   * "cloudflare".
+   */
+  exitIP(view: string): Promise<IPInfo> {
+    return call("Tools.ExitIP", view);
+  },
   /**
    * IPInfo returns the address the world sees, through the proxy, or
    * directly when direct is set.
@@ -1545,7 +1561,10 @@ export const Tools = {
   testSites(sites: Site[], ch: Channel<SiteResult>): Promise<void> {
     return call("Tools.TestSites", sites, ch);
   },
-  /** UnlockList returns the services the unlock page checks. */
+  /**
+   * UnlockList returns the streaming and AI services the connectivity page
+   * checks.
+   */
   unlockList(): Promise<Unlock[]> {
     return call("Tools.UnlockList");
   },

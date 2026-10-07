@@ -1,6 +1,6 @@
-// Package tools tests the network through the proxy: the address the
-// world sees, the delay of popular sites, and which streaming and AI
-// services are available.
+// Package tools tests the network through the proxy: the addresses that
+// sites at home and abroad see, the reachability of popular sites, and
+// which streaming and AI services are available.
 package tools
 
 import (
@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -72,12 +73,18 @@ type IPInfo struct {
 	Timezone    string  `json:"timezone"`
 	Latitude    float64 `json:"latitude"`
 	Longitude   float64 `json:"longitude"`
+	Colo        string  `json:"colo,omitempty"` // the Cloudflare data center
 	Source      string  `json:"source"`
 }
 
 // LookupIP asks public services for the address the proxy exits from.
 func LookupIP(ctx context.Context, proxy string) (IPInfo, error) {
-	c := Client(proxy, 8*time.Second, true)
+	return lookup(ctx, Client(proxy, 8*time.Second, true), "")
+}
+
+// lookup describes ip, or the address the client is seen from when ip is
+// empty, from the first public service that answers.
+func lookup(ctx context.Context, c *http.Client, ip string) (IPInfo, error) {
 	type source struct {
 		name, url string
 		parse     func(map[string]any) IPInfo
@@ -92,16 +99,22 @@ func LookupIP(ctx context.Context, proxy string) (IPInfo, error) {
 		return ""
 	}
 	num := func(m map[string]any, k string) float64 { f, _ := m[k].(float64); return f }
+	at := func(prefix, suffix string) string {
+		if ip == "" {
+			return prefix + suffix
+		}
+		return prefix + "/" + url.PathEscape(ip) + suffix
+	}
 	sources := []source{
-		{"ip.sb", "https://api.ip.sb/geoip", func(m map[string]any) IPInfo {
+		{"ip.sb", at("https://api.ip.sb/geoip", ""), func(m map[string]any) IPInfo {
 			return IPInfo{IP: str(m, "ip"), Country: str(m, "country"), CountryCode: str(m, "country_code"), Region: str(m, "region"), City: str(m, "city"),
 				ISP: str(m, "isp"), ASN: str(m, "asn"), Timezone: str(m, "timezone"), Latitude: num(m, "latitude"), Longitude: num(m, "longitude")}
 		}},
-		{"ipapi.co", "https://ipapi.co/json/", func(m map[string]any) IPInfo {
+		{"ipapi.co", at("https://ipapi.co", "/json/"), func(m map[string]any) IPInfo {
 			return IPInfo{IP: str(m, "ip"), Country: str(m, "country_name"), CountryCode: str(m, "country_code"), Region: str(m, "region"), City: str(m, "city"),
-				ISP: str(m, "org"), ASN: str(m, "asn"), Timezone: str(m, "timezone"), Latitude: num(m, "latitude"), Longitude: num(m, "longitude")}
+				ISP: str(m, "org"), ASN: strings.TrimPrefix(str(m, "asn"), "AS"), Timezone: str(m, "timezone"), Latitude: num(m, "latitude"), Longitude: num(m, "longitude")}
 		}},
-		{"ipinfo.io", "https://ipinfo.io/json", func(m map[string]any) IPInfo {
+		{"ipinfo.io", at("https://ipinfo.io", "/json"), func(m map[string]any) IPInfo {
 			info := IPInfo{IP: str(m, "ip"), CountryCode: str(m, "country"), Country: str(m, "country"), Region: str(m, "region"), City: str(m, "city"),
 				ISP: str(m, "org"), Timezone: str(m, "timezone")}
 			if a, o, ok := strings.Cut(info.ISP, " "); ok && strings.HasPrefix(a, "AS") {
@@ -112,17 +125,8 @@ func LookupIP(ctx context.Context, proxy string) (IPInfo, error) {
 	}
 	var errs []error
 	for _, s := range sources {
-		resp, body, err := get(ctx, c, s.url, map[string]string{"Accept": "application/json"})
+		m, err := getJSON(ctx, c, s.url)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("%s: %w", s.name, err))
-			continue
-		}
-		if resp.StatusCode != http.StatusOK {
-			errs = append(errs, fmt.Errorf("%s: %s", s.name, resp.Status))
-			continue
-		}
-		var m map[string]any
-		if err := json.Unmarshal([]byte(body), &m); err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", s.name, err))
 			continue
 		}
@@ -136,21 +140,153 @@ func LookupIP(ctx context.Context, proxy string) (IPInfo, error) {
 	return IPInfo{}, errors.Join(errs...)
 }
 
-// Site is a site whose delay the home page tests.
+func getJSON(ctx context.Context, c *http.Client, rawURL string) (map[string]any, error) {
+	resp, body, err := get(ctx, c, rawURL, map[string]string{"Accept": "application/json"})
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+	var m map[string]any
+	if err := json.Unmarshal([]byte(body), &m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// The views of ExitIP.
+const (
+	ViewDomestic   = "domestic"   // what sites in mainland China see
+	ViewGlobal     = "global"     // what sites abroad see
+	ViewCloudflare = "cloudflare" // what Cloudflare sees
+)
+
+// ExitIP returns the address that a kind of site sees through the proxy.
+// The proxy's rules route each kind its own way, so the addresses differ
+// when the rules split the traffic.
+func ExitIP(ctx context.Context, proxy, view string) (IPInfo, error) {
+	c := Client(proxy, 8*time.Second, true)
+	switch view {
+	case ViewGlobal:
+		return lookup(ctx, c, "")
+	case ViewDomestic:
+		return domesticIP(ctx, c)
+	case ViewCloudflare:
+		return cloudflareIP(ctx, c)
+	}
+	return IPInfo{}, fmt.Errorf("unknown view %q", view)
+}
+
+// domesticIP asks IPIP.net, then Upyun, both in mainland China.
+func domesticIP(ctx context.Context, c *http.Client) (IPInfo, error) {
+	var errs []error
+	m, err := getJSON(ctx, c, "https://myip.ipip.net/json")
+	if err == nil {
+		data, _ := m["data"].(map[string]any)
+		ip, _ := data["ip"].(string)
+		if net.ParseIP(ip) != nil {
+			// The location is [country, province, city, district, ISP].
+			var loc []string
+			list, _ := data["location"].([]any)
+			for _, v := range list {
+				s, _ := v.(string)
+				loc = append(loc, s)
+			}
+			for len(loc) < 5 {
+				loc = append(loc, "")
+			}
+			fallback := IPInfo{IP: ip, Country: loc[0], Region: loc[1], City: loc[2], ISP: loc[4]}
+			if loc[0] == "中国" {
+				fallback.CountryCode = "CN"
+			}
+			return describe(ctx, c, ip, "IPIP.net", fallback), nil
+		}
+		err = fmt.Errorf("no address in the answer")
+	}
+	errs = append(errs, fmt.Errorf("IPIP.net: %w", err))
+	m, err = getJSON(ctx, c, fmt.Sprintf("https://pubstatic.b0.upaiyun.com/?_upnode&t=%d", time.Now().Unix()))
+	if err == nil {
+		if ip, _ := m["remote_addr"].(string); net.ParseIP(ip) != nil {
+			return describe(ctx, c, ip, "Upyun", IPInfo{IP: ip}), nil
+		}
+		err = fmt.Errorf("no address in the answer")
+	}
+	errs = append(errs, fmt.Errorf("Upyun: %w", err))
+	return IPInfo{}, errors.Join(errs...)
+}
+
+// cloudflareIP reads the address and data center from Cloudflare's trace.
+func cloudflareIP(ctx context.Context, c *http.Client) (IPInfo, error) {
+	_, body, err := get(ctx, c, "https://www.cloudflare.com/cdn-cgi/trace", nil)
+	if err != nil {
+		return IPInfo{}, fmt.Errorf("Cloudflare: %w", err)
+	}
+	kv := parseTrace(body)
+	ip := kv["ip"]
+	if net.ParseIP(ip) == nil {
+		return IPInfo{}, errors.New("Cloudflare: no address in the trace")
+	}
+	info := describe(ctx, c, ip, "Cloudflare", IPInfo{IP: ip, CountryCode: kv["loc"], Country: kv["loc"]})
+	info.Colo = kv["colo"]
+	return info, nil
+}
+
+// parseTrace reads the key=value lines of a /cdn-cgi/trace.
+func parseTrace(body string) map[string]string {
+	kv := map[string]string{}
+	for _, line := range strings.Split(body, "\n") {
+		if k, v, ok := strings.Cut(line, "="); ok {
+			kv[k] = strings.TrimSpace(v)
+		}
+	}
+	return kv
+}
+
+// describe looks the details of ip up, keeping what the source said when
+// the lookup fails. The source stays the service that saw the address.
+func describe(ctx context.Context, c *http.Client, ip, source string, fallback IPInfo) IPInfo {
+	info, err := lookup(ctx, c, ip)
+	if err != nil || info.IP != ip {
+		info = fallback
+	}
+	info.Source = source
+	return info
+}
+
+// Site is a site whose delay is tested.
 type Site struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	Group string `json:"group,omitempty"` // global or domestic
 }
 
 // DefaultSites are tested unless the user chose others.
 var DefaultSites = []Site{
-	{"google", "Google", "https://www.google.com/generate_204"},
-	{"github", "GitHub", "https://github.com"},
-	{"youtube", "YouTube", "https://www.youtube.com"},
-	{"cloudflare", "Cloudflare", "https://www.cloudflare.com/cdn-cgi/trace"},
-	{"apple", "Apple", "https://www.apple.com/library/test/success.html"},
-	{"bilibili", "Bilibili", "https://www.bilibili.com"},
+	{"google", "Google", "https://www.google.com/generate_204", "global"},
+	{"github", "GitHub", "https://github.com", "global"},
+	{"youtube", "YouTube", "https://www.youtube.com", "global"},
+	{"cloudflare", "Cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", "global"},
+	{"apple", "Apple", "https://www.apple.com/library/test/success.html", "global"},
+	{"bilibili", "Bilibili", "https://www.bilibili.com", "domestic"},
+}
+
+// ConnectivitySites are the sites of the connectivity page: sites abroad,
+// then sites in mainland China, each tested at a small file, as in MyIP.
+var ConnectivitySites = []Site{
+	{"google", "Google", "https://www.google.com/generate_204", "global"},
+	{"youtube", "YouTube", "https://www.youtube.com/favicon.ico", "global"},
+	{"github", "GitHub", "https://github.com/favicon.ico", "global"},
+	{"cloudflare", "Cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", "global"},
+	{"chatgpt", "ChatGPT", "https://chatgpt.com/favicon.ico", "global"},
+	{"claude", "Claude", "https://claude.ai/favicon.ico", "global"},
+	{"telegram", "Telegram", "https://telegram.org/favicon.ico", "global"},
+	{"x", "X", "https://x.com/favicon.ico", "global"},
+	{"baidu", "Baidu", "https://www.baidu.com/favicon.ico", "domestic"},
+	{"bilibili", "Bilibili", "https://www.bilibili.com/favicon.ico", "domestic"},
+	{"wechat", "WeChat", "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico", "domestic"},
+	{"taobao", "Taobao", "https://www.taobao.com/favicon.ico", "domestic"},
 }
 
 // SiteResult is the delay of a site, 0 when it failed.

@@ -185,6 +185,13 @@ p {
   }
 }
 
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise, 6px));
+  }
+}
+
 @keyframes pulse {
   50% {
     opacity: 0.45;
@@ -196,6 +203,7 @@ p {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
   }
 }

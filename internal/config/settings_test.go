@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -97,5 +98,17 @@ func TestHomeCardsMigrate(t *testing.T) {
 		if c.Visible {
 			t.Errorf("added card %s is visible", c.ID)
 		}
+	}
+}
+
+func TestNavUnlockBecomesConnectivity(t *testing.T) {
+	s := Defaults()
+	s.UI.Nav = []string{"home", "unlock", "proxies"}
+	if err := s.Normalize(); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"home", "connectivity", "proxies", "settings"}
+	if !slices.Equal(s.UI.Nav, want) {
+		t.Fatalf("nav = %v, want %v", s.UI.Nav, want)
 	}
 }
