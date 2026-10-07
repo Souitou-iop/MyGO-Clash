@@ -2,6 +2,17 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.6-beta
+
+修掉上一版动效里各闪一帧的两处。/ Fixes the two single-frame blinks the last version's motion had.
+
+### 🐛 修复 / Fixes
+
+- 代理组展开时不再空白一帧：组里的节点在收起状态下不算待在屏幕内，因此跳过绘制，展开开始的那一帧便什么也没有；现在整个动画期间都保持绘制 / A proxy group no longer opens blank for a frame: its nodes counted as off screen while it was closed, so they skipped drawing and the first frame showed nothing; they are now kept drawn while it moves
+- 代理组收起结束时不再跳回满尺寸那一帧 / A group closing no longer springs back to full size for the frame before it goes
+- 通知消失时不再闪一下：原先它先从画面里去掉、下一帧才放回来播放退场，其余通知会先跳一下才开始平滑补位；现在在同一次渲染里留下 / A toast that left no longer blinks: it was dropped from the screen and put back a frame later to play its way out, so the others jumped before sliding up; it is now kept in the same render
+- 菜单关闭后不再留下一个多余的窗口失焦监听器 / The menu no longer leaves a window blur listener behind when it closes
+
 ## 0.1.5-beta
 
 规则页重做，内核未运行时说明原因并给出下一步，修掉五个名不副实的行为，弹窗与列表改为一气呵成的动效。/ The rules page is rebuilt, pages say why the core is down and how to start it, five actions that did not match their names are fixed, and dialogs, toasts and lists now move in one motion.
