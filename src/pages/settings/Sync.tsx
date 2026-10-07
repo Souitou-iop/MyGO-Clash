@@ -17,6 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { CloudUpload } from "../../components/icons/CloudUpload";
 import { bytes, dateTime, relative } from "../../lib/format";
 import { useAsync, useNow } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
@@ -101,7 +102,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
       open={open}
       onClose={onClose}
       title={t("sync.setupTitle")}
-      icon={<Cloud size={18} color="var(--accent-fg)" />}
+      icon={<span style={{ display: "flex", color: "var(--accent-fg)" }}><CloudUpload size={18} /></span>}
       size="wide"
       footer={
         step === 1 ? (
@@ -347,9 +348,9 @@ export default function SyncTab() {
   return (
     <>
       {!sync.configured ? (
-        <div className="card card-pad sync-hero">
+        <div className="card card-pad sync-hero cloud-upload-hover">
           <div className="ts-hero-icon">
-            <Cloud size={26} />
+            <CloudUpload size={26} />
           </div>
           <div className="grow">
             <h2 style={{ fontSize: 16 }}>{t("sync.heroTitle")}</h2>

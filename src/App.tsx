@@ -3,10 +3,10 @@ import {
   ArrowUp,
   Cable,
   FileStack,
-  Gauge,
   Globe2,
   LayoutDashboard,
   ListFilter,
+  LockKeyholeOpen,
   type LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -42,7 +42,7 @@ const icons: Record<Page, LucideIcon> = {
   rules: ListFilter,
   logs: ScrollText,
   tailscale: Waypoints,
-  unlock: Gauge,
+  unlock: LockKeyholeOpen,
   settings: SettingsIcon,
 };
 

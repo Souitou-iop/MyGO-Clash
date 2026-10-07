@@ -1129,7 +1129,7 @@
   border: 1px solid var(--border);
 }
 
-.empty .rainy-pick {
+.empty .rainy-compass {
   margin-bottom: 2px;
 }
 
@@ -1378,3 +1378,21 @@ kbd {
   transform: scaleX(-1);
 }
 
+
+/* ---------- Animated icons ---------- */
+
+.cloud-upload-arrow {
+  transition: transform 0.3s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+.cloud-upload:hover .cloud-upload-arrow,
+.cloud-upload.animate .cloud-upload-arrow,
+.cloud-upload-hover:hover .cloud-upload-arrow {
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-upload-arrow {
+    transition: none;
+  }
+}
