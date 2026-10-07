@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { en, type Key } from "./locales/en";
 import { useApp } from "./store";
 
@@ -81,10 +82,11 @@ export function translate(lang: Lang, key: Key, params?: Record<string, string |
   return format(dicts[lang]?.[key] ?? en[key] ?? key, params);
 }
 
-/** useT returns the translation function of the current language. */
+/** useT returns the translation function of the current language. It stays
+ * the same function until the language changes, so effects can depend on it. */
 export function useT() {
   const lang = useApp((s) => s.lang);
-  return (key: Key, params?: Record<string, string | number>) => translate(lang, key, params);
+  return useCallback((key: Key, params?: Record<string, string | number>) => translate(lang, key, params), [lang]);
 }
 
 /** t translates outside components, in the current language. */

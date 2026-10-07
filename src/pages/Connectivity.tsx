@@ -7,7 +7,7 @@ import { delayClass, delayText, flag, relative } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { toastError, useApp } from "../lib/store";
 import { type IPInfo, type Site, type SiteResult, Tools, type Unlock as Result } from "../mygo";
-import { Badge, Banner, Button, useFresh } from "../ui";
+import { Badge, Banner, Button, reflow, useFresh } from "../ui";
 
 // The connectivity page, after MyIP (github.com/jason5ng32/MyIP): the
 // addresses that sites at home and abroad see, the reachability of popular
@@ -107,7 +107,7 @@ function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs
         <Button size="sm" variant="ghost" icon={shown ? <EyeOff size={14} /> : <Eye size={14} />} onClick={() => setShown(!shown)} tip={shown ? t("common.hide") : t("common.show")} />
         <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} loading={loading} disabled={!running} onClick={load} tip={t("common.refresh")} />
       </Heading>
-      <div className="cty-grid cty-ips">
+      <div className="cty-grid cty-ips" ref={reflow}>
         {VIEWS.map((v) => {
           const s = ips[v];
           const info = s?.info;
@@ -235,7 +235,7 @@ function SiteSection({ sites, rounds, busy, test, running }: ReturnType<typeof u
         return (
           <div key={g} className="cty-group">
             <div className="cty-group-name faint">{t(`connectivity.group.${g}`)}</div>
-            <div className="cty-grid cty-sites">
+            <div className="cty-grid cty-sites" ref={reflow}>
               {of.map((s) => {
                 const r = rounds[s.id];
                 const b = best(r);
@@ -346,7 +346,7 @@ function UnlockSection({ items, results, checking, check, busy, running }: Retur
       <Heading title={t("connectivity.unlock")} hint={t("unlock.hint")}>
         <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} loading={busy} disabled={!running} onClick={() => check([])} tip={t("unlock.checkAll")} />
       </Heading>
-      <div className="cty-grid cty-unlock">
+      <div className="cty-grid cty-unlock" ref={reflow}>
         {items.map((it) => {
           const r = results[it.id];
           const state = checking.has(it.id) ? "checking" : (r?.status ?? "pending");

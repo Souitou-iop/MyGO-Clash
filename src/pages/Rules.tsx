@@ -7,7 +7,7 @@ import { useAsync } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { run, useApp } from "../lib/store";
 import { Rules as API, type Rule } from "../mygo";
-import { Badge, Button, Empty, SearchInput, Select, Spinner, Switch, Tabs } from "../ui";
+import { Badge, Button, Empty, reflow, SearchInput, Select, Spinner, Switch, Tabs } from "../ui";
 
 const COLS = "52px 150px minmax(220px, 2fr) minmax(140px, 1fr) 90px 52px";
 
@@ -122,7 +122,7 @@ export default function Rules() {
                 {t("proxies.updateAll")}
               </Button>
             </div>
-            <div className="grid-cards">
+            <div className="grid-cards" ref={reflow}>
               {data!.providers.map((p) => (
                 <div key={p.name} className="card card-pad row">
                   <div className="grow">

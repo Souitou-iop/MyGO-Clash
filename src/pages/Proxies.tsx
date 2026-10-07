@@ -6,7 +6,7 @@ import { useAsync } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, useApp } from "../lib/store";
 import { Core, Proxies as API, type ProxyGroup, type ProxyItem } from "../mygo";
-import { Badge, Banner, Button, Delay, Empty, Progress, SearchInput, Segmented, Select, Spinner } from "../ui";
+import { Badge, Banner, Button, Delay, Empty, Progress, reflow, SearchInput, Segmented, Select, Spinner } from "../ui";
 
 type Sort = "default" | "delay" | "name";
 
@@ -177,7 +177,7 @@ function Group({
         </div>
       </div>
       {open && (
-        <div className={`proxy-grid ${layout}`} style={layout === "card" && columns > 0 ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}>
+        <div className={`proxy-grid ${layout}`} ref={reflow} style={layout === "card" && columns > 0 ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}>
           {items.map((m) => (
             <Member
               key={m.name}
@@ -224,7 +224,7 @@ function ProvidersPanel({ providers, reload }: { providers: import("../mygo").Pr
           {t("proxies.updateAll")}
         </Button>
       </div>
-      <div className="grid-cards">
+      <div className="grid-cards" ref={reflow}>
         {providers.map((p) => {
           const info = p.subscriptionInfo;
           const used = (info?.Upload ?? 0) + (info?.Download ?? 0);
