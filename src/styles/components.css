@@ -1829,3 +1829,8 @@ svg.lucide > * {
   --rot: -20deg;
   animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* A Collapse measuring what it opens to. */
+.measuring > * {
+  content-visibility: visible !important;
+}

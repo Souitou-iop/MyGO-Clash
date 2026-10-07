@@ -543,6 +543,20 @@
   background: var(--surface-hover);
 }
 
+/* The arrow turns to point down as the group opens. */
+.group-chev {
+  flex: none;
+  transition: transform 0.3s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+[dir="rtl"] .group-chev {
+  transform: rotate(180deg);
+}
+
+.proxy-group.open .group-chev {
+  transform: rotate(90deg);
+}
+
 .group-icon {
   width: 22px;
   height: 22px;

@@ -344,6 +344,51 @@ export function Tabs<T extends string>({ value, tabs, onChange }: { value: T; ta
 }
 
 /**
+ * Collapse grows to show its children when it opens and shrinks away when
+ * it closes, turning back midway if asked. Its children mount only while
+ * they show.
+ */
+export function Collapse({ open, children }: { open: boolean; children: ReactNode }) {
+  const [shown, setShown] = useState(open);
+  if (open && !shown) setShown(true);
+  const ref = useRef<HTMLDivElement>(null);
+  const was = useRef(open);
+  const anim = useRef<Animation | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (was.current === open || !el) return;
+    was.current = open;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      if (!open) setShown(false);
+      return;
+    }
+    // From where it stands: a move under way, or closed, or open.
+    const moving = anim.current?.playState === "running";
+    const from = moving ? el.getBoundingClientRect().height : open ? 0 : el.offsetHeight;
+    const fade = moving ? Number(getComputedStyle(el).opacity) : open ? 0 : 1;
+    anim.current?.cancel();
+    // What is not yet drawn takes a size it guesses; measure it drawn.
+    el.classList.add("measuring");
+    const to = open ? el.offsetHeight : 0;
+    el.classList.remove("measuring");
+    el.style.overflow = "hidden";
+    const a = el.animate(
+      [
+        { height: `${from}px`, opacity: fade },
+        { height: `${to}px`, opacity: open ? 1 : 0 },
+      ],
+      { duration: Math.min(380, 220 + Math.abs(to - from) / 8), easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" },
+    );
+    anim.current = a;
+    a.onfinish = () => {
+      el.style.overflow = "";
+      if (!open) setShown(false);
+    };
+  }, [open, shown]);
+  return shown ? <div ref={ref}>{children}</div> : null;
+}
+
+/**
  * reflow, as the ref of a grid of cards, moves its cards to their new places
  * when its columns change, as the page narrows or widens with the sidebar,
  * instead of having them jump there.

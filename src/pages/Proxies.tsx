@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, LayoutGrid, List, Pin, PinOff, RefreshCw, Server, Stethoscope, Zap } from "lucide-react";
+import { ChevronRight, LayoutGrid, List, Pin, PinOff, RefreshCw, Server, Stethoscope, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { bytes, dateOnly, percent, relative } from "../lib/format";
@@ -6,7 +6,7 @@ import { useAsync } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, useApp } from "../lib/store";
 import { Core, Proxies as API, type ProxyGroup, type ProxyItem } from "../mygo";
-import { Badge, Banner, Button, Delay, Empty, Progress, reflow, SearchInput, Segmented, Select, Spinner } from "../ui";
+import { Badge, Banner, Button, Collapse, Delay, Empty, Progress, reflow, SearchInput, Segmented, Select, Spinner } from "../ui";
 
 type Sort = "default" | "delay" | "name";
 
@@ -149,9 +149,9 @@ function Group({
   };
   const current = group.all.find((m) => m.name === group.now);
   return (
-    <section className={`card proxy-group${flash ? " flash" : ""}`} data-group={group.name}>
+    <section className={`card proxy-group${open ? " open" : ""}${flash ? " flash" : ""}`} data-group={group.name}>
       <div className="proxy-group-head" onClick={onToggle}>
-        {open ? <ChevronDown size={16} className="muted" /> : <ChevronRight size={16} className="muted flip-rtl" />}
+        <ChevronRight size={16} className="muted group-chev" />
         {showIcon && group.icon && <img src={group.icon} alt="" className="group-icon" />}
         <div className="grow" style={{ minWidth: 0 }}>
           <div className="row" style={{ gap: 7 }}>
@@ -178,7 +178,7 @@ function Group({
           <Button size="sm" variant="ghost" icon={<Zap size={14} />} loading={groupTesting} onClick={testAll} tip={t("proxies.testGroup")} />
         </div>
       </div>
-      {open && (
+      <Collapse open={open}>
         <div className={`proxy-grid ${layout}`} ref={reflow} style={layout === "card" && columns > 0 ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}>
           {items.map((m) => (
             <Member
@@ -194,7 +194,7 @@ function Group({
             />
           ))}
         </div>
-      )}
+      </Collapse>
     </section>
   );
 }
@@ -277,7 +277,7 @@ export default function Proxies() {
   const layout = settings?.ui.proxyLayout ?? "card";
   const mode = settings?.clash.mode ?? "rule";
   const toggle = (name: string) => {
-    const next = { ...open, [name]: !(open[name] ?? false) };
+    const next = { ...open, [name]: !isOpen(name) };
     setOpen(next);
     localStorage.setItem("proxies.open", JSON.stringify(next));
   };
