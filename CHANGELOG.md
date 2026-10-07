@@ -2,6 +2,45 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.5-beta
+
+规则页重做，内核未运行时说明原因并给出下一步，修掉五个名不副实的行为，弹窗与列表改为一气呵成的动效。/ The rules page is rebuilt, pages say why the core is down and how to start it, five actions that did not match their names are fixed, and dialogs, toasts and lists now move in one motion.
+
+### ✨ 新增功能 / New Features
+
+- 规则页说明规则的生效方式（从上到下匹配，第一条命中的决定连接去向），页头「编辑规则」直接打开当前订阅的规则编辑器 / The rules page explains how rules take effect — matched top to bottom, the first that matches decides where a connection goes — and its header opens the current profile's rules editor
+- 规则可临时停用，重载配置后自动恢复；停用了规则时显示提示条，数出条数并一键「全部恢复」/ A rule can be turned off until the configuration reloads, with a banner that counts them and turns them all back on at once
+- 每条规则的 ⋯ 菜单：按配置文件写法复制规则、前往其策略组（在代理页展开并高亮该组）、或在此之前新建规则 / Every rule has a ⋯ menu to copy it as configurations write it, jump to its target group on the proxies page which opens and highlights it, or start a new rule before it
+- 规则可按序号或命中次数排序，按「命中过」「从未命中」「已停用」筛选；内核未运行、配置没有规则、筛选无结果时都给出下一步 / Rules sort by hits and filter to those matched, never matched or turned off, and every empty state — core down, no rules, nothing matching — says what to do next
+- 内核未运行时，代理、连接、规则、连通性、Tailscale 页与首页控制卡片都会说明原因，并提供「启动内核」按钮 / When the core is not running, the proxies, connections, rules, connectivity and Tailscale pages and the home control card say why and offer a *Start core* button
+- 日志页新增「导出」，把当前显示的日志保存为文件 / The logs page exports the logs it currently shows to a file
+- 代理页新增「隐藏不可用」，隐藏上次测速失败的节点，当前选中的节点始终保留 / The proxies page can hide nodes whose last test failed, always keeping the selected node
+
+### ✨ 改进 / Improvements
+
+- 名称改用配置文件与日常用语的写法：连接页的规则类型显示为 `DOMAIN-SUFFIX` 这类形式，代理组类型显示「手动选择」「自动测速」「故障转移」等，Tailscale 的状态、日志等级与查找进程的三种模式也不再是英文标识 / Names now read the way people use them: rule types on the connections page as configurations write them (DOMAIN-SUFFIX), group types as Manual, Fastest and Fallback, and the Tailscale state, log levels and find-process modes named rather than shown as identifiers
+- 十余项没有说明的设置补上了说明 / Over a dozen settings that did not say what they do gained a description
+- 订阅更新失败的原因点击即可展开全文，旁边有「重试」；删除正在使用的订阅时，提示将自动切换到列表中的下一个 / A failed subscription update expands to its full reason on a click, with a *Retry* button, and deleting the profile in use says another takes its place
+- 连通性页的解锁结果注明是经由哪个节点测得，换了节点后旧结果标为「节点已更换」/ Unlock results say which node they went through, and a result taken through a node no longer in use is marked as stale
+- 单个节点测速无法完成时显示真实原因，不再一律显示「超时」/ A node test that could not run says why instead of always showing a timeout
+- 退出应用前会先确认，因为退出会停止代理并关闭系统代理与 TUN / Quitting asks first, as it stops the proxy and turns off the system proxy and TUN
+- 弹窗与菜单关闭时播放反向的打开动画，期间保持关闭前的内容，不再直接消失；通知消失时先滑出并让出位置，其余通知平滑补位 / Dialogs and menus play their opening animation backwards as they close, still showing what they last showed, and a dismissed toast slides out and gives back its room so the others move up rather than jump
+- 代理组展开收起改为一调动效：内容平滑长出与收回，箭头随之转动，中途可反向 / Proxy groups open and close in one motion: the nodes grow into view and shrink away, turning back midway, with the arrow turning along with them
+- 设置行里随开关出现的分钟数、新建订阅的远程字段与同步向导的提示都改为平滑展开，弹窗高度随之平滑变化 / The minutes that appear beside a switch, the remote fields of a new profile and the notices of the sync setup expand smoothly, and the dialog's height changes with them
+- 同步向导按前进或后退方向横向滑动，切换设置页标签时内容淡入上浮 / The sync wizard slides the way it is navigated, and a settings tab switched to fades in and up
+- 订阅卡片拖拽排序后、编辑器里上移下移条目时，条目平滑滑到新位置，新增的卡片淡入；所有动画遵循系统「减少动态效果」设置 / Profiles dragged into a new order and items moved up or down in the editors glide to their place, new cards fade in, and every animation honors the system's reduce-motion setting
+- 文案补齐全部 15 种语言 / The wording is complete in all 15 languages
+
+### 🐛 修复 / Fixes
+
+- 订阅更新间隔填 0 原本会停止自动更新，与「按机场建议」的说明相反；现在按机场最近一次给出的建议更新，没有建议时每天一次，编辑框也会显示当前实际生效的间隔 / An update interval of 0 stopped updating, unlike the hint that said it follows the provider; it now follows the suggestion from the last download, else once a day, and the dialog shows the interval actually in use
+- 「后台时暂停图表」原本保存后没有任何作用；现在窗口在后台时图表保持最后一帧，回到窗口后补齐 / "Pause graphs in the background" was saved but read nowhere; graphs now hold their last picture while the window is in the background and catch up when you return
+- 规则、节点与代理组编辑器在点取消、按 Esc 或切到「以 YAML 编辑」时会直接丢弃改动；现在会先询问是否放弃 / The rules, nodes and groups editor silently dropped unsaved changes on Cancel, Esc or "Edit as YAML"; it asks first now
+- Esc 原本会穿透确认提示关掉底下的编辑器；现在只关闭最上层的弹窗 / Esc reached past a confirmation and closed the editor under it; it now closes only the dialog on top
+- 端口设置把应用自己正在使用的 SOCKS、HTTP、redir 与 TProxy 端口误报为「已占用」/ The ports dialog wrongly called the app's own SOCKS, HTTP, redir and TProxy ports in use
+- 连接详情的数据冻结在打开的那一刻，并对已关闭的连接仍显示「关闭连接」；现在随连接实时刷新，并标注已关闭 / Connection details froze when opened and offered to close a connection already closed; they now follow the connection and mark it closed
+- 默认展开的代理组第一次点击没有反应 / The first click on a proxy group that was open by default did nothing
+
 ## 0.1.4-beta
 
 修复编辑窗口闪烁，并让卡片随侧边栏平滑移动。/ Fixes flickering editors and lets cards glide as the sidebar folds.
