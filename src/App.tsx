@@ -17,7 +17,7 @@ import {
 import { lazy, Suspense, useEffect } from "react";
 import { BrandMark } from "./components/Brand";
 import { TrafficGraph } from "./components/TrafficGraph";
-import { rate } from "./lib/format";
+import { rate, shortRate } from "./lib/format";
 import { useT } from "./lib/i18n";
 import { enableTunWithService, offerServiceUpdate } from "./lib/service";
 import { type Page, PAGES, patchSettings, run, useApp, useTraffic } from "./lib/store";
@@ -86,13 +86,15 @@ function Sidebar() {
       <div className="side-foot">
         {settings?.ui.trafficGraph !== false && <TrafficGraph up={traffic.up.slice(-40)} down={traffic.down.slice(-40)} height={34} minimal />}
         <div className="side-traffic">
-          <div className="side-rate" title={t("common.upload")}>
+          <div className="side-rate" title={`${t("common.upload")} ${rate(traffic.now.up)}`}>
             <ArrowUp size={13} color="var(--graph-up)" />
             <span className="side-traffic-text">{rate(traffic.now.up)}</span>
+            <span className="side-traffic-short">{shortRate(traffic.now.up)}</span>
           </div>
-          <div className="side-rate" title={t("common.download")}>
+          <div className="side-rate" title={`${t("common.download")} ${rate(traffic.now.down)}`}>
             <ArrowDown size={13} color="var(--graph-down)" />
             <span className="side-traffic-text">{rate(traffic.now.down)}</span>
+            <span className="side-traffic-short">{shortRate(traffic.now.down)}</span>
           </div>
         </div>
         <Button

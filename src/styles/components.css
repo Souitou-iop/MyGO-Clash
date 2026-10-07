@@ -84,6 +84,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 0 10px;
+  overflow-x: hidden; /* the labels overflow while the sidebar animates */
   overflow-y: auto;
   flex: 1;
 }
@@ -165,6 +166,22 @@
 
 .side-rate svg {
   flex: none;
+}
+
+/* Collapsed, the rates are four characters at most, such as "9.9K". */
+.side-traffic-short {
+  display: none;
+}
+
+.collapsed .side-traffic-short {
+  display: inline;
+}
+
+.collapsed .side-rate {
+  justify-content: center;
+  gap: 2px;
+  font-size: 11px;
+  letter-spacing: -0.02em;
 }
 
 .side-graph {
