@@ -24,7 +24,7 @@ import { useAsync, useNow } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, toast, toastError, useApp } from "../lib/store";
 import { App, Proxies, Tailscale as API, type TailscalePeer, type TailscalePingResult, type TailscaleStatus } from "../mygo";
-import { Badge, Banner, Button, Card, confirm, Empty, Field, Input, NumberInput, Row, SearchInput, Section, Segmented, Select, Switch } from "../ui";
+import { Badge, Banner, Button, Card, confirm, Empty, Field, Input, NumberInput, reflow, Row, SearchInput, Section, Segmented, Select, Switch } from "../ui";
 
 type Mode = "off" | "embedded" | "system";
 
@@ -474,7 +474,7 @@ export default function Tailscale() {
                 </p>
               </div>
             </div>
-            <div className="grid-cards">
+            <div className="grid-cards" ref={reflow}>
               <div className="card card-pad col ts-choice">
                 <div className="row">
                   <Activity size={18} color="var(--accent-fg)" />

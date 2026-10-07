@@ -344,6 +344,56 @@ export function Tabs<T extends string>({ value, tabs, onChange }: { value: T; ta
 }
 
 /**
+ * reflow, as the ref of a grid of cards, moves its cards to their new places
+ * when its columns change, as the page narrows or widens with the sidebar,
+ * instead of having them jump there.
+ */
+export function reflow(grid: HTMLElement | null) {
+  if (!grid) return;
+  const cols = () => getComputedStyle(grid).gridTemplateColumns.split(" ").length;
+  // Places, unmoved by transforms, from the grid's top left.
+  const place = (el: HTMLElement) => {
+    const own = el.offsetParent === grid;
+    return { x: el.offsetLeft - (own ? 0 : grid.offsetLeft), y: el.offsetTop - (own ? 0 : grid.offsetTop) };
+  };
+  const cards = () => [...grid.children] as HTMLElement[];
+  const motion = { id: "reflow", duration: 320, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" };
+  let n = cols();
+  let last = new Map(cards().map((c) => [c, place(c)]));
+  let height = grid.offsetHeight;
+  const ro = new ResizeObserver(() => {
+    const now = new Map(cards().map((c) => [c, place(c)]));
+    const m = cols();
+    if (m !== n && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Rows come and go with the columns: what follows the grid moves with
+      // its height instead of jumping.
+      for (const a of grid.getAnimations()) if (a.id === "reflow") a.cancel();
+      const h = grid.offsetHeight;
+      if (h !== height) grid.animate([{ height: `${height}px`, alignContent: "start" }, { height: `${h}px`, alignContent: "start" }], motion);
+      const top = grid.getBoundingClientRect().top;
+      for (const [c, to] of now) {
+        const from = last.get(c);
+        if (!from || (from.x === to.x && from.y === to.y)) continue;
+        // Only what is in sight, of grids of hundreds of nodes.
+        if (Math.min(from.y, to.y) + top > innerHeight || Math.max(from.y, to.y) + top + c.offsetHeight < 0) continue;
+        // From where it shows now, a move already under way included.
+        const tf = getComputedStyle(c).transform;
+        const shown = new DOMMatrix(tf === "none" ? undefined : tf);
+        for (const a of c.getAnimations()) if (a.id === "reflow") a.cancel();
+        const dx = from.x + shown.m41 - to.x;
+        const dy = from.y + shown.m42 - to.y;
+        c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], motion);
+      }
+    }
+    n = m;
+    last = now;
+    height = grid.offsetHeight;
+  });
+  ro.observe(grid);
+  return () => ro.disconnect();
+}
+
+/**
  * SideTips shows the tips of the sidebar beside it. The sidebar clips what
  * overflows it, so the usual tip above an element would be cut off there;
  * these float over the page instead, at the element's inline end.

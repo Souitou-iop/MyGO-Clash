@@ -31,7 +31,7 @@ import { useNow } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { run, toast, toastError, useApp } from "../lib/store";
 import { App, Profiles as API, type LogEntry, type Profile } from "../mygo";
-import { Badge, Button, confirm, Dialog, Empty, Menu, Progress, Spinner } from "../ui";
+import { Badge, Button, confirm, Dialog, Empty, Menu, Progress, reflow, Spinner } from "../ui";
 
 const CodeEditor = lazy(() => import("../components/CodeEditor"));
 
@@ -369,7 +369,7 @@ export default function Profiles() {
             {t("profiles.emptyHint")}
           </Empty>
         ) : (
-          <div className="grid-cards" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
+          <div className="grid-cards" ref={reflow} style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
             {items.map((p) => (
               <ProfileCard
                 key={p.uid}
@@ -388,7 +388,7 @@ export default function Profiles() {
         )}
         <div className="section" style={{ marginTop: 22 }}>
           <div className="section-title">{t("profiles.globalExt")}</div>
-          <div className="grid-cards" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
+          <div className="grid-cards" ref={reflow} style={{ gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))" }}>
             {[
               { uid: "Merge", icon: <Merge size={16} />, title: t("profiles.globalMerge"), desc: t("profiles.globalMergeDesc"), lang: "yaml" as const },
               { uid: "Script", icon: <Code2 size={16} />, title: t("profiles.globalScript"), desc: t("profiles.globalScriptDesc"), lang: "javascript" as const },
