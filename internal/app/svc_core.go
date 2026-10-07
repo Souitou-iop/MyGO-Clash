@@ -334,6 +334,29 @@ func (s Rules) SetDisabled(ctx context.Context, index int, disabled bool) error 
 	return c.DisableRules(ctx, map[int]bool{index: disabled})
 }
 
+// EnableAll enables the rules disabled since the last reload, and returns
+// how many there were.
+func (s Rules) EnableAll(ctx context.Context) (int, error) {
+	c, err := s.a.core.Must()
+	if err != nil {
+		return 0, err
+	}
+	rules, err := c.Rules(ctx)
+	if err != nil {
+		return 0, err
+	}
+	off := map[int]bool{}
+	for _, r := range rules {
+		if r.Extra != nil && r.Extra.Disabled {
+			off[r.Index] = false
+		}
+	}
+	if len(off) == 0 {
+		return 0, nil
+	}
+	return len(off), c.DisableRules(ctx, off)
+}
+
 // Logs is the logs page.
 type Logs struct{ a *App }
 

@@ -96,6 +96,7 @@ function Group({
   columns,
   reload,
   showIcon,
+  flash,
 }: {
   group: ProxyGroup;
   open: boolean;
@@ -106,6 +107,7 @@ function Group({
   columns: number;
   reload: () => void;
   showIcon: boolean;
+  flash?: boolean;
 }) {
   const t = useT();
   const [delays, setDelays] = useState<Record<string, number>>({});
@@ -147,7 +149,7 @@ function Group({
   };
   const current = group.all.find((m) => m.name === group.now);
   return (
-    <section className="card proxy-group">
+    <section className={`card proxy-group${flash ? " flash" : ""}`} data-group={group.name}>
       <div className="proxy-group-head" onClick={onToggle}>
         {open ? <ChevronDown size={16} className="muted" /> : <ChevronRight size={16} className="muted flip-rtl" />}
         {showIcon && group.icon && <img src={group.icon} alt="" className="group-icon" />}
@@ -286,6 +288,20 @@ export default function Proxies() {
     return data.groups.filter((g) => !g.hidden);
   }, [data, mode]);
   const isOpen = (name: string) => open[name] ?? (groups.length <= 3 || !!search);
+  // A group another page pointed to, such as the target of a rule: open it,
+  // bring it into view, and light it up for a moment.
+  const focus = useApp((s) => s.focusGroup);
+  const [flash, setFlash] = useState<string | null>(null);
+  useEffect(() => {
+    if (!focus || !groups.some((g) => g.name === focus)) return;
+    useApp.setState({ focusGroup: null });
+    setSearch("");
+    if (!isOpen(focus)) toggle(focus);
+    setFlash(focus);
+    requestAnimationFrame(() => document.querySelector(`[data-group="${CSS.escape(focus)}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" }));
+    setTimeout(() => setFlash(null), 1400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, groups]);
   return (
     <>
       <PageHeader title={t("nav.proxies")}>
@@ -352,6 +368,7 @@ export default function Proxies() {
                 columns={settings?.ui.proxyColumns ?? 0}
                 reload={reload}
                 showIcon={settings?.ui.groupIcons ?? true}
+                flash={flash === g.name}
               />
             ))}
           </div>

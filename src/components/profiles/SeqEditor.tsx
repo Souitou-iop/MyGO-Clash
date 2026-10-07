@@ -7,7 +7,7 @@ import { Badge, Button, Dialog, Empty, Field, Input, SearchInput, Select, Spinne
 
 export type SeqKind = "rules" | "proxies" | "groups";
 
-const RULE_TYPES = [
+export const RULE_TYPES = [
   "DOMAIN",
   "DOMAIN-SUFFIX",
   "DOMAIN-KEYWORD",
@@ -58,10 +58,16 @@ function sub(it: Item): string {
   return "";
 }
 
-function RuleForm({ names, onAdd }: { names: NameLists; onAdd: (rule: string) => void }) {
+/** RuleDraft is a rule to start from: a type of RULE_TYPES and its payload. */
+export interface RuleDraft {
+  type: string;
+  payload: string;
+}
+
+function RuleForm({ names, onAdd, draft }: { names: NameLists; onAdd: (rule: string) => void; draft?: RuleDraft }) {
   const t = useT();
-  const [type, setType] = useState("DOMAIN-SUFFIX");
-  const [payload, setPayload] = useState("");
+  const [type, setType] = useState(draft?.type ?? "DOMAIN-SUFFIX");
+  const [payload, setPayload] = useState(draft?.payload ?? "");
   const [target, setTarget] = useState("DIRECT");
   const [noResolve, setNoResolve] = useState(false);
   const targets = [...names.groups, ...names.builtin, ...names.proxies];
@@ -177,6 +183,7 @@ export function SeqEditor({
   title,
   onClose,
   onRaw,
+  draft,
 }: {
   uid: string | null;
   profileUid: string;
@@ -184,6 +191,8 @@ export function SeqEditor({
   title: string;
   onClose: () => void;
   onRaw: () => void;
+  /** draft fills the form of a new rule. */
+  draft?: RuleDraft;
 }) {
   const t = useT();
   const [patch, setPatch] = useState<SeqPatch | null>(null);
@@ -267,7 +276,7 @@ export function SeqEditor({
             {t(`editor.${tab}Hint` as never)}
           </div>
           {tab !== "delete" &&
-            (kind === "rules" ? <RuleForm names={names} onAdd={(r) => addItems([r])} /> : kind === "proxies" ? <ProxyForm onAdd={addItems} /> : <GroupForm names={names} onAdd={(g) => addItems([g])} />)}
+            (kind === "rules" ? <RuleForm key={draft ? `${draft.type},${draft.payload}` : ""} names={names} onAdd={(r) => addItems([r])} draft={draft} /> : kind === "proxies" ? <ProxyForm onAdd={addItems} /> : <GroupForm names={names} onAdd={(g) => addItems([g])} />)}
           {tab === "delete" && (
             <div className="col" style={{ gap: 8 }}>
               <SearchInput value={filter} onChange={setFilter} placeholder={t("common.search")} />

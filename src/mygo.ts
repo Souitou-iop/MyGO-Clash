@@ -1282,6 +1282,13 @@ export const Connections = {
 
 /** Rules is the rules page. */
 export const Rules = {
+  /**
+   * EnableAll enables the rules disabled since the last reload, and returns
+   * how many there were.
+   */
+  enableAll(): Promise<number> {
+    return call("Rules.EnableAll");
+  },
   /** List returns the running rules and rule providers. */
   list(): Promise<RulesView> {
     return call("Rules.List");
