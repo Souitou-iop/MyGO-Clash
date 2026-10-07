@@ -2,6 +2,17 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.3-beta
+
+界面细节打磨。/ Interface polish.
+
+### ✨ 改进 / Improvements
+
+- 全局主按钮参照 Linear、Raycast 重排：实色底、顶部 1px 内高光与贴身投影，悬停加深、按下下沉；所有按钮按下时轻微缩小 / The primary button is redesigned after Linear and Raycast: a solid fill with a 1px inner highlight and a close shadow; hover darkens it, pressing sinks it, and every button shrinks slightly while pressed
+- 侧边栏收起重做为一条动效：图标固定在同一竖线上只有宽度在动，文字淡出，流量数字原位交叉淡入为短格式，警告圆点平滑移到角落 / The sidebar collapse is now one motion: icons stay on a fixed vertical line so only the width animates, labels fade out, the traffic numbers cross-fade into their short form, and the warning dot glides to its corner
+- 侧边栏悬停提示改为浮在页面一侧，不再被侧边栏裁剪 / Sidebar tooltips now float beside the page instead of being clipped by the sidebar
+- 「同步与备份」未配置时的引导卡片改为朴素样式：去掉渐变光晕与卖点清单，换成图标、标题、一行说明与按钮 / The unconfigured sync card is plainer: the gradient glow and the checklist give way to an icon, a title, one line of text and the buttons
+
 ## 0.1.2-beta
 
 界面动效与新连通性页。/ Motion across the app and a new connectivity page.
