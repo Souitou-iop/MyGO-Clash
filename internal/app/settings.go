@@ -42,6 +42,7 @@ func (a *App) updateSettings(ctx context.Context, fn func(*config.Settings)) (co
 // as needed, a mode switch never reloads the configuration.
 func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) error {
 	_ = SettingsEvent.Broadcast(cur)
+	logSwitches(ctx, old, cur)
 	changed := func(f func(config.Settings) any) bool { return !reflect.DeepEqual(f(old), f(cur)) }
 	var errs []error
 
@@ -73,6 +74,7 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 			// pages, the tray and the hotkey install it first instead.
 			_, _, _ = a.settings.Update(func(s *config.Settings) { s.Tun.Enabled = false })
 			_ = SettingsEvent.Broadcast(a.settings.Get())
+			log.Printf("switch: TUN off again: the service is not usable")
 			if svc.Installed && svc.Outdated {
 				a.notify(Notice{Level: "warning", Message: tr(a, "serviceOutdated"), Action: "repair-service", Page: "settings/network"})
 				return errors.New(tr(a, "serviceOutdated"))
@@ -141,29 +143,30 @@ func (a *App) patchMode(ctx context.Context, mode string) error {
 	return nil
 }
 
-// setMode switches the mode, from the tray, a shortcut or the panel.
-func (a *App) setMode(mode string) {
-	if _, err := a.updateSettings(context.Background(), func(s *config.Settings) { s.Clash.Mode = mode }); err != nil {
+// setMode switches the mode, from the tray, a shortcut or the panel, the
+// source.
+func (a *App) setMode(source, mode string) {
+	if _, err := a.updateSettings(from(context.Background(), source), func(s *config.Settings) { s.Clash.Mode = mode }); err != nil {
 		a.notifyErr("", tr(a, "modeFailed"), err)
 	}
 }
 
-// toggleSystemProxy turns the system proxy on or off.
-func (a *App) toggleSystemProxy() {
+// toggleSystemProxy turns the system proxy on or off, from source.
+func (a *App) toggleSystemProxy(source string) {
 	on := !a.settings.Get().SystemProxy.Enabled
-	if _, err := a.updateSettings(context.Background(), func(s *config.Settings) { s.SystemProxy.Enabled = on }); err != nil {
+	if _, err := a.updateSettings(from(context.Background(), source), func(s *config.Settings) { s.SystemProxy.Enabled = on }); err != nil {
 		a.notifyErr("settings/network", tr(a, "sysproxyFailed"), err)
 	}
 }
 
-// toggleTun turns TUN on or off.
-func (a *App) toggleTun() {
+// toggleTun turns TUN on or off, from source.
+func (a *App) toggleTun(source string) {
 	on := !a.settings.Get().Tun.Enabled
 	if on && !a.snapshot().TunAvailable {
 		a.installServiceForTun()
 		return
 	}
-	_, _ = a.updateSettings(context.Background(), func(s *config.Settings) { s.Tun.Enabled = on })
+	_, _ = a.updateSettings(from(context.Background(), source), func(s *config.Settings) { s.Tun.Enabled = on })
 }
 
 // installService installs, repairs or updates the service, asking for an
@@ -186,7 +189,7 @@ func (a *App) installService(ctx context.Context, enableTun bool) error {
 	if !a.snapshot().TunAvailable {
 		return errors.New(tr(a, "tunNeedsService"))
 	}
-	_, err = a.updateSettings(ctx, func(s *config.Settings) { s.Tun.Enabled = true })
+	_, err = a.updateSettings(from(ctx, "service install"), func(s *config.Settings) { s.Tun.Enabled = true })
 	return err
 }
 
@@ -270,6 +273,44 @@ func errString(err error) string {
 	return err.Error()
 }
 
+type sourceKey struct{}
+
+// from marks ctx with what changes the settings, such as "tray", for the
+// log of the switches.
+func from(ctx context.Context, source string) context.Context {
+	return context.WithValue(ctx, sourceKey{}, source)
+}
+
+func sourceOf(ctx context.Context) string {
+	if s, _ := ctx.Value(sourceKey{}).(string); s != "" {
+		return s
+	}
+	return "app"
+}
+
+func onOff(b bool) string {
+	if b {
+		return "on"
+	}
+	return "off"
+}
+
+// logSwitches notes in the app's log when the system proxy, TUN or the mode
+// changes and what changed it: the core does not log a TUN that a new
+// configuration turns off, nor does the system.
+func logSwitches(ctx context.Context, old, cur config.Settings) {
+	src := sourceOf(ctx)
+	if old.SystemProxy.Enabled != cur.SystemProxy.Enabled {
+		log.Printf("switch: system proxy %s (%s)", onOff(cur.SystemProxy.Enabled), src)
+	}
+	if old.Tun.Enabled != cur.Tun.Enabled {
+		log.Printf("switch: TUN %s (%s)", onOff(cur.Tun.Enabled), src)
+	}
+	if old.Clash.Mode != cur.Clash.Mode {
+		log.Printf("switch: mode %s → %s (%s)", old.Clash.Mode, cur.Clash.Mode, src)
+	}
+}
+
 // windowBackground is what the main window shows before its page paints.
 func windowBackground(st config.Settings) string {
 	if st.OLED {
@@ -304,11 +345,11 @@ func (a *App) registerHotkeys(st config.Settings) {
 	actions := map[string]func(){
 		config.HotkeyToggleWindow:      a.toggleMain,
 		config.HotkeyQuickPanel:        func() { a.panel.toggle() },
-		config.HotkeyToggleSystemProxy: func() { go a.toggleSystemProxy() },
-		config.HotkeyToggleTun:         func() { go a.toggleTun() },
-		config.HotkeyModeRule:          func() { go a.setMode("rule") },
-		config.HotkeyModeGlobal:        func() { go a.setMode("global") },
-		config.HotkeyModeDirect:        func() { go a.setMode("direct") },
+		config.HotkeyToggleSystemProxy: func() { go a.toggleSystemProxy("hotkey") },
+		config.HotkeyToggleTun:         func() { go a.toggleTun("hotkey") },
+		config.HotkeyModeRule:          func() { go a.setMode("hotkey", "rule") },
+		config.HotkeyModeGlobal:        func() { go a.setMode("hotkey", "global") },
+		config.HotkeyModeDirect:        func() { go a.setMode("hotkey", "direct") },
 		config.HotkeyLightweight:       a.enterLightweight,
 		config.HotkeyReactivate: func() {
 			go func() {

@@ -139,6 +139,7 @@ func (a *App) start() {
 	close(a.ready)
 	st := a.settings.Get()
 	a.applyTheme(st)
+	log.Printf("switch: at start, system proxy %s, TUN %s, mode %s", onOff(st.SystemProxy.Enabled), onOff(st.Tun.Enabled), st.Clash.Mode)
 	a.tray = newTrayUI(a)
 	a.panel = newQuickPanel(a)
 	a.updates = newUpdateChecker(a)

@@ -436,7 +436,7 @@ func (s appSource) Apply(ctx context.Context, changes map[string][]byte) error {
 	}
 	if len(settingsPatch) > 0 {
 		data, _ := json.Marshal(settingsPatch)
-		if _, err := s.a.changeSettings(ctx, data); err != nil {
+		if _, err := s.a.changeSettings(from(ctx, "sync"), data); err != nil {
 			errs = append(errs, err)
 		}
 	}

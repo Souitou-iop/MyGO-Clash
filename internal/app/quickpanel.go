@@ -324,7 +324,7 @@ func (p *quickPanel) view(c *ui.Context) {
 		// Mode and switches.
 		if ui.Segmented(c, &p.selected, tr(a, "rule"), tr(a, "global"), tr(a, "direct")).Label(tr(a, "mode")).Changed() {
 			mode := []string{"rule", "global", "direct"}[p.selected]
-			go a.setMode(mode)
+			go a.setMode("quick panel", mode)
 		}
 		ui.Column(c).Gap(8).Padding(8, 10).Radius(8).Background(t.Surface).Children(func() {
 			ui.Row(c).AlignItems(ui.Center).Children(func() {
@@ -332,7 +332,7 @@ func (p *quickPanel) view(c *ui.Context) {
 				if ui.Switch(c, &p.sysOn).Label(tr(a, "systemProxy")).Changed() {
 					on := p.sysOn
 					go func() {
-						_, err := a.updateSettings(context.Background(), func(s *config.Settings) { s.SystemProxy.Enabled = on })
+						_, err := a.updateSettings(from(context.Background(), "quick panel"), func(s *config.Settings) { s.SystemProxy.Enabled = on })
 						a.notifyErr("settings/network", tr(a, "sysproxyFailed"), err)
 					}()
 				}
@@ -348,7 +348,7 @@ func (p *quickPanel) view(c *ui.Context) {
 						go a.installServiceForTun()
 					} else {
 						go func() {
-							_, _ = a.updateSettings(context.Background(), func(s *config.Settings) { s.Tun.Enabled = on })
+							_, _ = a.updateSettings(from(context.Background(), "quick panel"), func(s *config.Settings) { s.Tun.Enabled = on })
 						}()
 					}
 				}

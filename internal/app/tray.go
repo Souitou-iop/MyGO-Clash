@@ -187,7 +187,7 @@ func (t *trayUI) build() {
 	for _, m := range []string{"rule", "global", "direct"} {
 		mode := m
 		modes = append(modes, &mygo.MenuItem{Label: tr(a, m), Type: mygo.MenuItemRadio, Checked: st.Clash.Mode == m,
-			Click: func(*mygo.MenuItem, *mygo.Window) { go a.setMode(mode) }})
+			Click: func(*mygo.MenuItem, *mygo.Window) { go a.setMode("tray", mode) }})
 	}
 	if st.Tray.InlineModes {
 		items = append(items, modes...)
@@ -208,9 +208,9 @@ func (t *trayUI) build() {
 	items = append(items, t.profiles())
 	items = append(items, mygo.Separator())
 	items = append(items, &mygo.MenuItem{Label: tr(a, "systemProxy"), Type: mygo.MenuItemCheckbox, Checked: st.SystemProxy.Enabled,
-		Click: func(*mygo.MenuItem, *mygo.Window) { go a.toggleSystemProxy() }})
+		Click: func(*mygo.MenuItem, *mygo.Window) { go a.toggleSystemProxy("tray") }})
 	items = append(items, &mygo.MenuItem{Label: tunLabel(a, s), Type: mygo.MenuItemCheckbox, Checked: st.Tun.Enabled && s.TunAvailable,
-		Click: func(*mygo.MenuItem, *mygo.Window) { go a.toggleTun() }})
+		Click: func(*mygo.MenuItem, *mygo.Window) { go a.toggleTun("tray") }})
 	if st.Tailscale.Mode != "off" {
 		items = append(items, t.tailscale())
 	}

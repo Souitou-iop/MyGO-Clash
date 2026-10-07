@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"runtime"
@@ -247,7 +248,7 @@ func (s SettingsService) Patch(ctx context.Context, patch map[string]any) (confi
 	if err != nil {
 		return config.Settings{}, err
 	}
-	return s.a.changeSettings(ctx, data)
+	return s.a.changeSettings(from(ctx, "window"), data)
 }
 
 // Defaults returns the settings of a new installation.
@@ -300,6 +301,7 @@ func (s System) UninstallService(ctx context.Context) error {
 	}
 	_, _, _ = s.a.settings.Update(func(st *config.Settings) { st.Tun.Enabled = false })
 	_ = SettingsEvent.Broadcast(s.a.settings.Get())
+	log.Printf("switch: TUN off (service uninstalled)")
 	s.a.checkService(ctx)
 	go s.a.startCore(context.Background())
 	return nil

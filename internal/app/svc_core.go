@@ -424,7 +424,7 @@ func (s Core) Restart(ctx context.Context) error {
 
 // SetMode switches the mode: rule, global or direct.
 func (s Core) SetMode(ctx context.Context, mode string) error {
-	_, err := s.a.updateSettings(ctx, func(st *config.Settings) { st.Clash.Mode = mode })
+	_, err := s.a.updateSettings(from(ctx, "window"), func(st *config.Settings) { st.Clash.Mode = mode })
 	return err
 }
 
