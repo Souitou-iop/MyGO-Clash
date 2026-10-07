@@ -2,6 +2,17 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.7-beta
+
+同步可以选择不加密，由你决定。/ Sync can be set up without encryption, if you choose.
+
+### ✨ 新增功能 / New Features
+
+- 设置同步的第二步现在可以在「加密（推荐）」与「不加密」之间选：不加密的保险库只压缩不加密，之后每台设备加入都不需要密码；默认仍是加密 / Sync setup's second step now chooses between *Encrypt (recommended)* and *Don't encrypt*: an unencrypted vault only compresses its data, and every device joins it without a passphrase; encrypting remains the default
+- 选「不加密」时会把代价说清楚：WebDAV 服务商或服务器管理员能读到你同步的订阅链接（含机场令牌）与节点密码，以后要改回加密，得在新的文件夹重新设置一次 / Choosing it spells out the cost: your WebDAV provider or the server's admin can read the subscription links you sync (provider tokens included) and your node passwords, and encrypting later means setting sync up again in a new folder
+- 加密与否属于保险库本身，不属于这台设备：文件夹里已有同步数据时沿用它当初的选择，加入时不会被本机改成另一种，界面也只在该文件夹确实未加密时才免掉密码 / The choice belongs to the vault, not to this device: a folder that already holds data keeps what it was created with, joining cannot switch it from this computer, and the passphrase is skipped only when that folder really is unencrypted
+- 同步页的安全区在未加密时显示「未加密」警告标记；没有密码可改，「修改密码」改为说明加密的保险库才可以在这里换密码 / The sync page's security section badges an unencrypted vault, and *Change passphrase* is replaced by a note that only an encrypted vault has a passphrase to change here
+
 ## 0.1.6-beta
 
 修掉上一版动效里各闪一帧的两处。/ Fixes the two single-frame blinks the last version's motion had.
