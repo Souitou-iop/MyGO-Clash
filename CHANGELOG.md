@@ -2,6 +2,26 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.8-beta
+
+新电脑首次启动不再卡在 GeoIP 下载，托盘如实显示开关状态，UWP 回环可以逐个选择应用，另有纯黑主题与几处动效、布局修正。/ A first start on a new computer no longer stalls on the GeoIP download, the tray shows the switches as they are, UWP loopback can be set app by app, and there is a pure black theme with a few motion and layout fixes.
+
+### ✨ 新增功能 / New Features
+
+- 安装包内置 GeoIP（geoip.metadb）与 GeoSite（geosite.dat）数据库，像 Clash Verge 一样：新电脑（例如刚通过 WebDAV 同步完）第一次启动就能应用含 GEOIP / GEOSITE 规则的订阅，不必先从 GitHub 下载 / The installers carry the GeoIP (geoip.metadb) and GeoSite (geosite.dat) databases, as Clash Verge does: on a new computer, such as one just synced over WebDAV, a profile with GEOIP or GEOSITE rules applies on the first start without a download from GitHub
+- 缺少的 Geo 数据库改为依次尝试：订阅自己的 geox-url → jsDelivr 镜像 → GitHub，下载到临时文件校验通过才替换；未指定 geox-url 时「更新 GeoData」也走镜像 / A missing geo database is now fetched from the profile's own geox-url, then jsDelivr mirrors, then GitHub, through a temporary file that has to check out; without a geox-url, *Update GeoData* uses the mirror too
+- 检查与下载应用更新时，内核在运行就先经内核代理访问 GitHub，再直连，下载最后可经 gh-proxy.org 镜像；更新包有签名，镜像无法篡改。此前更新检查只会直连，代理开着也连不上 GitHub / Update checks and downloads now reach GitHub through the core when it runs, then directly, then for downloads through the gh-proxy.org mirror; updates are signed, so a mirror cannot alter one. Checks used to go direct only and failed where GitHub is blocked, even with the proxy on
+- UWP 回环改为应用列表：显示应用名与包名、勾出已放行的应用，可搜索、全选 / 全不选（作用于当前搜索结果）或逐个勾选，保存时一次授权；列表在你自己的账户里读取，其他账户的放行设置保持不变 / UWP loopback is now a list of the Store apps, with names, package names and the current exemptions checked: search, select all or none of what the search shows, or pick apps, then authorize once to save; the list is read in your own account, and other accounts' exemptions are left as they are
+- 新增「纯黑（OLED）」开关：深色主题下页面、快捷面板与窗口底色改为纯黑 / A *Pure black (OLED)* switch turns the dark theme's pages, quick panel and window background pure black
+- Windows：双击托盘图标打开主窗口 / Windows: double-clicking the tray icon opens the main window
+- 配置未能应用时，首页横幅多了「重试」按钮 / The home page's *configuration did not apply* banner has a *Retry* button
+
+### 🐛 修复 / Fixes
+
+- 托盘菜单的系统代理、TUN 勾选与代理模式不再停在旧状态（Windows 与 macOS 都有此问题）：开关、模式、内核状态、订阅或 Tailscale 状态变化时菜单都会刷新；Tailscale 子菜单在标签上显示连接状态 / The tray menu's system proxy and TUN checkmarks and the mode no longer stay as they were (on Windows and macOS alike): the menu follows the switches, the mode, the core, the profile and Tailscale; Tailscale's submenu shows its state in its label
+- 订阅页随侧边栏展开 / 收起改变列数时，卡片平滑缩放到新列宽，不再闪一下跳变 / On the profiles page, cards now grow or shrink smoothly into their columns when the sidebar changes how many fit, instead of snapping
+- macOS：侧边栏收起后红绿灯不再压在侧边栏边缘上 / macOS: the window buttons no longer hang over the edge of the collapsed sidebar
+
 ## 0.1.7-beta
 
 同步可以选择不加密，由你决定。/ Sync can be set up without encryption, if you choose.
