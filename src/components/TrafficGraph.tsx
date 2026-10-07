@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useApp } from "../lib/store";
 
 /** rgba turns #rgb or #rrggbb into rgba(), which every canvas understands. */
 function rgba(hex: string, alpha: number): string {
@@ -27,6 +28,28 @@ function useThemeKey(): number {
 }
 
 /**
+ * usePaused tells whether graphs should stop drawing: the window is in the
+ * background and the setting to pause there is on.
+ */
+function usePaused(): boolean {
+  const on = useApp((s) => s.settings?.ui.pauseOnBlur ?? true);
+  const away = () => document.hidden || !document.hasFocus();
+  const [gone, setGone] = useState(away);
+  useEffect(() => {
+    const check = () => setGone(away());
+    window.addEventListener("focus", check);
+    window.addEventListener("blur", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      window.removeEventListener("focus", check);
+      window.removeEventListener("blur", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, []);
+  return on && gone;
+}
+
+/**
  * TrafficGraph draws upload and download over time on a canvas. Without a
  * height it fills its parent, which must have one.
  */
@@ -34,6 +57,8 @@ export function TrafficGraph({ up, down, height, minimal }: { up: number[]; down
   const canvas = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState(0);
   const theme = useThemeKey();
+  const paused = usePaused();
+  const drawn = useRef(false);
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
@@ -43,11 +68,14 @@ export function TrafficGraph({ up, down, height, minimal }: { up: number[]; down
   }, []);
   useEffect(() => {
     const c = canvas.current;
-    if (!c) return;
+    // In the background, keep the last picture; the data still comes in, so
+    // coming back draws it up to date.
+    if (!c || (paused && drawn.current)) return;
     const dpr = window.devicePixelRatio || 1;
     const w = c.clientWidth;
     const h = c.clientHeight;
     if (!w || !h) return;
+    drawn.current = true;
     if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
       c.width = Math.round(w * dpr);
       c.height = Math.round(h * dpr);
@@ -105,7 +133,7 @@ export function TrafficGraph({ up, down, height, minimal }: { up: number[]; down
     };
     draw(down, down0, minimal ? 1.25 : 1.75, 0.26);
     draw(up, up0, minimal ? 1 : 1.4, minimal ? 0 : 0.12);
-  }, [up, down, size, theme, minimal]);
+  }, [up, down, size, theme, minimal, paused]);
   return (
     <canvas
       ref={canvas}

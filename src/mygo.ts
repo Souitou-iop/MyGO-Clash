@@ -384,6 +384,11 @@ export interface Profile {
    * into a configuration.
    */
   converted?: boolean;
+  /**
+   * Suggested is the update interval the provider suggested at the last
+   * download, in minutes; 0 when it suggested none.
+   */
+  suggestedInterval?: number;
 }
 
 /** ProfilesView is the list of profiles the page shows. */

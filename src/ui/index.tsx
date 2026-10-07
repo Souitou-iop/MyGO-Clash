@@ -182,7 +182,7 @@ export function SearchInput({ value, onChange, placeholder, width = 240 }: { val
   );
 }
 
-export function NumberInput({ value, onChange, min, max, width = 100 }: { value: number; onChange: (v: number) => void; min?: number; max?: number; width?: number }) {
+export function NumberInput({ value, onChange, min, max, width = 100, disabled }: { value: number; onChange: (v: number) => void; min?: number; max?: number; width?: number; disabled?: boolean }) {
   const [text, setText] = useState(String(value));
   useEffect(() => setText(String(value)), [value]);
   const n = Number(text);
@@ -192,6 +192,7 @@ export function NumberInput({ value, onChange, min, max, width = 100 }: { value:
       value={text}
       invalid={invalid}
       style={{ width }}
+      disabled={disabled}
       inputMode="numeric"
       onChange={(e) => setText(e.target.value.replace(/[^\d]/g, ""))}
       onBlur={() => (!invalid && n !== value ? onChange(n) : setText(String(value)))}
@@ -479,6 +480,9 @@ export function SideTips() {
 
 // ---------- Dialog ----------
 
+/** dialogs stacks the open dialogs, the last on top. */
+const dialogs: object[] = [];
+
 export function Dialog({
   open,
   onClose,
@@ -498,12 +502,20 @@ export function Dialog({
   flush?: boolean;
   icon?: ReactNode;
 }) {
+  const latest = useRef(onClose);
+  latest.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    // Esc closes only the dialog on top, such as a confirmation over an editor.
+    const me = {};
+    dialogs.push(me);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && dialogs.at(-1) === me && latest.current();
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      dialogs.splice(dialogs.indexOf(me), 1);
+    };
+  }, [open]);
   if (!open) return null;
   return createPortal(
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>

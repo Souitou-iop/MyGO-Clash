@@ -81,8 +81,11 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
               <Field label={t("profiles.userAgent")} hint={t("profiles.userAgentHint")}>
                 <Input value={opt.userAgent ?? ""} onChange={(e) => set("userAgent", e.target.value)} placeholder="mihomo/1.19 clash-verge/v2.4 MyGO-Clash" />
               </Field>
-              <Field label={t("profiles.interval")} hint={t("profiles.intervalHint")}>
-                <NumberInput value={opt.updateInterval ?? 0} onChange={(v) => set("updateInterval", v)} min={0} max={525600} width={140} />
+              <Field
+                label={t("profiles.interval")}
+                hint={!opt.updateInterval && profile?.suggestedInterval ? t("profiles.intervalFollow", { n: profile.suggestedInterval }) : t("profiles.intervalHint")}
+              >
+                <NumberInput value={opt.updateInterval ?? 0} onChange={(v) => set("updateInterval", v)} min={0} max={525600} width={140} disabled={!!opt.noAutoUpdate} />
               </Field>
             </div>
             <div className="form-row">
@@ -102,6 +105,7 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
               <div className="setting">
                 <div className="setting-text">
                   <div className="setting-label">{t("profiles.autoUpdate")}</div>
+                  <div className="setting-desc">{t("profiles.autoUpdateHint")}</div>
                 </div>
                 <Switch checked={!opt.noAutoUpdate} onChange={(v) => set("noAutoUpdate", !v)} />
               </div>

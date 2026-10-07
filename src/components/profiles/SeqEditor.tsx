@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useT } from "../../lib/i18n";
 import { toast, toastError } from "../../lib/store";
 import { Profiles, type NameLists, type SeqPatch } from "../../mygo";
-import { Badge, Button, Dialog, Empty, Field, Input, SearchInput, Select, Spinner, Tabs } from "../../ui";
+import { Badge, Button, confirm, Dialog, Empty, Field, Input, SearchInput, Select, Spinner, Tabs } from "../../ui";
 
 export type SeqKind = "rules" | "proxies" | "groups";
 
@@ -196,6 +196,7 @@ export function SeqEditor({
 }) {
   const t = useT();
   const [patch, setPatch] = useState<SeqPatch | null>(null);
+  const [orig, setOrig] = useState("");
   const [names, setNames] = useState<NameLists>({ proxies: [], groups: [], builtin: [] });
   const [own, setOwn] = useState<string[]>([]);
   const [tab, setTab] = useState<Tab>("prepend");
@@ -208,6 +209,7 @@ export function SeqEditor({
     Promise.all([Profiles.seq(uid), Profiles.names(profileUid), kind === "rules" ? Profiles.rulesOf(profileUid) : Promise.resolve([])])
       .then(([p, n, r]) => {
         setPatch(p);
+        setOrig(JSON.stringify(p));
         setNames(n);
         setOwn(kind === "rules" ? r : kind === "proxies" ? n.proxies : n.groups);
       })
@@ -227,6 +229,12 @@ export function SeqEditor({
     });
   const remove = (i: number) => update((p) => (tab === "delete" ? { ...p, delete: p.delete.filter((_, k) => k !== i) } : { ...p, [tab]: p[tab].filter((_, k) => k !== i) }));
   const deletable = useMemo(() => own.filter((n) => n.toLowerCase().includes(filter.toLowerCase())), [own, filter]);
+  const dirty = !!patch && JSON.stringify(patch) !== orig;
+  // Leaving with changes not saved asks first, as the YAML editor does.
+  const leave = (then: () => void) => async () => {
+    if (dirty && !(await confirm({ title: t("profiles.discardTitle"), message: t("profiles.discard"), confirm: t("profiles.discardOk"), danger: true }))) return;
+    then();
+  };
   const save = async () => {
     if (!uid || !patch) return;
     setBusy(true);
@@ -242,15 +250,15 @@ export function SeqEditor({
   return (
     <Dialog
       open={!!uid}
-      onClose={onClose}
+      onClose={leave(onClose)}
       title={title}
       size="wide"
       footer={
         <>
-          <Button variant="ghost" icon={<Code2 size={14} />} onClick={onRaw} style={{ marginInlineEnd: "auto" }}>
+          <Button variant="ghost" icon={<Code2 size={14} />} onClick={leave(onRaw)} style={{ marginInlineEnd: "auto" }}>
             {t("editor.editYaml")}
           </Button>
-          <Button onClick={onClose}>{t("common.cancel")}</Button>
+          <Button onClick={leave(onClose)}>{t("common.cancel")}</Button>
           <Button variant="primary" loading={busy} onClick={save} disabled={!patch}>
             {t("common.save")}
           </Button>

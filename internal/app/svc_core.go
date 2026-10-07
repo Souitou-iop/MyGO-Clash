@@ -490,7 +490,7 @@ func (s Core) OpenWebUI(template string) error {
 // PortInUse reports whether a TCP port of the loopback is taken by
 // another program.
 func (s Core) PortInUse(port int) bool {
-	if port == s.a.settings.Get().Clash.MixedPort && s.a.core.Client() != nil {
+	if c := s.a.settings.Get().Clash; s.a.core.Client() != nil && port > 0 && slices.Contains([]int{c.MixedPort, c.SocksPort, c.HTTPPort, c.RedirPort, c.TProxyPort}, port) {
 		return false // ours
 	}
 	ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))

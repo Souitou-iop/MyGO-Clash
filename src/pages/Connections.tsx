@@ -24,7 +24,7 @@ function chain(c: Connection): string {
 
 const COLS = "minmax(200px, 2.2fr) 74px minmax(110px, 1fr) minmax(130px, 1.2fr) minmax(140px, 1.4fr) 82px 82px 80px 80px 66px 30px";
 
-function Detail({ c, onClose }: { c: Connection | null; onClose: () => void }) {
+function Detail({ c, active, onClose }: { c: Connection | null; active: boolean; onClose: () => void }) {
   const t = useT();
   if (!c) return null;
   const m = c.metadata;
@@ -50,12 +50,18 @@ function Detail({ c, onClose }: { c: Connection | null; onClose: () => void }) {
     <Dialog
       open
       onClose={onClose}
-      title={t("conn.details")}
+      title={
+        <>
+          {t("conn.details")} {!active && <Badge>{t("conn.closed")}</Badge>}
+        </>
+      }
       size="wide"
       footer={
-        <Button variant="danger" icon={<XCircle size={14} />} onClick={() => run(() => API.close([c.id]), t("common.failed")).then(onClose)}>
-          {t("conn.close")}
-        </Button>
+        active ? (
+          <Button variant="danger" icon={<XCircle size={14} />} onClick={() => run(() => API.close([c.id]), t("common.failed")).then(onClose)}>
+            {t("conn.close")}
+          </Button>
+        ) : undefined
       }
     >
       <dl className="kv" style={{ gridTemplateColumns: "140px 1fr" }}>
@@ -82,7 +88,9 @@ export default function Connections() {
   const [net, setNet] = useState<"all" | "tcp" | "udp">("all");
   const [view, setView] = useState<View>("active");
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "start", desc: true });
+  // The connection shown in detail, kept up to date while it lasts.
   const [detail, setDetail] = useState<Connection | null>(null);
+  const live = detail && snap?.connections.find((c) => c.id === detail.id);
   const prev = useRef<Map<string, Connection>>(new Map());
   useStream<Snapshot>(
     (ch) => API.stream(ch),
@@ -240,7 +248,7 @@ export default function Connections() {
           </div>
         )}
       </div>
-      <Detail c={detail} onClose={() => setDetail(null)} />
+      <Detail c={live ?? closed.find((c) => c.id === detail?.id) ?? detail} active={!!live} onClose={() => setDetail(null)} />
     </>
   );
 }
