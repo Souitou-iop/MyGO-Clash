@@ -866,6 +866,11 @@
   max-width: 900px;
 }
 
+.tab-pane {
+  --rise: 4px;
+  animation: rise-in 0.2s ease;
+}
+
 .swatch {
   position: relative;
   width: 20px;

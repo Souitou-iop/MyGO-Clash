@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useT } from "../../lib/i18n";
 import { toast, toastError } from "../../lib/store";
 import { Profiles, type NameLists, type SeqPatch } from "../../mygo";
-import { Badge, Button, confirm, Dialog, Empty, Field, Input, SearchInput, Select, Spinner, Tabs } from "../../ui";
+import { Badge, Button, confirm, Dialog, Empty, Field, Input, reflow, SearchInput, Select, Spinner, Tabs } from "../../ui";
 
 export type SeqKind = "rules" | "proxies" | "groups";
 
@@ -216,6 +216,17 @@ export function SeqEditor({
       .catch((e) => toastError(t("profiles.readFailed"), e));
   }, [uid, profileUid, kind, t]);
   const list = patch ? (tab === "delete" ? patch.delete : patch[tab]) : [];
+  // Keys that follow an item as it moves, so moving it shows: what it reads,
+  // and which of the alike it is.
+  const keys = useMemo(() => {
+    const seen = new Map<string, number>();
+    return list.map((it) => {
+      const k = label(kind, it);
+      const n = seen.get(k) ?? 0;
+      seen.set(k, n + 1);
+      return `${k}\u0000${n}`;
+    });
+  }, [list, kind]);
   const update = (fn: (p: SeqPatch) => SeqPatch) => setPatch((p) => (p ? fn(p) : p));
   const addItems = (items: Item[]) => update((p) => (tab === "append" ? { ...p, append: [...p.append, ...items] } : { ...p, prepend: [...p.prepend, ...items] }));
   const move = (i: number, d: number) =>
@@ -308,9 +319,9 @@ export function SeqEditor({
             {list.length === 0 ? (
               <Empty title={t("editor.empty")} />
             ) : (
-              <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
+              <div ref={reflow} style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
                 {list.map((it, i) => (
-                  <div key={i} className="row table-row" style={{ display: "flex", height: "auto", minHeight: 36, padding: "6px 10px" }}>
+                  <div key={keys[i]} className="row table-row seq-row" style={{ display: "flex", height: "auto", minHeight: 36, padding: "6px 10px" }}>
                     <Badge>{i + 1}</Badge>
                     <div className="grow">
                       <div className="ellipsis mono" style={{ fontSize: 12 }}>

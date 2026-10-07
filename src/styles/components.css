@@ -876,6 +876,21 @@
   animation: pop-in 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
+/* Closing plays the opening backwards, faster. */
+.overlay.leaving {
+  animation: fade-out 0.14s ease forwards;
+  pointer-events: none;
+}
+
+.overlay.leaving .dialog {
+  animation: pop-out 0.14s ease forwards;
+}
+
+.menu.leaving {
+  animation: fade-out 0.1s ease forwards;
+  pointer-events: none;
+}
+
 .dialog.wide {
   width: min(820px, 100%);
 }
@@ -1834,3 +1849,50 @@ svg.lucide > * {
 .measuring > * {
   content-visibility: visible !important;
 }
+
+/* What a Collapse shows inside a row, kept on one line as it grows. */
+.collapse-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  flex: none;
+}
+
+/* A wizard's steps slide the way it goes. */
+.form.step-fwd {
+  animation: step-fwd 0.24s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.form.step-back {
+  animation: step-back 0.24s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+@keyframes step-fwd {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+[dir="rtl"] .form.step-fwd {
+  animation-name: step-back;
+}
+
+[dir="rtl"] .form.step-back {
+  animation-name: step-fwd;
+}
+
+/* Rows of an extension that slide past each other as they move stay opaque. */
+.seq-row {
+  position: relative;
+  background: var(--surface);
+}
+

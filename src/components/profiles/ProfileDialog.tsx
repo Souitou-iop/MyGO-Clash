@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useT } from "../../lib/i18n";
 import { toastError } from "../../lib/store";
 import { Profiles, type Option, type Profile } from "../../mygo";
-import { Button, Dialog, Field, Input, NumberInput, Segmented, Switch } from "../../ui";
+import { Button, Collapse, Dialog, Field, Input, NumberInput, Segmented, Switch } from "../../ui";
 
 /** ProfileDialog creates a profile, or edits one's properties. */
 export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClose: () => void; profile?: Profile | null }) {
@@ -72,8 +72,8 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
             <Input value={desc} onChange={(e) => setDesc(e.target.value)} />
           </Field>
         </div>
-        {type === "remote" && (
-          <>
+        <Collapse open={type === "remote"}>
+          <div className="form">
             <Field label={t("profiles.url")} error={url && !validURL ? t("profiles.badUrl") : undefined}>
               <textarea className="textarea mono" rows={3} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" spellCheck={false} />
             </Field>
@@ -119,8 +119,8 @@ export function ProfileDialog({ open, onClose, profile }: { open: boolean; onClo
                 <Switch checked={!!opt.insecure} onChange={(v) => set("insecure", v)} />
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </Collapse>
       </div>
     </Dialog>
   );

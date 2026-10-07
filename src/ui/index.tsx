@@ -3,6 +3,7 @@ import {
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
+  type RefObject,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -349,10 +350,10 @@ export function Tabs<T extends string>({ value, tabs, onChange }: { value: T; ta
  * it closes, turning back midway if asked. Its children mount only while
  * they show.
  */
-export function Collapse({ open, children }: { open: boolean; children: ReactNode }) {
+export function Collapse({ open, children, inline }: { open: boolean; children: ReactNode; /** grows sideways, inside a row */ inline?: boolean }) {
   const [shown, setShown] = useState(open);
   if (open && !shown) setShown(true);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const was = useRef(open);
   const anim = useRef<Animation | null>(null);
   useLayoutEffect(() => {
@@ -365,18 +366,24 @@ export function Collapse({ open, children }: { open: boolean; children: ReactNod
     }
     // From where it stands: a move under way, or closed, or open.
     const moving = anim.current?.playState === "running";
-    const from = moving ? el.getBoundingClientRect().height : open ? 0 : el.offsetHeight;
+    const size = (e: HTMLElement) => (inline ? e.offsetWidth : e.offsetHeight);
+    const from = moving ? el.getBoundingClientRect()[inline ? "width" : "height"] : open ? 0 : size(el);
     const fade = moving ? Number(getComputedStyle(el).opacity) : open ? 0 : 1;
     anim.current?.cancel();
     // What is not yet drawn takes a size it guesses; measure it drawn.
     el.classList.add("measuring");
-    const to = open ? el.offsetHeight : 0;
+    const to = open ? size(el) : 0;
     el.classList.remove("measuring");
     el.style.overflow = "hidden";
+    // In a flex or grid parent, the gap before it comes and goes with it.
+    const parent = el.parentElement && getComputedStyle(el.parentElement);
+    const gap = el.previousElementSibling && parent ? Number.parseFloat(inline ? parent.columnGap : parent.rowGap) || 0 : 0;
+    const prop = inline ? "width" : "height";
+    const margin = inline ? "marginInlineStart" : "marginBlockStart";
     const a = el.animate(
       [
-        { height: `${from}px`, opacity: fade },
-        { height: `${to}px`, opacity: open ? 1 : 0 },
+        { [prop]: `${from}px`, opacity: fade, [margin]: `${from ? 0 : -gap}px` },
+        { [prop]: `${to}px`, opacity: open ? 1 : 0, [margin]: `${to ? 0 : -gap}px` },
       ],
       { duration: Math.min(380, 220 + Math.abs(to - from) / 8), easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" },
     );
@@ -385,14 +392,22 @@ export function Collapse({ open, children }: { open: boolean; children: ReactNod
       el.style.overflow = "";
       if (!open) setShown(false);
     };
-  }, [open, shown]);
-  return shown ? <div ref={ref}>{children}</div> : null;
+  }, [open, shown, inline]);
+  if (!shown) return null;
+  return inline ? (
+    <span ref={ref as RefObject<HTMLSpanElement>} className="collapse-inline">
+      {children}
+    </span>
+  ) : (
+    <div ref={ref as RefObject<HTMLDivElement>}>{children}</div>
+  );
 }
 
 /**
  * reflow, as the ref of a grid of cards, moves its cards to their new places
- * when its columns change, as the page narrows or widens with the sidebar,
- * instead of having them jump there.
+ * instead of having them jump there: when its columns change, as the page
+ * narrows or widens with the sidebar, and when cards come, go or reorder.
+ * New cards fade in.
  */
 export function reflow(grid: HTMLElement | null) {
   if (!grid) return;
@@ -403,40 +418,64 @@ export function reflow(grid: HTMLElement | null) {
     return { x: el.offsetLeft - (own ? 0 : grid.offsetLeft), y: el.offsetTop - (own ? 0 : grid.offsetTop) };
   };
   const cards = () => [...grid.children] as HTMLElement[];
+  const places = () => new Map(cards().map((c) => [c, place(c)]));
   const motion = { id: "reflow", duration: 320, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" };
   let n = cols();
-  let last = new Map(cards().map((c) => [c, place(c)]));
+  let last = places();
   let height = grid.offsetHeight;
-  const ro = new ResizeObserver(() => {
-    const now = new Map(cards().map((c) => [c, place(c)]));
-    const m = cols();
-    if (m !== n && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // Rows come and go with the columns: what follows the grid moves with
-      // its height instead of jumping.
-      for (const a of grid.getAnimations()) if (a.id === "reflow") a.cancel();
-      const h = grid.offsetHeight;
-      if (h !== height) grid.animate([{ height: `${height}px`, alignContent: "start" }, { height: `${h}px`, alignContent: "start" }], motion);
-      const top = grid.getBoundingClientRect().top;
-      for (const [c, to] of now) {
-        const from = last.get(c);
-        if (!from || (from.x === to.x && from.y === to.y)) continue;
-        // Only what is in sight, of grids of hundreds of nodes.
-        if (Math.min(from.y, to.y) + top > innerHeight || Math.max(from.y, to.y) + top + c.offsetHeight < 0) continue;
-        // From where it shows now, a move already under way included.
-        const tf = getComputedStyle(c).transform;
-        const shown = new DOMMatrix(tf === "none" ? undefined : tf);
-        for (const a of c.getAnimations()) if (a.id === "reflow") a.cancel();
-        const dx = from.x + shown.m41 - to.x;
-        const dy = from.y + shown.m42 - to.y;
-        c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], motion);
+  const move = (now: typeof last, arrived: boolean) => {
+    if (reducedMotion()) return;
+    // Rows come and go: what follows the grid moves with its height
+    // instead of jumping.
+    for (const a of grid.getAnimations()) if (a.id === "reflow") a.cancel();
+    const h = grid.offsetHeight;
+    if (h !== height) grid.animate([{ height: `${height}px`, alignContent: "start" }, { height: `${h}px`, alignContent: "start" }], motion);
+    const top = grid.getBoundingClientRect().top;
+    for (const [c, to] of now) {
+      const from = last.get(c);
+      // Only what is in sight, of grids of hundreds of nodes.
+      const fromY = from?.y ?? to.y;
+      if (Math.min(fromY, to.y) + top > innerHeight || Math.max(fromY, to.y) + top + c.offsetHeight < 0) continue;
+      if (!from) {
+        if (arrived) c.animate([{ opacity: 0, transform: "scale(0.97)" }, { opacity: 1, transform: "none" }], { ...motion, id: "arrive" });
+        continue;
       }
+      if (from.x === to.x && from.y === to.y) continue;
+      // From where it shows now, a move already under way included.
+      const tf = getComputedStyle(c).transform;
+      const shown = new DOMMatrix(tf === "none" ? undefined : tf);
+      for (const a of c.getAnimations()) if (a.id === "reflow") a.cancel();
+      const dx = from.x + shown.m41 - to.x;
+      const dy = from.y + shown.m42 - to.y;
+      c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], motion);
     }
-    n = m;
+  };
+  const settle = (now: typeof last) => {
+    n = cols();
     last = now;
     height = grid.offsetHeight;
+  };
+  // Sizes: the grid's, which can change its columns, and each card's, which
+  // moves those after it and only needs noting.
+  const ro = new ResizeObserver(() => {
+    const now = places();
+    if (cols() !== n) move(now, false);
+    settle(now);
+  });
+  // Cards that come, go or change places.
+  const mo = new MutationObserver((records) => {
+    const now = places();
+    move(now, true);
+    settle(now);
+    for (const r of records) for (const el of r.addedNodes) if (el instanceof HTMLElement) ro.observe(el);
   });
   ro.observe(grid);
-  return () => ro.disconnect();
+  for (const c of cards()) ro.observe(c);
+  mo.observe(grid, { childList: true });
+  return () => {
+    ro.disconnect();
+    mo.disconnect();
+  };
 }
 
 /**
@@ -480,6 +519,23 @@ export function SideTips() {
 
 // ---------- Dialog ----------
 
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * usePresence keeps something on screen for ms after it closes, so it can
+ * play its way out: leaving is true for that time.
+ */
+export function usePresence(open: boolean, ms: number): { mounted: boolean; leaving: boolean } {
+  const [mounted, setMounted] = useState(open);
+  if (open && !mounted) setMounted(true);
+  useEffect(() => {
+    if (open || !mounted) return;
+    const id = setTimeout(() => setMounted(false), reducedMotion() ? 0 : ms);
+    return () => clearTimeout(id);
+  }, [open, mounted, ms]);
+  return { mounted, leaving: mounted && !open };
+}
+
 /** dialogs stacks the open dialogs, the last on top. */
 const dialogs: object[] = [];
 
@@ -516,17 +572,23 @@ export function Dialog({
       dialogs.splice(dialogs.indexOf(me), 1);
     };
   }, [open]);
-  if (!open) return null;
+  // On the way out it shows what it last showed, though its owner may
+  // already have cleared what fed it.
+  const { mounted, leaving } = usePresence(open, 140);
+  const shown = useRef({ title, children, footer, icon });
+  if (open) shown.current = { title, children, footer, icon };
+  if (!mounted) return null;
+  const v = shown.current;
   return createPortal(
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`overlay${leaving ? " leaving" : ""}`} onMouseDown={(e) => !leaving && e.target === e.currentTarget && onClose()}>
       <div className={`dialog${size ? ` ${size}` : ""}`} role="dialog" aria-modal="true">
         <div className="dialog-head">
-          {icon}
-          <h2>{title}</h2>
+          {v.icon}
+          <h2>{v.title}</h2>
           <Button variant="ghost" size="sm" icon={<X size={15} />} onClick={onClose} tip="Esc" />
         </div>
-        <div className={`dialog-body${flush ? " flush" : ""}`}>{children}</div>
-        {footer && <div className="dialog-foot">{footer}</div>}
+        <div className={`dialog-body${flush ? " flush" : ""}`}>{v.children}</div>
+        {v.footer && <div className="dialog-foot">{v.footer}</div>}
       </div>
     </div>,
     document.body,
@@ -650,14 +712,15 @@ export function Menu({ trigger, items, align = "right" }: { trigger: (open: () =
       window.removeEventListener("keydown", close);
     };
   }, [pos]);
+  const { mounted: shown, leaving } = usePresence(!!pos, 100);
   return (
     <>
       <span ref={anchor} style={{ display: "inline-flex" }}>
         {trigger(open)}
       </span>
-      {pos &&
+      {shown &&
         createPortal(
-          <div ref={menu} className="menu" style={{ left: -9999, top: -9999 }} role="menu">
+          <div ref={menu} className={`menu${leaving ? " leaving" : ""}`} style={{ left: -9999, top: -9999 }} role="menu">
             {items.map((it, i) =>
               it.separator ? (
                 <div key={i} className="menu-sep" />
@@ -688,16 +751,48 @@ export function Menu({ trigger, items, align = "right" }: { trigger: (open: () =
 
 const toastIcons = { success: CheckCircle2, error: XCircle, warning: AlertTriangle, info: Info };
 
+/** leave slides a toast out, then closes the room it took, so the others
+ * move up rather than jump. */
+function leave(el: HTMLElement | null) {
+  if (!el || el.dataset.leaving) return;
+  el.dataset.leaving = "1";
+  el.style.overflow = "hidden";
+  const h = el.offsetHeight;
+  // The borders stay; the margin takes them back along with the gap.
+  const cs = getComputedStyle(el);
+  const rest = 8 + Number.parseFloat(cs.borderTopWidth) + Number.parseFloat(cs.borderBottomWidth);
+  el.animate(
+    [
+      { opacity: 1, transform: "none", height: `${h}px`, marginBlockEnd: "0px" },
+      { opacity: 0, transform: "translateX(16px)", height: `${h}px`, marginBlockEnd: "0px", offset: 0.45 },
+      { opacity: 0, transform: "translateX(16px)", height: "0px", paddingBlock: "0px", marginBlockEnd: `-${rest}px` },
+    ],
+    { duration: 260, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)", fill: "forwards" },
+  );
+}
+
 export function Toasts({ onAction }: { onAction: (action: string) => void }) {
   const toasts = useApp((s) => s.toasts);
   const position = useApp((s) => s.settings?.ui.toastPosition ?? "top-right");
   const t = useT();
+  // Toasts gone from the store stay a moment to play their way out.
+  const [leaving, setLeaving] = useState<typeof toasts>([]);
+  const prev = useRef(toasts);
+  useEffect(() => {
+    const gone = prev.current.filter((p) => !toasts.some((n) => n.id === p.id));
+    prev.current = toasts;
+    if (gone.length === 0 || reducedMotion()) return;
+    setLeaving((l) => [...l, ...gone]);
+    setTimeout(() => setLeaving((l) => l.filter((x) => !gone.includes(x))), 280);
+  }, [toasts]);
+  const all = [...toasts, ...leaving].sort((a, b) => a.id - b.id);
   return (
     <div className={`toasts ${position}`} aria-live="polite">
-      {toasts.map((n) => {
+      {all.map((n) => {
         const Icon = toastIcons[n.level as keyof typeof toastIcons] ?? Info;
+        const out = leaving.includes(n);
         return (
-          <div key={n.id} className={`toast ${n.level}`}>
+          <div key={n.id} className={`toast ${n.level}`} ref={out ? leave : undefined} aria-hidden={out || undefined}>
             <Icon size={17} className="toast-icon" />
             <div className="grow">
               <div className="toast-title">{n.message}</div>

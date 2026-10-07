@@ -16,14 +16,14 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CloudUpload } from "../../components/icons/CloudUpload";
 import { bytes, dateTime, relative } from "../../lib/format";
 import { useAsync, useNow } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
 import { run, toast, toastError, useApp } from "../../lib/store";
 import { Sync as API, type BackupInfo, type SyncProbe } from "../../mygo";
-import { Badge, Banner, Button, Card, confirm, Dialog, Empty, Field, Input, NumberInput, prompt, Row, Section, Select, Spinner, Switch } from "../../ui";
+import { Badge, Banner, Button, Card, Collapse, confirm, Dialog, Empty, Field, Input, NumberInput, prompt, Row, Section, Select, Spinner, Switch } from "../../ui";
 import { usePatch } from "./General";
 
 /** strength scores a passphrase from 0 to 4. */
@@ -59,6 +59,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   useEffect(() => {
     if (!open) return;
     setStep(1);
+    setMoved("");
     setUrl(s.sync.url);
     setUser(s.sync.username);
     setDir(s.sync.dir);
@@ -84,6 +85,12 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   const untrusted = probe?.fingerprint && !probe.trusted;
   const canNext = probe?.reachable && (!untrusted || pin === probe.fingerprint);
   const newVault = !probe?.hasVault;
+  // What the probe found stays in its notice while the notice closes.
+  const lastProbe = useRef(probe);
+  if (probe) lastProbe.current = probe;
+  const found = probe ?? lastProbe.current;
+  // The steps slide the way the wizard goes.
+  const [moved, setMoved] = useState<"" | "fwd" | "back">("");
   const st = strength(pass);
   const canFinish = newVault ? st >= 1 && pass === pass2 : pass.length >= 8;
   const finish = async () => {
@@ -111,13 +118,13 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
               {t("sync.test")}
             </Button>
             <Button onClick={onClose}>{t("common.cancel")}</Button>
-            <Button variant="primary" disabled={!canNext} onClick={() => setStep(2)}>
+            <Button variant="primary" disabled={!canNext} onClick={() => (setStep(2), setMoved("fwd"))}>
               {t("common.next")}
             </Button>
           </>
         ) : (
           <>
-            <Button onClick={() => setStep(1)} style={{ marginInlineEnd: "auto" }}>
+            <Button onClick={() => (setStep(1), setMoved("back"))} style={{ marginInlineEnd: "auto" }}>
               {t("common.back")}
             </Button>
             <Button onClick={onClose}>{t("common.cancel")}</Button>
@@ -129,7 +136,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
       }
     >
       {step === 1 ? (
-        <div className="form">
+        <div className={`form${moved ? ` step-${moved}` : ""}`} key="1">
           <div className="steps">
             <span className="step active">1 · {t("sync.stepServer")}</span>
             <span className="step">2 · {t("sync.stepPassphrase")}</span>
@@ -155,32 +162,34 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
           <Field label={t("sync.folder")} hint={t("sync.folderHint")}>
             <Input value={dir} onChange={(e) => (setDir(e.target.value), setProbe(null))} />
           </Field>
-          {isHttp && (
+          <Collapse open={isHttp}>
             <Banner tone="warning" action={<Switch checked={insecure} onChange={(v) => (setInsecure(v), setProbe(null))} />}>
               {t("sync.httpWarn")}
             </Banner>
-          )}
-          {probe && (
-            <div className={`banner ${probe.reachable ? "info" : "danger"}`}>
-              {probe.reachable ? <CheckCircle2 size={16} color="var(--success)" /> : <ShieldAlert size={16} />}
-              <div className="grow">
-                {probe.reachable ? (probe.hasVault ? t("sync.foundVault") : t("sync.noVault")) : probe.error}
-                {probe.fingerprint && (
-                  <div className="mono faint" style={{ fontSize: 11, marginTop: 4, wordBreak: "break-all" }}>
-                    SHA-256 {probe.fingerprint}
-                  </div>
-                )}
+          </Collapse>
+          <Collapse open={!!probe}>
+            {found && (
+              <div className={`banner ${found.reachable ? "info" : "danger"}`}>
+                {found.reachable ? <CheckCircle2 size={16} color="var(--success)" /> : <ShieldAlert size={16} />}
+                <div className="grow">
+                  {found.reachable ? (found.hasVault ? t("sync.foundVault") : t("sync.noVault")) : found.error}
+                  {found.fingerprint && (
+                    <div className="mono faint" style={{ fontSize: 11, marginTop: 4, wordBreak: "break-all" }}>
+                      SHA-256 {found.fingerprint}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-          {untrusted && (
-            <Banner tone="warning" action={<Switch checked={pin === probe!.fingerprint} onChange={(v) => setPin(v ? probe!.fingerprint! : "")} />}>
+            )}
+          </Collapse>
+          <Collapse open={!!untrusted}>
+            <Banner tone="warning" action={<Switch checked={!!found?.fingerprint && pin === found.fingerprint} onChange={(v) => setPin(v ? (found?.fingerprint ?? "") : "")} />}>
               {t("sync.untrusted")}
             </Banner>
-          )}
+          </Collapse>
         </div>
       ) : (
-        <div className="form">
+        <div className={`form${moved ? ` step-${moved}` : ""}`} key="2">
           <div className="steps">
             <span className="step done">1 · {t("sync.stepServer")}</span>
             <span className="step active">2 · {t("sync.stepPassphrase")}</span>

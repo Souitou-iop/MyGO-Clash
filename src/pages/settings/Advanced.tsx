@@ -7,7 +7,7 @@ import { ltr, relative } from "../../lib/format";
 import { useT } from "../../lib/i18n";
 import { run, toast, useApp } from "../../lib/store";
 import { App, Core, events, Updates, type UpdateState } from "../../mygo";
-import { Badge, Button, confirm, NumberInput, Row, Section, Select, Switch } from "../../ui";
+import { Badge, Button, Collapse, confirm, NumberInput, Row, Section, Select, Switch } from "../../ui";
 import { usePatch } from "./General";
 
 export default function Advanced() {
@@ -40,12 +40,10 @@ export default function Advanced() {
 
       <Section title={t("adv.lightweight")}>
         <Row label={t("adv.lightAuto")} desc={t("adv.lightAutoDesc")} icon={<Feather size={16} />}>
-          {s.lightweight.autoEnter && (
-            <>
-              <NumberInput value={s.lightweight.delayMinutes} onChange={(v) => patch({ lightweight: { delayMinutes: v } })} min={1} max={1440} width={80} />
-              <span className="muted">{t("common.minutes")}</span>
-            </>
-          )}
+          <Collapse inline open={s.lightweight.autoEnter}>
+            <NumberInput value={s.lightweight.delayMinutes} onChange={(v) => patch({ lightweight: { delayMinutes: v } })} min={1} max={1440} width={80} />
+            <span className="muted">{t("common.minutes")}</span>
+          </Collapse>
           <Switch checked={s.lightweight.autoEnter} onChange={(v) => patch({ lightweight: { autoEnter: v } })} />
         </Row>
         <Row label={t("adv.lightNow")} desc={t("adv.lightNowDesc")}>

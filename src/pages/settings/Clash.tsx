@@ -4,7 +4,7 @@ import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
 import { patchSettings, run, useApp } from "../../lib/store";
 import { App, Core, Settings as SettingsAPI, System, type Clash as ClashSettings, type Controller } from "../../mygo";
-import { Button, Dialog, Field, Input, NumberInput, Row, Section, Select, Spinner, Switch } from "../../ui";
+import { Button, Collapse, Dialog, Field, Input, NumberInput, Row, Section, Select, Spinner, Switch } from "../../ui";
 import { usePatch } from "./General";
 
 const CodeEditor = lazy(() => import("../../components/CodeEditor"));
@@ -313,12 +313,10 @@ export default function Clash() {
           <span className="muted">ms</span>
         </Row>
         <Row label={t("settings.autoCheck")} desc={t("settings.autoCheckDesc")}>
-          {s.latency.autoCheck && (
-            <>
-              <NumberInput value={s.latency.autoCheckMinutes} onChange={(v) => patch({ latency: { autoCheckMinutes: v } })} min={1} max={1440} width={80} />
-              <span className="muted">{t("common.minutes")}</span>
-            </>
-          )}
+          <Collapse inline open={s.latency.autoCheck}>
+            <NumberInput value={s.latency.autoCheckMinutes} onChange={(v) => patch({ latency: { autoCheckMinutes: v } })} min={1} max={1440} width={80} />
+            <span className="muted">{t("common.minutes")}</span>
+          </Collapse>
           <Switch checked={s.latency.autoCheck} onChange={(v) => patch({ latency: { autoCheck: v } })} />
         </Row>
       </Section>
