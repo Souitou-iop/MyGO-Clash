@@ -2,6 +2,7 @@ package cloudsync
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -175,7 +176,8 @@ func newDevice(t *testing.T, s *server, name, passphrase, policy string) *device
 	if err != nil {
 		t.Fatal(err)
 	}
-	keys, _, err := OpenVault(context.Background(), c, "MyGO-Clash", passphrase, true)
+	// No passphrase creates a plain vault.
+	keys, _, err := OpenVault(context.Background(), c, "MyGO-Clash", passphrase, true, passphrase == "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,21 +321,70 @@ func TestPassphraseAndRewrap(t *testing.T) {
 	s := newServer(t, true)
 	a := newDevice(t, s, "a", "first passphrase", "ask")
 	c, _ := webdav.New(s.URL+"/dav/", "ada", "pw", webdav.Options{AllowInsecure: true})
-	if _, _, err := OpenVault(context.Background(), c, "MyGO-Clash", "wrong passphrase", false); !errors.Is(err, ErrPassphrase) {
+	if _, _, err := OpenVault(context.Background(), c, "MyGO-Clash", "wrong passphrase", false, false); !errors.Is(err, ErrPassphrase) {
 		t.Fatalf("wrong passphrase: %v", err)
 	}
 	if err := ChangePassphrase(context.Background(), c, "MyGO-Clash", a.eng.Keys, "second passphrase"); err != nil {
 		t.Fatal(err)
 	}
-	keys, _, err := OpenVault(context.Background(), c, "MyGO-Clash", "second passphrase", false)
+	keys, _, err := OpenVault(context.Background(), c, "MyGO-Clash", "second passphrase", false, false)
 	if err != nil || keys.ID != a.eng.Keys.ID {
 		t.Fatalf("rewrapped vault: %v", err)
 	}
-	if _, _, err := OpenVault(context.Background(), c, "MyGO-Clash", "first passphrase", false); !errors.Is(err, ErrPassphrase) {
+	if _, _, err := OpenVault(context.Background(), c, "MyGO-Clash", "first passphrase", false, false); !errors.Is(err, ErrPassphrase) {
 		t.Fatal("the old passphrase still opens the vault")
 	}
 	if _, err := webdav.New("http://dav.example.com", "u", "p", webdav.Options{}); !errors.Is(err, webdav.ErrInsecure) {
 		t.Fatal("plain HTTP was allowed")
+	}
+}
+
+func TestPlainVault(t *testing.T) {
+	s := newServer(t, true)
+	ctx := context.Background()
+	a := newDevice(t, s, "laptop", "", "ask")
+	if !a.eng.Keys.Plain() {
+		t.Fatal("the vault is encrypted")
+	}
+	// A device that joins follows the vault, whatever it was given.
+	b := newDevice(t, s, "desktop", "some passphrase", "ask")
+	if !b.eng.Keys.Plain() || b.eng.Keys.ID != a.eng.Keys.ID {
+		t.Fatal("the joining device did not open the plain vault")
+	}
+	a.src.set("profile/x", "proxies: [x1]")
+	a.sync(t)
+	if r := b.sync(t); len(r.Pulled) != 1 || b.src.get("profile/x") != "proxies: [x1]" {
+		t.Fatalf("pull: %+v", r)
+	}
+	meta, err := ReadVault(ctx, a.eng.Client, "MyGO-Clash")
+	if err != nil || !meta.Plain() || len(meta.WrappedKey) != 0 {
+		t.Fatalf("vault.json %+v %v", meta, err)
+	}
+	// Its keys keep across restarts.
+	keys, err := KeysFromRaw(a.eng.Keys.Raw())
+	if err != nil || !keys.Plain() || keys.ID != a.eng.Keys.ID {
+		t.Fatalf("raw keys %+v %v", keys, err)
+	}
+	// What it stores is compressed, not sealed.
+	sealed, _ := keys.Seal([]byte("proxies: [x1]"), "x")
+	zr, err := gzip.NewReader(bytes.NewReader(sealed[5:]))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plain, _ := io.ReadAll(zr); string(plain) != "proxies: [x1]" {
+		t.Fatalf("plain object %q", plain)
+	}
+	// Encrypted and plain objects do not pass for each other.
+	_, enc, _ := NewVault("a passphrase")
+	if _, err := enc.Open(sealed, "x"); err == nil {
+		t.Fatal("an encrypted vault opened a plain object")
+	}
+	other, _ := enc.Seal([]byte("y"), "x")
+	if _, err := keys.Open(other, "x"); err == nil {
+		t.Fatal("a plain vault opened an encrypted object")
+	}
+	if err := ChangePassphrase(ctx, a.eng.Client, "MyGO-Clash", a.eng.Keys, "a new passphrase"); !errors.Is(err, ErrPlain) {
+		t.Fatalf("passphrase of a plain vault: %v", err)
 	}
 }
 

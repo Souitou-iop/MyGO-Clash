@@ -9,6 +9,7 @@ import {
   KeyRound,
   Laptop,
   Lock,
+  LockOpen,
   RefreshCw,
   RotateCcw,
   ShieldAlert,
@@ -23,7 +24,7 @@ import { useAsync, useNow } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
 import { run, toast, toastError, useApp } from "../../lib/store";
 import { Sync as API, type BackupInfo, type SyncProbe } from "../../mygo";
-import { Badge, Banner, Button, Card, Collapse, confirm, Dialog, Empty, Field, Input, NumberInput, prompt, Row, Section, Select, Spinner, Switch } from "../../ui";
+import { Badge, Banner, Button, Card, Collapse, confirm, Dialog, Empty, Field, Input, NumberInput, prompt, Row, Section, Segmented, Select, Spinner, Switch } from "../../ui";
 import { usePatch } from "./General";
 
 /** strength scores a passphrase from 0 to 4. */
@@ -55,6 +56,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   const [probe, setProbe] = useState<SyncProbe | null>(null);
   const [pass, setPass] = useState("");
   const [pass2, setPass2] = useState("");
+  const [plain, setPlain] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!open) return;
@@ -68,10 +70,11 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
     setPassword("");
     setPass("");
     setPass2("");
+    setPlain(false);
     setProbe(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
-  const setup = { url, username: user, password, dir, passphrase: pass, allowInsecure: insecure, pinnedKey: pin };
+  const setup = { url, username: user, password, dir, passphrase: pass, plain, allowInsecure: insecure, pinnedKey: pin };
   const isHttp = url.trim().startsWith("http://");
   const test = async () => {
     setBusy(true);
@@ -85,6 +88,8 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   const untrusted = probe?.fingerprint && !probe.trusted;
   const canNext = probe?.reachable && (!untrusted || pin === probe.fingerprint);
   const newVault = !probe?.hasVault;
+  // A vault found keeps its own choice; a new one takes the one made here.
+  const unencrypted = newVault ? plain : !!probe?.plain;
   // What the probe found stays in its notice while the notice closes.
   const lastProbe = useRef(probe);
   if (probe) lastProbe.current = probe;
@@ -92,12 +97,12 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
   // The steps slide the way the wizard goes.
   const [moved, setMoved] = useState<"" | "fwd" | "back">("");
   const st = strength(pass);
-  const canFinish = newVault ? st >= 1 && pass === pass2 : pass.length >= 8;
+  const canFinish = unencrypted || (newVault ? st >= 1 && pass === pass2 : pass.length >= 8);
   const finish = async () => {
     setBusy(true);
     try {
       const created = await API.setup(setup);
-      toast({ level: "success", message: created ? t("sync.vaultCreated") : t("sync.vaultOpened") });
+      toast({ level: "success", message: unencrypted ? (created ? t("sync.plainCreated") : t("sync.plainOpened")) : created ? t("sync.vaultCreated") : t("sync.vaultOpened") });
       onClose();
     } catch (e) {
       toastError(t("sync.setupFailed"), e);
@@ -129,7 +134,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
             </Button>
             <Button onClick={onClose}>{t("common.cancel")}</Button>
             <Button variant="primary" loading={busy} disabled={!canFinish} onClick={finish}>
-              {newVault ? t("sync.createVault") : t("sync.openVault")}
+              {unencrypted ? (newVault ? t("sync.createPlain") : t("sync.joinPlain")) : newVault ? t("sync.createVault") : t("sync.openVault")}
             </Button>
           </>
         )
@@ -139,7 +144,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
         <div className={`form${moved ? ` step-${moved}` : ""}`} key="1">
           <div className="steps">
             <span className="step active">1 · {t("sync.stepServer")}</span>
-            <span className="step">2 · {t("sync.stepPassphrase")}</span>
+            <span className="step">2 · {newVault || found?.plain ? t("sync.stepEncrypt") : t("sync.stepPassphrase")}</span>
           </div>
           <Field label={t("sync.url")} hint={t("sync.urlHint")}>
             <Input className="mono" value={url} onChange={(e) => (setUrl(e.target.value), setProbe(null))} placeholder="https://dav.example.com/dav/" />
@@ -172,7 +177,7 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
               <div className={`banner ${found.reachable ? "info" : "danger"}`}>
                 {found.reachable ? <CheckCircle2 size={16} color="var(--success)" /> : <ShieldAlert size={16} />}
                 <div className="grow">
-                  {found.reachable ? (found.hasVault ? t("sync.foundVault") : t("sync.noVault")) : found.error}
+                  {found.reachable ? (found.hasVault ? (found.plain ? t("sync.foundPlain") : t("sync.foundVault")) : t("sync.noVault")) : found.error}
                   {found.fingerprint && (
                     <div className="mono faint" style={{ fontSize: 11, marginTop: 4, wordBreak: "break-all" }}>
                       SHA-256 {found.fingerprint}
@@ -192,33 +197,58 @@ function SetupDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
         <div className={`form${moved ? ` step-${moved}` : ""}`} key="2">
           <div className="steps">
             <span className="step done">1 · {t("sync.stepServer")}</span>
-            <span className="step active">2 · {t("sync.stepPassphrase")}</span>
+            <span className="step active">2 · {newVault || unencrypted ? t("sync.stepEncrypt") : t("sync.stepPassphrase")}</span>
           </div>
-          <div className="banner info">
-            <Lock size={16} />
-            <span>{newVault ? t("sync.newPassHint") : t("sync.existingPassHint")}</span>
-          </div>
-          <Field label={t("sync.passphrase")}>
-            <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoFocus />
-          </Field>
-          {newVault && (
-            <>
-              <div className="strength">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className={i < st ? `on s${st}` : ""} />
-                ))}
-                <span className="muted" style={{ fontSize: 11.5 }}>
-                  {t(`sync.strength.${st}` as never)}
-                </span>
+          {newVault ? (
+            <Segmented
+              full
+              value={plain ? "plain" : "encrypt"}
+              onChange={(v) => setPlain(v === "plain")}
+              options={[
+                { value: "encrypt", label: t("sync.encrypt"), icon: <Lock size={14} /> },
+                { value: "plain", label: t("sync.plain"), icon: <LockOpen size={14} /> },
+              ]}
+            />
+          ) : (
+            unencrypted && (
+              <div className="banner info">
+                <LockOpen size={16} />
+                <span>{t("sync.joinPlainHint")}</span>
               </div>
-              <Field label={t("sync.passphrase2")} error={pass2 && pass !== pass2 ? t("sync.mismatch") : undefined}>
-                <Input type="password" value={pass2} onChange={(e) => setPass2(e.target.value)} />
-              </Field>
-              <div className="muted" style={{ fontSize: 12 }}>
-                {t("sync.noRecovery")}
-              </div>
-            </>
+            )
           )}
+          <Collapse open={newVault && plain}>
+            <Banner tone="warning">{t("sync.plainWarn")}</Banner>
+          </Collapse>
+          <Collapse open={!unencrypted}>
+            <div className="form">
+              <div className="banner info">
+                <Lock size={16} />
+                <span>{newVault ? t("sync.newPassHint") : t("sync.existingPassHint")}</span>
+              </div>
+              <Field label={t("sync.passphrase")}>
+                <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoFocus />
+              </Field>
+              {newVault && (
+                <>
+                  <div className="strength">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className={i < st ? `on s${st}` : ""} />
+                    ))}
+                    <span className="muted" style={{ fontSize: 11.5 }}>
+                      {t(`sync.strength.${st}` as never)}
+                    </span>
+                  </div>
+                  <Field label={t("sync.passphrase2")} error={pass2 && pass !== pass2 ? t("sync.mismatch") : undefined}>
+                    <Input type="password" value={pass2} onChange={(e) => setPass2(e.target.value)} />
+                  </Field>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    {t("sync.noRecovery")}
+                  </div>
+                </>
+              )}
+            </div>
+          </Collapse>
         </div>
       )}
     </Dialog>
@@ -477,14 +507,21 @@ export default function SyncTab() {
           </Section>
 
           <Section title={t("sync.security")}>
-            <Row label={t("sync.encryption")} desc={t("sync.encryptionDesc")} icon={<ShieldCheck size={16} color="var(--success)" />}>
-              <Badge tone="success" tip={sync.keyId ? `key ${sync.keyId}` : undefined}>
-                E2EE
-              </Badge>
-            </Row>
+            {sync.plain ? (
+              <Row label={t("sync.encryption")} desc={t("sync.encryptionPlainDesc")} icon={<ShieldAlert size={16} color="var(--warning)" />}>
+                <Badge tone="warning">{t("sync.plainBadge")}</Badge>
+              </Row>
+            ) : (
+              <Row label={t("sync.encryption")} desc={t("sync.encryptionDesc")} icon={<ShieldCheck size={16} color="var(--success)" />}>
+                <Badge tone="success" tip={sync.keyId ? `key ${sync.keyId}` : undefined}>
+                  E2EE
+                </Badge>
+              </Row>
+            )}
             <Row label={t("sync.transport")} desc={s.sync.allowInsecure ? t("sync.transportHttp") : s.sync.pinnedKey ? t("sync.transportPinned") : t("sync.transportTls")}>
               <Badge tone={s.sync.allowInsecure ? "warning" : "success"}>{s.sync.allowInsecure ? "HTTP" : s.sync.pinnedKey ? "TLS · pinned" : "TLS"}</Badge>
             </Row>
+            {!sync.plain && (
             <Row label={t("sync.changePass")} desc={t("sync.changePassDesc")} icon={<KeyRound size={16} />}>
               <Button
                 size="sm"
@@ -500,6 +537,7 @@ export default function SyncTab() {
                 {t("common.change")}
               </Button>
             </Row>
+            )}
             <Row label={t("sync.disconnect")} desc={t("sync.disconnectDesc")}>
               <Button
                 size="sm"

@@ -44,9 +44,11 @@ type SyncStatus struct {
 	DeviceID   string               `json:"deviceId"`
 	DeviceName string               `json:"deviceName"`
 	KeyID      string               `json:"keyId,omitempty"`
-	Report     *cloudsync.Report    `json:"report,omitempty"`
-	NextSync   time.Time            `json:"nextSync,omitzero"`
-	Labels     map[string]string    `json:"labels"`
+	// Plain is set when the vault on the server is not encrypted.
+	Plain    bool              `json:"plain"`
+	Report   *cloudsync.Report `json:"report,omitempty"`
+	NextSync time.Time         `json:"nextSync,omitzero"`
+	Labels   map[string]string `json:"labels"`
 }
 
 type syncer struct {
@@ -118,6 +120,9 @@ func (s *syncer) statusSnapshot() SyncStatus {
 		out.Conflicts = []cloudsync.Conflict{}
 	}
 	out.DeviceID, out.DeviceName, out.KeyID = s.state.DeviceID, s.deviceName(), s.state.KeyID
+	if k, err := s.keys(); err == nil {
+		out.Plain = k.Plain()
+	}
 	out.Labels = s.labels()
 	if out.Enabled && st.IntervalMinutes > 0 && !out.LastSync.IsZero() {
 		out.NextSync = out.LastSync.Add(time.Duration(st.IntervalMinutes) * time.Minute)
@@ -228,17 +233,22 @@ func (s *syncer) client(st config.Sync, password string) (*webdav.Client, error)
 	return webdav.New(st.URL, st.Username, password, webdav.Options{AllowInsecure: st.AllowInsecure, PinnedKey: st.PinnedKey})
 }
 
+// keys returns the vault's keys this device keeps.
+func (s *syncer) keys() (*cloudsync.Keys, error) {
+	raw, err := base64.StdEncoding.DecodeString(s.a.secrets.Get(secretSyncKey))
+	if err != nil || len(raw) == 0 {
+		return nil, errors.New(tr(s.a, "syncNotSetUp"))
+	}
+	return cloudsync.KeysFromRaw(raw)
+}
+
 func (s *syncer) engine() (*cloudsync.Engine, error) {
 	st := s.a.settings.Get()
 	c, err := s.client(st.Sync, s.a.secrets.Get(secretSyncPassword))
 	if err != nil {
 		return nil, err
 	}
-	raw, err := base64.StdEncoding.DecodeString(s.a.secrets.Get(secretSyncKey))
-	if err != nil {
-		return nil, errors.New(tr(s.a, "syncNotSetUp"))
-	}
-	keys, err := cloudsync.KeysFromRaw(raw)
+	keys, err := s.keys()
 	if err != nil {
 		return nil, err
 	}
@@ -568,20 +578,25 @@ type Sync struct{ a *App }
 
 // SyncSetup sets sync up.
 type SyncSetup struct {
-	URL           string `json:"url"`
-	Username      string `json:"username"`
-	Password      string `json:"password"` // "" keeps the saved one
-	Dir           string `json:"dir"`
-	Passphrase    string `json:"passphrase"`
+	URL        string `json:"url"`
+	Username   string `json:"username"`
+	Password   string `json:"password"` // "" keeps the saved one
+	Dir        string `json:"dir"`
+	Passphrase string `json:"passphrase"`
+	// Plain creates a vault that is not encrypted; an existing vault
+	// stays as it is.
+	Plain         bool   `json:"plain"`
 	AllowInsecure bool   `json:"allowInsecure"`
 	PinnedKey     string `json:"pinnedKey"`
 }
 
 // SyncProbe is what a test of the server found.
 type SyncProbe struct {
-	Reachable bool   `json:"reachable"`
-	HasVault  bool   `json:"hasVault"`
-	Error     string `json:"error,omitempty"`
+	Reachable bool `json:"reachable"`
+	HasVault  bool `json:"hasVault"`
+	// Plain is set when the vault found is not encrypted.
+	Plain bool   `json:"plain"`
+	Error string `json:"error,omitempty"`
 	// Fingerprint and Trusted describe the server's key, for pinning one
 	// that certificate authorities do not trust.
 	Fingerprint string `json:"fingerprint,omitempty"`
@@ -618,8 +633,10 @@ func (s Sync) Probe(ctx context.Context, setup SyncSetup) SyncProbe {
 		return p
 	}
 	p.Reachable = true
-	if _, err := c.Stat(ctx, st.Dir+"/vault.json"); err == nil {
-		p.HasVault = true
+	if meta, err := cloudsync.ReadVault(ctx, c, st.Dir); err == nil {
+		p.HasVault, p.Plain = true, meta.Plain()
+	} else if !errors.Is(err, cloudsync.ErrNoVault) {
+		p.Error = err.Error()
 	}
 	return p
 }
@@ -635,7 +652,7 @@ func (s Sync) Setup(ctx context.Context, setup SyncSetup) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	keys, created, err := cloudsync.OpenVault(ctx, c, st.Dir, setup.Passphrase, true)
+	keys, created, err := cloudsync.OpenVault(ctx, c, st.Dir, setup.Passphrase, true, setup.Plain)
 	if err != nil {
 		return false, err
 	}

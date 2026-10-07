@@ -16,8 +16,9 @@ import (
 var ErrNoVault = errors.New("the server has no vault yet")
 
 // OpenVault opens the vault in dir on the server with the passphrase. When
-// there is none and create is set, it creates one, and reports so.
-func OpenVault(ctx context.Context, c *webdav.Client, dir, passphrase string, create bool) (*Keys, bool, error) {
+// there is none and create is set, it creates one, plain if so asked, and
+// reports so. Opening follows the vault: a plain one needs no passphrase.
+func OpenVault(ctx context.Context, c *webdav.Client, dir, passphrase string, create, plain bool) (*Keys, bool, error) {
 	if err := c.MkdirAll(ctx, dir); err != nil {
 		return nil, false, err
 	}
@@ -26,14 +27,17 @@ func OpenVault(ctx context.Context, c *webdav.Client, dir, passphrase string, cr
 		if !create {
 			return nil, false, ErrNoVault
 		}
-		meta, keys, err := NewVault(passphrase)
-		if err != nil {
+		var meta VaultMeta
+		var keys *Keys
+		if plain {
+			meta, keys = NewPlainVault()
+		} else if meta, keys, err = NewVault(passphrase); err != nil {
 			return nil, false, err
 		}
 		out, _ := json.MarshalIndent(meta, "", "  ")
 		if _, err := c.Put(ctx, path.Join(dir, "vault.json"), out, webdav.Condition{IfNoneMatch: true}); errors.Is(err, webdav.ErrPrecondition) {
 			// Another device created it just now: open theirs.
-			return OpenVault(ctx, c, dir, passphrase, false)
+			return OpenVault(ctx, c, dir, passphrase, false, plain)
 		} else if err != nil {
 			return nil, false, err
 		}
@@ -48,6 +52,22 @@ func OpenVault(ctx context.Context, c *webdav.Client, dir, passphrase string, cr
 	}
 	keys, err := meta.Open(passphrase)
 	return keys, false, err
+}
+
+// ReadVault returns the vault in dir on the server, ErrNoVault if none.
+func ReadVault(ctx context.Context, c *webdav.Client, dir string) (VaultMeta, error) {
+	data, _, err := c.Get(ctx, path.Join(dir, "vault.json"))
+	if errors.Is(err, webdav.ErrNotFound) {
+		return VaultMeta{}, ErrNoVault
+	}
+	if err != nil {
+		return VaultMeta{}, err
+	}
+	var meta VaultMeta
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return VaultMeta{}, fmt.Errorf("vault.json is damaged: %w", err)
+	}
+	return meta, nil
 }
 
 // ChangePassphrase wraps the vault's key with a new passphrase. Other
