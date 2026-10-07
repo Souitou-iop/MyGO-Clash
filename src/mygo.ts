@@ -687,6 +687,8 @@ export interface Sync {
 export interface SyncProbe {
   reachable: boolean;
   hasVault: boolean;
+  /** Plain is set when the vault found is not encrypted. */
+  plain: boolean;
   error?: string;
   /**
    * Fingerprint and Trusted describe the server's key, for pinning one
@@ -704,6 +706,11 @@ export interface SyncSetup {
   password: string;
   dir: string;
   passphrase: string;
+  /**
+   * Plain creates a vault that is not encrypted; an existing vault
+   * stays as it is.
+   */
+  plain: boolean;
   allowInsecure: boolean;
   pinnedKey: string;
 }
@@ -721,6 +728,8 @@ export interface SyncStatus {
   deviceId: string;
   deviceName: string;
   keyId?: string;
+  /** Plain is set when the vault on the server is not encrypted. */
+  plain: boolean;
   report?: Report;
   nextSync?: string;
   labels: Record<string, string>;
