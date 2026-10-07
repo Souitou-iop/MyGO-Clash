@@ -17,6 +17,7 @@ import (
 	C "github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/log"
 
+	"github.com/mygo-clash/mygo-clash/internal/corehost/geodata"
 	"github.com/mygo-clash/mygo-clash/internal/yamlx"
 )
 
@@ -73,6 +74,15 @@ func ensureGeo(ctx context.Context, raw string) {
 		if _, err := os.Stat(path); err == nil {
 			continue
 		}
+		// The copy this build carries, before any download.
+		if b, ok := geodata.Read(f.name); ok {
+			err := place(path, bytes.NewReader(b), f.mmdb)
+			if err == nil {
+				log.Infoln("[Geo] %s from the app", filepath.Base(path))
+				continue
+			}
+			log.Warnln("[Geo] the app's %s: %v", f.name, err)
+		}
 		var sources []string
 		if urls != nil {
 			if u := strings.TrimSpace(urls.String(f.key)); u != "" {
@@ -104,8 +114,7 @@ func ensureGeo(ctx context.Context, raw string) {
 	}
 }
 
-// download fetches url into path through a temporary file, so a broken
-// download never stands in for the database.
+// download fetches url into path.
 func download(ctx context.Context, url, path string, isMMDB bool) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -126,20 +135,26 @@ func download(ctx context.Context, url, path string, isMMDB bool) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP %s", resp.Status)
 	}
+	return place(path, resp.Body, isMMDB)
+}
+
+// place writes a database to path through a temporary file that must
+// check out, so a broken copy never stands in for it.
+func place(path string, r io.Reader, isMMDB bool) error {
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".geo-*")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tmp.Name())
 	head := make([]byte, 64)
-	n, _ := io.ReadFull(resp.Body, head)
+	n, _ := io.ReadFull(r, head)
 	if bytes.HasPrefix(bytes.TrimSpace(head[:n]), []byte("<")) {
 		tmp.Close()
 		return fmt.Errorf("got a web page, not the database")
 	}
 	_, err = tmp.Write(head[:n])
 	if err == nil {
-		_, err = io.Copy(tmp, resp.Body)
+		_, err = io.Copy(tmp, r)
 	}
 	if cerr := tmp.Close(); err == nil {
 		err = cerr

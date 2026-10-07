@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -182,6 +183,8 @@ func (a *App) init() error {
 	if a.dirs, err = paths.New(data, logs, cache); err != nil {
 		return err
 	}
+	// mygo's updater asks GitHub with the default client.
+	http.DefaultClient.Transport = newGitHubTransport(a)
 	appLog := &logx.RotatingFile{Path: filepath.Join(logs, "app.log"), MaxSize: 4 << 20, MaxFiles: 3}
 	log.SetOutput(io.MultiWriter(os.Stderr, appLog))
 	log.Printf("MyGO-Clash %s (mihomo %s) on %s/%s", Version, corehost.MihomoVersion(), runtime.GOOS, runtime.GOARCH)
