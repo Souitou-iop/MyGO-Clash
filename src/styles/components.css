@@ -1845,7 +1845,7 @@ svg.lucide > * {
   animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* A Collapse measuring what it opens to. */
+/* A Collapse measuring what it opens to, and drawing it while it moves. */
 .measuring > * {
   content-visibility: visible !important;
 }

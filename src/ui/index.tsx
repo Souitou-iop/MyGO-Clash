@@ -370,10 +370,11 @@ export function Collapse({ open, children, inline }: { open: boolean; children: 
     const from = moving ? el.getBoundingClientRect()[inline ? "width" : "height"] : open ? 0 : size(el);
     const fade = moving ? Number(getComputedStyle(el).opacity) : open ? 0 : 1;
     anim.current?.cancel();
-    // What is not yet drawn takes a size it guesses; measure it drawn.
+    // What is not yet drawn takes a size it guesses; measure it drawn, and
+    // keep it drawn while it moves: clipped to nothing as it starts, it
+    // would otherwise skip painting and open blank for a frame or two.
     el.classList.add("measuring");
     const to = open ? size(el) : 0;
-    el.classList.remove("measuring");
     el.style.overflow = "hidden";
     // In a flex or grid parent, the gap before it comes and goes with it.
     const parent = el.parentElement && getComputedStyle(el.parentElement);
@@ -385,11 +386,14 @@ export function Collapse({ open, children, inline }: { open: boolean; children: 
         { [prop]: `${from}px`, opacity: fade, [margin]: `${from ? 0 : -gap}px` },
         { [prop]: `${to}px`, opacity: open ? 1 : 0, [margin]: `${to ? 0 : -gap}px` },
       ],
-      { duration: Math.min(380, 220 + Math.abs(to - from) / 8), easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" },
+      // Closed, it holds still until it is gone, not back at full size
+      // for the frame before.
+      { duration: Math.min(380, 220 + Math.abs(to - from) / 8), easing: "cubic-bezier(0.3, 0.7, 0.2, 1)", fill: open ? "none" : "forwards" },
     );
     anim.current = a;
     a.onfinish = () => {
       el.style.overflow = "";
+      el.classList.remove("measuring");
       if (!open) setShown(false);
     };
   }, [open, shown, inline]);
@@ -704,12 +708,14 @@ export function Menu({ trigger, items, align = "right" }: { trigger: (open: () =
       if (e instanceof MouseEvent && menu.current?.contains(e.target as Node)) return;
       setPos(null);
     };
+    const blur = () => setPos(null);
     window.addEventListener("mousedown", close);
     window.addEventListener("keydown", close);
-    window.addEventListener("blur", () => setPos(null));
+    window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", close);
+      window.removeEventListener("blur", blur);
     };
   }, [pos]);
   const { mounted: shown, leaving } = usePresence(!!pos, 100);
@@ -775,16 +781,21 @@ export function Toasts({ onAction }: { onAction: (action: string) => void }) {
   const toasts = useApp((s) => s.toasts);
   const position = useApp((s) => s.settings?.ui.toastPosition ?? "top-right");
   const t = useT();
-  // Toasts gone from the store stay a moment to play their way out.
+  // Toasts gone from the store stay a moment to play their way out. They
+  // are kept in the same render that drops them, never a frame later, or
+  // they would blink out and the rest jump up before it began.
   const [leaving, setLeaving] = useState<typeof toasts>([]);
-  const prev = useRef(toasts);
+  const [prev, setPrev] = useState(toasts);
+  if (prev !== toasts) {
+    setPrev(toasts);
+    const gone = prev.filter((p) => !toasts.some((n) => n.id === p.id));
+    if (gone.length > 0 && !reducedMotion()) setLeaving((l) => [...l, ...gone]);
+  }
   useEffect(() => {
-    const gone = prev.current.filter((p) => !toasts.some((n) => n.id === p.id));
-    prev.current = toasts;
-    if (gone.length === 0 || reducedMotion()) return;
-    setLeaving((l) => [...l, ...gone]);
-    setTimeout(() => setLeaving((l) => l.filter((x) => !gone.includes(x))), 280);
-  }, [toasts]);
+    if (leaving.length === 0) return;
+    const id = setTimeout(() => setLeaving((l) => l.filter((x) => !leaving.includes(x))), 280);
+    return () => clearTimeout(id);
+  }, [leaving]);
   const all = [...toasts, ...leaving].sort((a, b) => a.id - b.id);
   return (
     <div className={`toasts ${position}`} aria-live="polite">
