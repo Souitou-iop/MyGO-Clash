@@ -8,7 +8,7 @@
 }
 
 .shell.collapsed {
-  --sidebar-w: 64px;
+  --sidebar-w: var(--rail-w);
 }
 
 /* The sidebar is a window on a rainy night: faint streaks, and the glow of
@@ -38,14 +38,14 @@
 
 /*
  * Collapsing only narrows the sidebar: every icon keeps its place on one
- * line, 32px in, the middle of the collapsed bar, and the words fade. So
- * nothing jumps, either way.
+ * line, in the middle of the collapsed bar (32px in, and more on macOS),
+ * and the words fade. So nothing jumps, either way.
  */
 .brand {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 6px 16px 14px 19px;
+  padding: 6px 16px 14px calc(19px + var(--rail-shift));
   font-weight: 700;
   font-size: 14.5px;
   letter-spacing: -0.01em;
@@ -90,7 +90,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 0 10px;
+  padding: 0 calc(10px + var(--rail-shift));
   overflow-x: hidden; /* the labels overflow while the sidebar animates */
   overflow-y: auto;
   flex: 1;
@@ -142,7 +142,7 @@
 }
 
 .side-foot {
-  padding: 10px;
+  padding: 10px calc(10px + var(--rail-shift));
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -1495,6 +1495,11 @@ kbd {
 /* Persian and Arabic mirror the layout: the sidebar moves to the right,
    while the window's controls stay where the system draws them, so the
    insets that keep clear of them change sides. */
+/* The sidebar is away from macOS's buttons. */
+:root[dir="rtl"] {
+  --rail-w: 64px;
+}
+
 [dir="rtl"] .sidebar-top {
   padding-left: 14px;
   padding-right: max(var(--mygo-titlebar-inset-right, 0px), 14px);

@@ -61,6 +61,12 @@
   --radius: 9px;
   --radius-lg: 13px;
   --sidebar-w: 216px;
+  /* The collapsed sidebar, a rail of icons: wide enough on macOS for the
+     window's buttons above it, which would stick out of 64px, with as much
+     room after them as before (the inset ends at the zoom button). Its
+     icons keep to its middle, rail-shift in from where 64px puts them. */
+  --rail-w: max(64px, calc(var(--mygo-titlebar-inset-left, 0px) + 9px));
+  --rail-shift: calc((var(--rail-w) - 64px) / 2);
   --titlebar-h: var(--mygo-titlebar-height, 44px);
 }
 
