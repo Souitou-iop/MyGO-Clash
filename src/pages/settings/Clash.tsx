@@ -143,7 +143,7 @@ function ControllerDialog({ open, onClose }: { open: boolean; onClose: () => voi
           <textarea className="textarea mono" rows={3} value={origins} onChange={(e) => setOrigins(e.target.value)} spellCheck={false} />
         </Field>
         <div className="rows">
-          <Row label={t("settings.privateNetwork")}>
+          <Row label={t("settings.privateNetwork")} desc={t("settings.privateNetworkDesc")}>
             <Switch checked={c.allowPrivateNetwork} onChange={(v) => setC({ ...c, allowPrivateNetwork: v })} />
           </Row>
         </div>
@@ -262,9 +262,9 @@ export default function Clash() {
             onChange={(v) => patch({ clash: { findProcessMode: v } })}
             options={[
               { value: "", label: t("settings.followProfile") },
-              { value: "strict", label: "strict" },
-              { value: "always", label: "always" },
-              { value: "off", label: "off" },
+              { value: "strict", label: t("settings.findProcess.strict") },
+              { value: "always", label: t("settings.findProcess.always") },
+              { value: "off", label: t("settings.findProcess.off") },
             ]}
             width={150}
           />
@@ -277,8 +277,8 @@ export default function Clash() {
             width={200}
           />
         </Row>
-        <Row label={t("settings.logLevel")}>
-          <Select value={c.logLevel} onChange={(v) => patch({ clash: { logLevel: v } })} options={["debug", "info", "warning", "error", "silent"].map((l) => ({ value: l, label: l }))} width={130} />
+        <Row label={t("settings.logLevel")} desc={t("settings.logLevelDesc")}>
+          <Select value={c.logLevel} onChange={(v) => patch({ clash: { logLevel: v } })} options={["debug", "info", "warning", "error", "silent"].map((l) => ({ value: l, label: t(`logs.${l}` as never) }))} width={130} />
         </Row>
         <Row label={t("settings.controller")} desc={c.controller.enabled ? `${c.controller.address}` : t("settings.controllerOff")}>
           <Button size="sm" onClick={() => setDialog("controller")}>
@@ -294,7 +294,7 @@ export default function Clash() {
           </Button>
           <Switch checked={s.dns.defaultOverride} onChange={(v) => patch({ dns: { defaultOverride: v } })} />
         </Row>
-        <Row label={t("settings.flushDns")}>
+        <Row label={t("settings.flushDns")} desc={t("settings.flushDnsDesc")}>
           <Button size="sm" loading={busy === "dns"} onClick={() => act("dns", () => Core.flushDNS(), t("settings.flushed"))}>
             DNS
           </Button>
@@ -308,7 +308,7 @@ export default function Clash() {
         <Row label={t("settings.testUrl")} desc={t("settings.testUrlDesc")}>
           <Input className="mono" value={testUrl} onChange={(e) => setTestUrl(e.target.value)} onBlur={() => testUrl !== s.latency.url && patch({ latency: { url: testUrl } })} style={{ width: 280 }} />
         </Row>
-        <Row label={t("settings.testTimeout")}>
+        <Row label={t("settings.testTimeout")} desc={t("settings.testTimeoutDesc")}>
           <NumberInput value={s.latency.timeoutMs} onChange={(v) => patch({ latency: { timeoutMs: v } })} min={100} max={60000} />
           <span className="muted">ms</span>
         </Row>

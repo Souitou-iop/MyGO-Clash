@@ -1246,3 +1246,42 @@
   color: var(--accent-fg);
   text-decoration-color: currentColor;
 }
+
+/* Why a subscription's last update failed, and a way to try again. */
+.profile-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 4px 6px 9px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--danger) 9%, transparent);
+}
+
+.profile-error-text {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 2px 0 0;
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--danger);
+  text-align: start;
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.profile-error-text.open {
+  -webkit-line-clamp: unset;
+}
+
+/* An unlock result from a node no longer in use. */
+.unlock-stale {
+  color: var(--warning);
+}

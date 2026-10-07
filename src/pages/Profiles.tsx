@@ -63,6 +63,7 @@ function ProfileCard({
   const lang = useApp((s) => s.lang);
   const [busy, setBusy] = useState("");
   const [over, setOver] = useState(false);
+  const [errOpen, setErrOpen] = useState(false);
   const used = (p.usage?.upload ?? 0) + (p.usage?.download ?? 0);
   const total = p.usage?.total ?? 0;
   const pct = percent(used, total);
@@ -142,7 +143,7 @@ function ProfileCard({
               icon: <Trash2 size={14} />,
               danger: true,
               onClick: async () => {
-                if (await confirm({ title: t("profiles.deleteTitle"), message: t("profiles.deleteMsg", { name: p.name }), confirm: t("common.delete"), danger: true }))
+                if (await confirm({ title: t("profiles.deleteTitle"), message: current ? `${t("profiles.deleteMsg", { name: p.name })} ${t("profiles.deleteCurrent")}` : t("profiles.deleteMsg", { name: p.name }), confirm: t("common.delete"), danger: true }))
                   void run(() => API.delete(p.uid), t("common.failed"));
               },
             },
@@ -169,8 +170,13 @@ function ProfileCard({
         </div>
       )}
       {p.lastError && (
-        <div style={{ color: "var(--danger)", fontSize: 11.5 }} className="ellipsis" title={p.lastError}>
-          {p.lastError}
+        <div className="profile-error">
+          <button className={`profile-error-text${errOpen ? " open" : ""}`} onClick={() => setErrOpen(!errOpen)} title={errOpen ? undefined : p.lastError}>
+            {t("profiles.lastError")}: {p.lastError}
+          </button>
+          <Button size="sm" variant="ghost" loading={busy === "update"} onClick={() => act("update", () => API.update(p.uid, null), t("profiles.updateFailed"), t("profiles.updated"))}>
+            {t("profiles.retry")}
+          </Button>
         </div>
       )}
       <div className="row profile-foot">

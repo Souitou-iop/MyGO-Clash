@@ -6,8 +6,9 @@ import { PageHeader } from "../components/Page";
 import { delayClass, delayText, flag, relative } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { toastError, useApp } from "../lib/store";
-import { type IPInfo, type Site, type SiteResult, Tools, type Unlock as Result } from "../mygo";
+import { type IPInfo, Proxies, type ProxiesView, type Site, type SiteResult, Tools, type Unlock } from "../mygo";
 import { Badge, Banner, Button, reflow, useFresh } from "../ui";
+import { CoreDown } from "../components/CoreDown";
 
 // The connectivity page, after MyIP (github.com/jason5ng32/MyIP): the
 // addresses that sites at home and abroad see, the reachability of popular
@@ -47,7 +48,7 @@ export default function Connectivity() {
         </Button>
       </PageHeader>
       <div className="page-body">
-        {!running && <Banner tone="warning">{t("common.coreNotRunning")}</Banner>}
+        {!running && <CoreDown banner />}
         <IPSection {...ips} running={running} />
         <SiteSection {...sites} running={running} />
         <UnlockSection {...unlock} running={running} />
@@ -294,6 +295,35 @@ const look: Record<string, { icon: typeof CheckCircle2; tone: "success" | "warni
   checking: { icon: Loader2, tone: undefined, color: "var(--text-muted)" },
 };
 
+/** Result is a check, and the node it went through. */
+type Result = Unlock & { via?: string };
+
+/** exitNode follows the selections from the main group down to a node:
+ * where checks go out now. */
+function exitNode(view: ProxiesView | undefined, mode: string): string {
+  if (!view) return "";
+  const groups = new Map([...view.groups, ...(view.global ? [view.global] : [])].map((g) => [g.name, g]));
+  let g = mode === "global" && view.global ? view.global : view.groups.find((x) => !x.hidden && ["Selector", "URLTest", "Fallback"].includes(x.type));
+  let name = g?.now ?? "";
+  for (let i = 0; g && i < 10; i++) {
+    name = g.now;
+    g = groups.get(name);
+  }
+  return name;
+}
+
+function useExit(): string {
+  const mode = useApp((s) => s.settings?.clash.mode ?? "rule");
+  const selection = useApp((s) => s.selection);
+  const runtime = useApp((s) => s.runtime);
+  const running = useApp((s) => s.state?.core.status === "running");
+  const [view, setView] = useState<ProxiesView>();
+  useEffect(() => {
+    if (running) Proxies.view().then(setView).catch(() => {});
+  }, [selection, runtime, running, mode]);
+  return mode === "direct" ? "DIRECT" : exitNode(view, mode);
+}
+
 function loadResults(): Record<string, Result> {
   try {
     return JSON.parse(localStorage.getItem("unlock.results") ?? "{}");
@@ -304,6 +334,7 @@ function loadResults(): Record<string, Result> {
 
 function useUnlock() {
   const t = useT();
+  const exit = useExit();
   const [items, setItems] = useState<Result[]>([]);
   const [results, setResults] = useState<Record<string, Result>>(loadResults);
   const [checking, setChecking] = useState<Set<string>>(new Set());
@@ -312,9 +343,10 @@ function useUnlock() {
   }, []);
   const check = async (ids: string[]) => {
     setChecking((c) => new Set([...c, ...(ids.length ? ids : items.map((i) => i.id))]));
-    const ch = new Channel<Result>((r) => {
+    const via = exit;
+    const ch = new Channel<Unlock>((r) => {
       setResults((old) => {
-        const next = { ...old, [r.id]: r };
+        const next = { ...old, [r.id]: { ...r, via } };
         try {
           localStorage.setItem("unlock.results", JSON.stringify(next));
         } catch {
@@ -335,10 +367,10 @@ function useUnlock() {
     }
     setChecking(new Set());
   };
-  return { items, results, checking, check, busy: checking.size > 0 };
+  return { items, results, checking, check, busy: checking.size > 0, exit };
 }
 
-function UnlockSection({ items, results, checking, check, busy, running }: ReturnType<typeof useUnlock> & { running: boolean }) {
+function UnlockSection({ items, results, checking, check, busy, running, exit }: ReturnType<typeof useUnlock> & { running: boolean }) {
   const t = useT();
   const lang = useApp((s) => s.lang);
   return (
@@ -374,6 +406,12 @@ function UnlockSection({ items, results, checking, check, busy, running }: Retur
                 {r?.detail}
                 {r?.detail && r?.at && " · "}
                 {r?.at && relative(r.at, lang)}
+                {r?.via && state !== "checking" && (
+                  <div className={`ellipsis${exit && r.via !== exit ? " unlock-stale" : ""}`} title={exit && r.via !== exit ? t("unlock.stale") : undefined}>
+                    {t("unlock.via", { node: r.via })}
+                    {exit && r.via !== exit && ` · ${t("unlock.changed")}`}
+                  </div>
+                )}
               </div>
             </div>
           );

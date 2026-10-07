@@ -430,7 +430,7 @@ export default function SyncTab() {
           )}
 
           <Section title={t("sync.options")}>
-            <Row label={t("sync.enabled")}>
+            <Row label={t("sync.enabled")} desc={t("sync.enabledDesc")}>
               <Switch checked={s.sync.enabled} onChange={(v) => patch({ sync: { enabled: v } })} />
             </Row>
             <Row label={t("sync.interval")}>

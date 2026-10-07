@@ -4,55 +4,17 @@ import { useMemo, useRef, useState } from "react";
 import { EditorDialog } from "../components/profiles/EditorDialog";
 import { RULE_TYPES, SeqEditor, type RuleDraft } from "../components/profiles/SeqEditor";
 import { PageHeader } from "../components/Page";
-import { relative } from "../lib/format";
+import { relative, ruleType } from "../lib/format";
 import { useAsync } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { run, toast, useApp } from "../lib/store";
 import { App, Profiles, Proxies, Rules as API, type Rule } from "../mygo";
 import { Badge, Banner, Button, Empty, Menu, reflow, SearchInput, Select, Spinner, Switch, Tabs } from "../ui";
+import { CoreDown } from "../components/CoreDown";
 
 const COLS = "52px 150px minmax(220px, 2fr) minmax(140px, 1fr) 90px 52px 32px";
 
-/** SYNTAX spells the core's rule types as configurations write them. */
-const SYNTAX: Record<string, string> = {
-  Domain: "DOMAIN",
-  DomainSuffix: "DOMAIN-SUFFIX",
-  DomainKeyword: "DOMAIN-KEYWORD",
-  DomainRegex: "DOMAIN-REGEX",
-  DomainWildcard: "DOMAIN-WILDCARD",
-  GeoSite: "GEOSITE",
-  GeoIP: "GEOIP",
-  SrcGeoIP: "SRC-GEOIP",
-  IPASN: "IP-ASN",
-  SrcIPASN: "SRC-IP-ASN",
-  IPCIDR: "IP-CIDR",
-  SrcIPCIDR: "SRC-IP-CIDR",
-  IPSuffix: "IP-SUFFIX",
-  SrcIPSuffix: "SRC-IP-SUFFIX",
-  SrcPort: "SRC-PORT",
-  DstPort: "DST-PORT",
-  InPort: "IN-PORT",
-  InUser: "IN-USER",
-  InName: "IN-NAME",
-  InType: "IN-TYPE",
-  ProcessName: "PROCESS-NAME",
-  ProcessPath: "PROCESS-PATH",
-  ProcessNameRegex: "PROCESS-NAME-REGEX",
-  ProcessPathRegex: "PROCESS-PATH-REGEX",
-  ProcessNameWildcard: "PROCESS-NAME-WILDCARD",
-  ProcessPathWildcard: "PROCESS-PATH-WILDCARD",
-  Match: "MATCH",
-  RuleSet: "RULE-SET",
-  Network: "NETWORK",
-  DSCP: "DSCP",
-  Uid: "UID",
-  SubRules: "SUB-RULE",
-};
-
-function syntax(r: Rule): string {
-  const s = SYNTAX[r.type] ?? r.type.toUpperCase();
-  return s === "IP-CIDR" && r.payload.includes(":") ? "IP-CIDR6" : s;
-}
+const syntax = (r: Rule) => ruleType(r.type, r.payload);
 
 /** line writes a rule as a configuration does. */
 function line(r: Rule): string {
@@ -154,10 +116,7 @@ export default function Rules() {
           ]}
         />
         {!running ? (
-          <Empty title={t("common.coreNotRunning")}>
-            <p className="muted">{t("rules.coreHint")}</p>
-            <Button onClick={() => navigate("home")}>{t("rules.goHome")}</Button>
-          </Empty>
+          <CoreDown />
         ) : loading && !data ? (
           <div className="empty">
             <Spinner />

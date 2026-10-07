@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"slices"
 	"sort"
 	"strconv"
@@ -381,6 +382,17 @@ func (s Logs) Stream(ctx context.Context, ch *mygo.Channel[coreapi.LogEvent]) er
 
 // Clear forgets the logs kept.
 func (s Logs) Clear() { s.a.logs.clear() }
+
+// Export saves logs, as the page shows them, to a file the user picks, and
+// returns its path, "" when cancelled.
+func (s Logs) Export(ctx context.Context, text string) (string, error) {
+	name := "MyGO-Clash-logs-" + time.Now().Format("20060102-150405") + ".log"
+	path, err := mygo.Dialog.Save(mygo.SaveDialogOptions{Parent: mygo.CallerWindow(ctx), DefaultPath: name})
+	if err != nil || path == "" {
+		return "", err
+	}
+	return path, os.WriteFile(path, []byte(text), 0o600)
+}
 
 // Core is the core itself.
 type Core struct{ a *App }

@@ -2,12 +2,13 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Pause, Play, X, XCircle } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
-import { bytes, duration, rate } from "../lib/format";
+import { bytes, duration, rate, ruleType } from "../lib/format";
 import { useStream } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { run, useApp } from "../lib/store";
 import { Connections as API, type Connection, type Connections as Snapshot } from "../mygo";
 import { Badge, Button, confirm, Dialog, Empty, SearchInput, Segmented } from "../ui";
+import { CoreDown } from "../components/CoreDown";
 
 type SortKey = "start" | "host" | "down" | "up" | "downTotal" | "upTotal";
 type View = "active" | "closed";
@@ -36,7 +37,7 @@ function Detail({ c, active, onClose }: { c: Connection | null; active: boolean;
     ["SNI", m.sniffHost || "—"],
     [t("conn.process"), m.process || "—"],
     [t("conn.processPath"), m.processPath || "—"],
-    [t("conn.rule"), `${c.rule}${c.rulePayload ? ` (${c.rulePayload})` : ""}`],
+    [t("conn.rule"), `${ruleType(c.rule, c.rulePayload)}${c.rulePayload ? ` (${c.rulePayload})` : ""}`],
     [t("conn.chain"), chain(c)],
     [t("conn.inbound"), [m.inboundName, m.inboundIP && `${m.inboundIP}:${m.inboundPort}`].filter(Boolean).join(" · ") || "—"],
     [t("conn.dnsMode"), m.dnsMode || "—"],
@@ -108,7 +109,7 @@ export default function Connections() {
   const list = useMemo(() => {
     const src = view === "active" ? (snap?.connections ?? []) : closed;
     const q = search.trim().toLowerCase();
-    let out = src.filter((c) => (net === "all" || c.metadata.network === net) && (!q || [host(c), c.metadata.process, c.rule, c.rulePayload, chain(c), c.metadata.sourceIP].some((v) => v?.toLowerCase().includes(q))));
+    let out = src.filter((c) => (net === "all" || c.metadata.network === net) && (!q || [host(c), c.metadata.process, ruleType(c.rule, c.rulePayload), c.rulePayload, chain(c), c.metadata.sourceIP].some((v) => v?.toLowerCase().includes(q))));
     const key = (c: Connection): number | string => {
       switch (sort.key) {
         case "host":
@@ -187,7 +188,7 @@ export default function Connections() {
           <SearchInput value={search} onChange={setSearch} placeholder={t("conn.search")} width={280} />
         </div>
         {!running ? (
-          <Empty title={t("common.coreNotRunning")} />
+          <CoreDown />
         ) : list.length === 0 ? (
           <Empty title={t("conn.empty")} art />
         ) : (
@@ -226,7 +227,7 @@ export default function Connections() {
                         {c.metadata.process || "—"}
                       </span>
                       <span className="cell" title={c.rulePayload}>
-                        {c.rule}
+                        {ruleType(c.rule, c.rulePayload)}
                         {c.rulePayload && <span className="faint"> {c.rulePayload}</span>}
                       </span>
                       <span className="cell" title={chain(c)}>

@@ -1314,6 +1314,13 @@ export const Logs = {
   clear(): Promise<void> {
     return call("Logs.Clear");
   },
+  /**
+   * Export saves logs, as the page shows them, to a file the user picks, and
+   * returns its path, "" when cancelled.
+   */
+  export(text: string): Promise<string> {
+    return call("Logs.Export", text);
+  },
   /** Recent returns the logs kept, oldest first. */
   recent(): Promise<LogEvent[]> {
     return call("Logs.Recent");
