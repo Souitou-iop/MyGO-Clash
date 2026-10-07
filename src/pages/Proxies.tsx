@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, LayoutGrid, List, Pin, PinOff, RefreshCw, Server, Stethoscope, Zap } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { bytes, dateOnly, percent, relative } from "../lib/format";
 import { useAsync } from "../lib/hooks";
@@ -48,9 +48,16 @@ function Member({
   onTest: () => void;
   layout: string;
 }) {
+  // Only a node chosen while the page is open pops, not those chosen before.
+  const wasActive = useRef(active);
+  const [picked, setPicked] = useState(false);
+  useEffect(() => {
+    if (active && !wasActive.current) setPicked(true);
+    wasActive.current = active;
+  }, [active]);
   return (
     <div
-      className={`proxy-item ${layout}${active ? " active" : ""}${selectable ? " selectable" : ""}`}
+      className={`proxy-item ${layout}${active ? " active" : ""}${active && picked ? " picked" : ""}${selectable ? " selectable" : ""}`}
       onClick={() => selectable && !active && onSelect()}
       role={selectable ? "button" : undefined}
       title={item.name}

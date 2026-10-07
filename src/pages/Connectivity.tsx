@@ -7,7 +7,7 @@ import { delayClass, delayText, flag, relative } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { toastError, useApp } from "../lib/store";
 import { type IPInfo, type Site, type SiteResult, Tools, type Unlock as Result } from "../mygo";
-import { Badge, Banner, Button } from "../ui";
+import { Badge, Banner, Button, useFresh } from "../ui";
 
 // The connectivity page, after MyIP (github.com/jason5ng32/MyIP): the
 // addresses that sites at home and abroad see, the reachability of popular
@@ -130,7 +130,7 @@ function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs
               ) : !info ? (
                 <div className="faint">—</div>
               ) : (
-                <>
+                <div className="reveal reveal-stack">
                   <div className="cty-ip-place">
                     <span className="cty-flag">{flag(info.countryCode)}</span>
                     <span className="ellipsis" title={[info.country, place].filter(Boolean).join(" · ")}>
@@ -154,7 +154,7 @@ function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs
                       </>
                     )}
                   </dl>
-                </>
+                </div>
               )}
             </div>
           );
@@ -244,7 +244,7 @@ function SiteSection({ sites, rounds, busy, test, running }: ReturnType<typeof u
                     <div className="row">
                       <Logo id={s.id} name={s.name} size={22} />
                       <span className="grow ellipsis cty-name">{s.name}</span>
-                      {busy && !r?.length ? <Loader2 size={13} className="spin muted" /> : <span className={`delay ${delayClass(b)}`}>{delayText(b, t("connectivity.unreachable"))}</span>}
+                      <SiteDelay value={b} busy={busy} />
                     </div>
                     <div className="cty-bars">
                       {Array.from({ length: ROUNDS }, (_, i) => {
@@ -268,6 +268,18 @@ function SiteSection({ sites, rounds, busy, test, running }: ReturnType<typeof u
         );
       })}
     </section>
+  );
+}
+
+/** SiteDelay shows the fastest round, lit up once the rounds are done. */
+function SiteDelay({ value, busy }: { value: number | undefined; busy: boolean }) {
+  const t = useT();
+  const fresh = useFresh(value, busy);
+  if (busy && value === undefined) return <Loader2 size={13} className="spin muted" />;
+  return (
+    <span key={fresh} className={`delay ${delayClass(value)}${fresh ? " fresh" : ""}`}>
+      {delayText(value, t("connectivity.unreachable"))}
+    </span>
   );
 }
 

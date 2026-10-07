@@ -65,6 +65,39 @@ export function Switch({
   );
 }
 
+/**
+ * useIndicator places the sliding highlight of a segmented control or of
+ * tabs on the active child, through the --ind-* properties of the box. The
+ * highlight moves only once placed, so it never slides in from the start.
+ */
+function useIndicator<E extends HTMLElement>(value: unknown) {
+  const ref = useRef<E>(null);
+  useLayoutEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    const place = () => {
+      const a = box.querySelector<HTMLElement>(":scope > .active");
+      box.classList.toggle("ind-on", !!a);
+      if (!a) return;
+      box.style.setProperty("--ind-x", `${a.offsetLeft}px`);
+      box.style.setProperty("--ind-y", `${a.offsetTop}px`);
+      box.style.setProperty("--ind-w", `${a.offsetWidth}px`);
+      box.style.setProperty("--ind-h", `${a.offsetHeight}px`);
+    };
+    place();
+    // Labels change width with the language and the font.
+    const ro = new ResizeObserver(place);
+    ro.observe(box);
+    for (const c of box.children) ro.observe(c);
+    const frame = requestAnimationFrame(() => box.classList.add("ind-ready"));
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [value]);
+  return ref;
+}
+
 export function Segmented<T extends string>({
   value,
   options,
@@ -76,8 +109,9 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
   full?: boolean;
 }) {
+  const ref = useIndicator<HTMLDivElement>(value);
   return (
-    <div className={`segmented${full ? " full" : ""}`} role="radiogroup">
+    <div ref={ref} className={`segmented${full ? " full" : ""}`} role="radiogroup">
       {options.map((o) => (
         <button
           key={o.value}
@@ -196,8 +230,30 @@ export function Badge({ tone, children, tip }: { tone?: "accent" | "success" | "
 
 export function Delay({ value, loading }: { value: number | undefined; loading?: boolean }) {
   const t = useT();
+  const fresh = useFresh(value, loading);
   if (loading) return <Loader2 size={13} className="spin muted" />;
-  return <span className={`delay ${delayClass(value)}`}>{delayText(value, t("common.timeout"))}</span>;
+  return (
+    <span key={fresh} className={`delay ${delayClass(value)}${fresh ? " fresh" : ""}`}>
+      {delayText(value, t("common.timeout"))}
+    </span>
+  );
+}
+
+/**
+ * useFresh counts the results that arrived since mounting: a test that
+ * ended, or a value that changed. Keyed on it, an element replays its
+ * arrival, so a retest that gives the same figure still shows.
+ */
+export function useFresh(value: unknown, loading?: boolean): number {
+  const [n, setN] = useState(0);
+  const last = useRef({ value, loading });
+  useEffect(() => {
+    const was = last.current;
+    last.current = { value, loading };
+    if (loading) return;
+    if (was.loading || (was.value !== value && was.value !== undefined && value !== undefined)) setN((c) => c + 1);
+  }, [value, loading]);
+  return n;
 }
 
 export function Progress({ value, tone }: { value: number; tone?: "warning" | "danger" }) {
@@ -274,8 +330,9 @@ export function Field({ label, hint, error, children }: { label: ReactNode; hint
 }
 
 export function Tabs<T extends string>({ value, tabs, onChange }: { value: T; tabs: { value: T; label: ReactNode; icon?: ReactNode }[]; onChange: (v: T) => void }) {
+  const ref = useIndicator<HTMLDivElement>(value);
   return (
-    <div className="tabs" role="tablist">
+    <div ref={ref} className="tabs" role="tablist">
       {tabs.map((t) => (
         <button key={t.value} role="tab" aria-selected={t.value === value} className={`tab${t.value === value ? " active" : ""}`} onClick={() => onChange(t.value)}>
           {t.icon}

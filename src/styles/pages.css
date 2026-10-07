@@ -6,6 +6,13 @@
   gap: 12px;
 }
 
+/* When the app starts, the cards come in one after another. */
+.home-grid.intro > .home-cell {
+  --rise: 10px;
+  animation: rise-in 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms + 60ms);
+}
+
 /* Cards fill their cell, so the cards of a row are of one height. */
 .home-cell {
   display: flex;
@@ -159,6 +166,69 @@
   background: var(--surface-2);
   color: var(--text-muted);
   border: 1px solid var(--border);
+}
+
+/* Turning on sends a ripple out of the orb; turning off draws one in. */
+.status-orb {
+  position: relative;
+}
+
+.status-orb.up {
+  animation: orb-up 0.5s cubic-bezier(0.3, 0.7, 0.4, 1.3);
+}
+
+.status-orb.down {
+  animation: orb-down 0.4s ease-out;
+}
+
+.status-orb.up::after,
+.status-orb.down::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.status-orb.up::after {
+  animation: ripple-out 0.8s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.status-orb.down::after {
+  animation: ripple-in 0.45s ease-in forwards;
+}
+
+@keyframes orb-up {
+  from {
+    transform: scale(0.86);
+  }
+}
+
+@keyframes orb-down {
+  from {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes ripple-out {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 55%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 18px color-mix(in oklab, var(--accent) 0%, transparent);
+  }
+}
+
+@keyframes ripple-in {
+  from {
+    box-shadow: 0 0 0 16px color-mix(in oklab, var(--text-muted) 0%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--text-muted) 30%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--text-muted) 0%, transparent);
+  }
 }
 
 .status-orb.on {
@@ -517,6 +587,35 @@
   border-color: var(--accent);
   background: var(--accent-softer);
   box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+/* The node just chosen pops, with a ring out of it. */
+.proxy-item.active.picked {
+  animation: pick 0.45s cubic-bezier(0.3, 0.7, 0.4, 1.3);
+}
+
+@keyframes pick {
+  from {
+    transform: scale(0.96);
+    box-shadow:
+      0 0 0 1px var(--accent) inset,
+      0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent);
+  }
+  to {
+    box-shadow:
+      0 0 0 1px var(--accent) inset,
+      0 0 0 8px color-mix(in oklab, var(--accent) 0%, transparent);
+  }
+}
+
+.proxy-item.list.active.picked {
+  animation-name: pick-list;
+}
+
+@keyframes pick-list {
+  from {
+    transform: scale(0.98);
+  }
 }
 
 .proxy-item.list.active {
@@ -919,6 +1018,18 @@
   border-radius: 2px;
   background: var(--surface-2);
   transition: height 0.25s ease;
+}
+
+/* A round's bar grows out of the baseline when its result arrives. */
+.cty-bar:is(.good, .ok, .bad, .fail) {
+  transform-origin: bottom;
+  animation: bar-in 0.36s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+}
+
+@keyframes bar-in {
+  from {
+    transform: scaleY(0);
+  }
 }
 
 .cty-bar.good {

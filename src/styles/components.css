@@ -241,6 +241,24 @@
   scrollbar-gutter: stable;
 }
 
+/* A page eases in when the sidebar opens it. */
+.main > .page-body {
+  animation: rise-in 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Content that replaces a skeleton fades in over it. */
+.reveal {
+  --rise: 3px;
+  animation: rise-in 0.3s ease-out;
+}
+
+.reveal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-width: 0;
+}
+
 .page-body.flush {
   overflow: hidden;
   display: flex;
@@ -502,6 +520,7 @@
 }
 
 .segmented {
+  position: relative;
   display: inline-flex;
   padding: 3px;
   gap: 2px;
@@ -511,6 +530,9 @@
 }
 
 .segmented button {
+  position: relative;
+  z-index: 1;
+  transition: color 0.2s;
   border: 0;
   background: transparent;
   border-radius: 6px;
@@ -530,9 +552,33 @@
 }
 
 .segmented button.active {
-  background: var(--surface);
   color: var(--text);
+}
+
+/* The highlight slides to the chosen option (useIndicator). */
+.segmented::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--ind-w, 0);
+  height: var(--ind-h, 0);
+  transform: translate(var(--ind-x, 0), var(--ind-y, 0));
+  border-radius: 6px;
+  background: var(--surface);
   box-shadow: var(--shadow-sm), 0 0 0 1px var(--border);
+  opacity: 0;
+}
+
+.segmented.ind-on::before {
+  opacity: 1;
+}
+
+.segmented.ind-ready::before,
+.tabs.ind-ready::after {
+  transition:
+    transform 0.26s cubic-bezier(0.3, 0.7, 0.3, 1),
+    width 0.26s cubic-bezier(0.3, 0.7, 0.3, 1);
 }
 
 .segmented.full {
@@ -733,6 +779,20 @@
   font-size: 11.5px;
   font-weight: 650;
   white-space: nowrap;
+}
+
+/* A figure that a test just gave lights up, even when it did not change. */
+.delay.fresh {
+  display: inline-block;
+  animation: delay-fresh 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes delay-fresh {
+  from {
+    opacity: 0.2;
+    transform: translateY(-4px) scale(1.15);
+    filter: brightness(1.4);
+  }
 }
 
 .delay.good {
@@ -1092,6 +1152,7 @@
 /* ---------- Tabs ---------- */
 
 .tabs {
+  position: relative;
   display: flex;
   gap: 2px;
   border-bottom: 1px solid var(--border);
@@ -1099,6 +1160,7 @@
 }
 
 .tab {
+  transition: color 0.2s;
   border: 0;
   background: transparent;
   padding: 7px 12px 9px;
@@ -1117,7 +1179,24 @@
 
 .tab.active {
   color: var(--accent-fg);
-  border-bottom-color: var(--accent);
+}
+
+/* The underline slides to the chosen tab (useIndicator). */
+.tabs::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: var(--ind-w, 0);
+  height: 2px;
+  transform: translateX(var(--ind-x, 0));
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+}
+
+.tabs.ind-on::after {
+  opacity: 1;
 }
 
 /* ---------- Empty & loading ---------- */

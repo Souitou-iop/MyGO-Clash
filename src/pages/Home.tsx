@@ -23,7 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Channel } from "mygo-runtime";
-import { type ReactNode, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
 import { TrafficGraph } from "../components/TrafficGraph";
@@ -47,7 +47,7 @@ import {
   type ProxyGroup,
   type SiteResult,
 } from "../mygo";
-import { Badge, Button, Card, Delay, Dialog, Empty, Progress, Segmented, Select, Spinner, Switch } from "../ui";
+import { Badge, Button, Card, Delay, Dialog, Empty, Progress, Segmented, Select, Switch } from "../ui";
 
 // ---------- Pieces ----------
 
@@ -131,7 +131,7 @@ function ControlCard() {
   return (
     <section className={`card control-card ${tone}`}>
       <div className="control-top">
-        <div className={`status-orb ${tone}`}>{icon}</div>
+        <StatusOrb tone={tone}>{icon}</StatusOrb>
         <div className="grow">
           <div className="control-title">{title}</div>
           <div className="control-sub">{sub}</div>
@@ -174,6 +174,27 @@ function ControlCard() {
         </ToggleTile>
       </div>
     </section>
+  );
+}
+
+/**
+ * StatusOrb is the state of the proxy at a glance. Turning the proxy on
+ * sends a ripple out of it, turning it off draws one in; neither plays when
+ * the page opens.
+ */
+function StatusOrb({ tone, children }: { tone: string; children: ReactNode }) {
+  const last = useRef(tone);
+  const [change, setChange] = useState<{ n: number; dir: "" | "up" | "down" }>({ n: 0, dir: "" });
+  useEffect(() => {
+    if (last.current === tone) return;
+    const dir = tone === "on" ? "up" : last.current === "on" ? "down" : "";
+    last.current = tone;
+    setChange((c) => ({ n: c.n + 1, dir }));
+  }, [tone]);
+  return (
+    <div key={change.n} className={`status-orb ${tone}${change.dir ? ` ${change.dir}` : ""}`}>
+      {children}
+    </div>
   );
 }
 
@@ -524,7 +545,7 @@ function IPCard() {
           <div className="skeleton" style={{ height: 64 }} />
         </>
       ) : (
-        <>
+        <div className="reveal reveal-stack">
           <Lead title={`${flag(info.countryCode)}  ${info.country || "—"}`} sub={place || info.timezone || "—"} />
           <dl className="kv">
             <dt>IP</dt>
@@ -536,7 +557,7 @@ function IPCard() {
             <dt>ASN</dt>
             <dd>{info.asn ? `AS${info.asn}` : "—"}</dd>
           </dl>
-        </>
+        </div>
       )}
     </Card>
   );
@@ -633,7 +654,7 @@ function TestCard() {
             <div key={s.id} className="site" title={r && r !== "pending" && r.error ? r.error : s.url}>
               <Logo id={s.id} name={s.name} size={16} />
               <span className="grow ellipsis">{s.name}</span>
-              {r === "pending" ? <Spinner size={13} /> : r ? <Delay value={r.error ? 0 : r.delayMs} /> : <span className="faint">—</span>}
+              {r ? <Delay value={r === "pending" ? undefined : r.error ? 0 : r.delayMs} loading={r === "pending"} /> : <span className="faint">—</span>}
             </div>
           );
         })}
@@ -777,8 +798,16 @@ function Customize({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
+// The cards come in one after another the first time only, when the app
+// starts, not each time the page opens.
+let introPlayed = false;
+
 export default function Home() {
   const t = useT();
+  const [intro] = useState(() => !introPlayed);
+  useEffect(() => {
+    introPlayed = true;
+  }, []);
   const cards = useApp((s) => s.settings?.ui.homeCards ?? NO_CARDS);
   const state = useApp((s) => s.state);
   const navigate = useApp((s) => s.navigate);
@@ -805,9 +834,9 @@ export default function Home() {
             </Button>
           </div>
         )}
-        <div className="home-grid" ref={ref}>
-          {layout.map(({ id, span }) => (
-            <div key={id} className="home-cell" style={{ gridColumn: `span ${span}` }}>
+        <div className={`home-grid${intro ? " intro" : ""}`} ref={ref}>
+          {layout.map(({ id, span }, i) => (
+            <div key={id} className="home-cell" style={{ gridColumn: `span ${span}`, "--i": i } as CSSProperties}>
               {CARDS[id]!()}
             </div>
           ))}
