@@ -4,5 +4,6 @@ node_modules/
 /.mygo/
 mygo_windows_*.syso
 .DS_Store
-# Icon design sources, kept outside the repository
-/MyGO-Clash-iConDesign/
+# Icon design lives in src/assets/icon-design: source/, exports/ and the
+# .icon project are tracked; the project's own Assets are exports of source/.
+/src/assets/icon-design/MyGo-Clash.icon/Assets/
