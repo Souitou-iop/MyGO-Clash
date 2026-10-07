@@ -1573,15 +1573,10 @@ svg.lucide > * {
   animation-delay: 0.21s;
 }
 
-:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-lock-keyhole-open > :nth-child(3) {
-  --dy: -2.5px;
-  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-lock-keyhole-open > :nth-child(1) {
-  --s: 1.8;
-  animation: icon-nudge 0.55s cubic-bezier(0.4, 0, 0.2, 1);
-  animation-delay: 0.1s;
+:is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-activity > path {
+  --len: 64;
+  stroke-dasharray: var(--len);
+  animation: icon-draw 0.8s cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
 :is(.nav-item, .tab, .btn:not(:disabled)):is(:hover, .active) .lucide-settings {

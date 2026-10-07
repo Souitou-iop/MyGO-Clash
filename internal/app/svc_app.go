@@ -325,8 +325,18 @@ func (s Tools) IPInfo(ctx context.Context, direct bool) (tools.IPInfo, error) {
 	return tools.LookupIP(ctx, proxy)
 }
 
+// ExitIP returns the address that a kind of site sees through the proxy:
+// "domestic" for sites in mainland China, "global" for sites abroad, or
+// "cloudflare".
+func (s Tools) ExitIP(ctx context.Context, view string) (tools.IPInfo, error) {
+	return tools.ExitIP(ctx, s.a.proxyURL(), view)
+}
+
 // Sites returns the sites the home page tests.
 func (s Tools) Sites() []tools.Site { return tools.DefaultSites }
+
+// ConnectivitySites returns the sites the connectivity page tests.
+func (s Tools) ConnectivitySites() []tools.Site { return tools.ConnectivitySites }
 
 // TestSites tests sites through the proxy, sending each result as it
 // arrives.
@@ -347,7 +357,8 @@ func (s Tools) TestSites(ctx context.Context, sites []tools.Site, ch *mygo.Chann
 	return nil
 }
 
-// UnlockList returns the services the unlock page checks.
+// UnlockList returns the streaming and AI services the connectivity page
+// checks.
 func (s Tools) UnlockList() []tools.Unlock { return tools.UnlockList() }
 
 // CheckUnlock checks services through the proxy, sending each result as it

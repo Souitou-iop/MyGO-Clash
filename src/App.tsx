@@ -1,12 +1,12 @@
 import {
   ArrowDown,
+  Activity,
   ArrowUp,
   Cable,
   FileStack,
   Globe2,
   LayoutDashboard,
   ListFilter,
-  LockKeyholeOpen,
   type LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -31,7 +31,7 @@ const Connections = lazy(() => import("./pages/Connections"));
 const Rules = lazy(() => import("./pages/Rules"));
 const Logs = lazy(() => import("./pages/Logs"));
 const Tailscale = lazy(() => import("./pages/Tailscale"));
-const Unlock = lazy(() => import("./pages/Unlock"));
+const Connectivity = lazy(() => import("./pages/Connectivity"));
 const Settings = lazy(() => import("./pages/settings"));
 
 const icons: Record<Page, LucideIcon> = {
@@ -42,7 +42,7 @@ const icons: Record<Page, LucideIcon> = {
   rules: ListFilter,
   logs: ScrollText,
   tailscale: Waypoints,
-  unlock: LockKeyholeOpen,
+  connectivity: Activity,
   settings: SettingsIcon,
 };
 
@@ -125,8 +125,8 @@ function PageView({ page }: { page: Page }) {
       return <Logs />;
     case "tailscale":
       return <Tailscale />;
-    case "unlock":
-      return <Unlock />;
+    case "connectivity":
+      return <Connectivity />;
     case "settings":
       return <Settings />;
   }

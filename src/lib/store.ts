@@ -28,10 +28,10 @@ export type Page =
   | "rules"
   | "logs"
   | "tailscale"
-  | "unlock"
+  | "connectivity"
   | "settings";
 
-export const PAGES: Page[] = ["home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "unlock", "settings"];
+export const PAGES: Page[] = ["home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "connectivity", "settings"];
 
 /** route reads a page named by the Go side: "proxies", or "settings/sync" for a tab of the settings. */
 function route(target: string): { page: Page; tab?: string } | null {

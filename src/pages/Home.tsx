@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Channel } from "mygo-runtime";
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
 import { TrafficGraph } from "../components/TrafficGraph";
 import { bytes, dateOnly, duration, flag, percent, rate, relative } from "../lib/format";
@@ -621,7 +622,7 @@ function TestCard() {
       actions={
         <>
           <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} loading={running} onClick={test} tip={t("common.retest")} />
-          <GoTo page="unlock" label={t("nav.unlock")} />
+          <GoTo page="connectivity" label={t("nav.connectivity")} />
         </>
       }
     >
@@ -630,6 +631,7 @@ function TestCard() {
           const r = results[s.id];
           return (
             <div key={s.id} className="site" title={r && r !== "pending" && r.error ? r.error : s.url}>
+              <Logo id={s.id} name={s.name} size={16} />
               <span className="grow ellipsis">{s.name}</span>
               {r === "pending" ? <Spinner size={13} /> : r ? <Delay value={r.error ? 0 : r.delayMs} /> : <span className="faint">—</span>}
             </div>

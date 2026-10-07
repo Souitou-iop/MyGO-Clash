@@ -817,6 +817,151 @@
   color: var(--success);
 }
 
+/* ---------- Connectivity ---------- */
+
+.cty-section {
+  margin-bottom: 26px;
+}
+
+.cty-title {
+  min-height: 28px;
+  margin-bottom: 2px;
+}
+
+.cty-hint {
+  font-size: 12.5px;
+  margin: 0 4px 12px;
+}
+
+.cty-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.cty-ips {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.cty-sites {
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+}
+
+.cty-unlock {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.cty-ip {
+  gap: 10px;
+  min-width: 0;
+}
+
+.cty-ip-head {
+  font-size: 12px;
+  font-weight: 620;
+  color: var(--text-muted);
+}
+
+.cty-ip-place {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.cty-flag {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.cty-error {
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.cty-group + .cty-group {
+  margin-top: 12px;
+}
+
+.cty-group-name {
+  font-size: 12px;
+  margin: 0 4px 6px;
+}
+
+.cty-site {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 11px 12px 10px;
+  min-width: 0;
+}
+
+.cty-name {
+  font-weight: 620;
+}
+
+/* One bar a round, taller when slower, as in MyIP. */
+.cty-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 14px;
+}
+
+.cty-bar {
+  flex: 1;
+  height: 30%;
+  border-radius: 2px;
+  background: var(--surface-2);
+  transition: height 0.25s ease;
+}
+
+.cty-bar.good {
+  background: var(--success);
+}
+
+.cty-bar.ok {
+  background: var(--warning);
+}
+
+.cty-bar.bad,
+.cty-bar.fail {
+  background: var(--danger);
+}
+
+.cty-bar.fail {
+  opacity: 0.45;
+}
+
+.cty-bar.next {
+  background: var(--border-strong);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.logo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.logo-letter {
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
 .unlock-card {
   transition: border-color 0.12s;
 }

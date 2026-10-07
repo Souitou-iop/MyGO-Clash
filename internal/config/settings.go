@@ -368,7 +368,7 @@ func Defaults() Settings {
 				{"profile", true}, {"ip", true}, {"tailscale", true},
 				{"test", true}, {"core", true}, {"system", false},
 			},
-			Nav: []string{"home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "unlock", "settings"},
+			Nav: []string{"home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "connectivity", "settings"},
 		},
 		SystemProxy: SystemProxy{
 			Host:             "127.0.0.1",
@@ -519,6 +519,10 @@ func (s *Settings) Normalize() error {
 	}
 	if s.UI.ProxyColumns < 0 || s.UI.ProxyColumns > 6 {
 		s.UI.ProxyColumns = 0
+	}
+	// The unlock page became the connectivity page.
+	if i := slices.Index(s.UI.Nav, "unlock"); i >= 0 {
+		s.UI.Nav[i] = "connectivity"
 	}
 	if len(s.UI.Nav) == 0 {
 		s.UI.Nav = d.UI.Nav
