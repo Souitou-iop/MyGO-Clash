@@ -2,6 +2,15 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.4-beta
+
+修复编辑窗口闪烁，并让卡片随侧边栏平滑移动。/ Fixes flickering editors and lets cards glide as the sidebar folds.
+
+### 🐛 修复 / Fixes
+
+- 修复订阅菜单中的规则、节点、代理组、覆写与脚本编辑窗口不停闪烁、无法使用的问题：翻译函数每次渲染都会重建，编辑器读取内容的副作用因此陷入循环（1.5 秒内重复读取上百次）；现在按语言缓存，每个编辑器只读取一次 / Fixed the rule, proxy, group, override and script editors in the profile menu flickering and being unusable: the translation function was rebuilt on every render, so the effect that loads their content looped (hundreds of reloads in 1.5 seconds); it is now cached per language and each editor loads once
+- 代理、订阅、连通性、规则与 Tailscale 页面的卡片在侧边栏伸缩导致列数变化时，从原位置平滑滑到新位置，下方内容同步移动，不再跳动 / Cards on the proxies, profiles, connectivity, rules and Tailscale pages now glide from their old position to the new one when the sidebar changes the column count, and the content below moves with them instead of jumping
+
 ## 0.1.3-beta
 
 界面细节打磨。/ Interface polish.
