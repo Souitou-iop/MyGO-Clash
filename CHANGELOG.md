@@ -2,6 +2,16 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.9-beta
+
+开关怎么变的、是谁变的，都写进应用日志。/ The app's log now says how each switch changed and what changed it.
+
+### ✨ 新增功能 / New Features
+
+- 应用自身的日志文件（不是日志页的内核日志）记下系统代理、TUN 与模式的每一次开关，并写明是谁改的：托盘 `tray`、快捷键 `hotkey`、快捷面板 `quick panel`、主窗口 `window`、WebDAV 同步 `sync`、装完服务后自动开启 TUN 的 `service install`；应用自己撤掉 TUN 的两种情况也各自写明：服务不可用、服务被卸载 / The app's own log file, not the core's Logs page, records every change of the system proxy, TUN and mode with what made it: `tray`, `hotkey`, `quick panel`, `window`, WebDAV `sync`, or `service install` when installing the helper turns TUN on; the two times the app takes TUN back are written out as well, for want of the service and after it is uninstalled
+- 每次启动先记一行当时的状态，例如 `switch: at start, system proxy on, TUN off, mode rule`；之后的变化形如 `switch: TUN off (tray)`、`switch: mode rule → global (quick panel)` / Each start logs the state it came up in, such as `switch: at start, system proxy on, TUN off, mode rule`, and later changes read like `switch: TUN off (tray)` or `switch: mode rule → global (quick panel)`
+- 排查用得上：TUN 自己不见了，在应用数据目录的 `logs/app.log` 里搜 `switch:`，就能看出它是被哪里关掉的；关闭前若没有一行 `switch: TUN off`，那就不是应用关的，得当 bug 查 / This is what to search for when TUN disappears on its own: `switch:` in `logs/app.log` under the app's data directory shows where it was turned off, and with no `switch: TUN off` before it the app did not turn it off, which is a bug worth reporting
+
 ## 0.1.8-beta
 
 新电脑首次启动不再卡在 GeoIP 下载，托盘如实显示开关状态，UWP 回环可以逐个选择应用，另有纯黑主题与几处动效、布局修正。/ A first start on a new computer no longer stalls on the GeoIP download, the tray shows the switches as they are, UWP loopback can be set app by app, and there is a pure black theme with a few motion and layout fixes.
