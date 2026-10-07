@@ -2,6 +2,22 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.1.2-beta
+
+界面动效与新连通性页。/ Motion across the app and a new connectivity page.
+
+### ✨ 改进 / Improvements
+
+- 解锁检测页升级为连通性页：出口 IP、国内外分流与流媒体、AI 服务逐项检测，配品牌图标、结果柱条与二维码 / The unlock page becomes a connectivity page: exit IP, domestic and proxy routing, streaming and AI services are checked item by item, with brand logos, result bars and a QR code
+- 分段选择器与标签的选中滑块平滑移动，文字颜色同步淡入 / Segmented controls and tabs: the selection slides over smoothly while label colors cross-fade
+- 页面切换淡入并轻微上移 / Switching pages fades the content in and up
+- 首页主开关：开启时圆标弹跳并扩出波纹，关闭时波纹收回 / The home main switch bounces with an outward ripple when enabled and an inward one when disabled
+- 每次测速结束后延迟数字亮一下（首页延迟卡、代理节点与连通性页）/ Delay numbers flash after every retest (the home latency card, proxy nodes and the connectivity page)
+- 选中代理节点时卡片弹跳并扩出光环，仅对点选的节点播放 / Selecting a proxy node bounces the card with a halo, only for nodes you click
+- 首页卡片仅在启动后首次进入时依次入场；骨架加载完成后内容淡入替换 / Home cards stagger in only on the first visit after launch; skeletons fade into their content
+- 连通性结果柱条从底部长出 / Connectivity bars grow from the bottom
+- 图标动效（如上传图标），遵循系统"减少动态效果"设置：开启时动效时长归零 / Animated icons (such as upload), honoring the system reduce-motion setting, which zeroes animation durations
+
 ## 0.1.1-beta
 
 图标与侧边栏的打磨版本。/ A polish release for the compass icon and the sidebar.
