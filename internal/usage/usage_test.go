@@ -15,6 +15,12 @@ func conn(id, host, proc string, up, down int64, chain ...string) coreapi.Connec
 	return c
 }
 
+// snap is a snapshot of the core: its totals and open connections. Totals
+// of zero leave the connections to count alone.
+func snap(up, down int64, cs ...coreapi.Connection) coreapi.Connections {
+	return coreapi.Connections{UploadTotal: up, DownloadTotal: down, Connections: cs}
+}
+
 var noon = time.Date(2026, 10, 8, 12, 30, 0, 0, time.Local)
 
 func newStore(t *testing.T) *Store {
@@ -25,10 +31,10 @@ func newStore(t *testing.T) *Store {
 
 func TestDeltas(t *testing.T) {
 	s := newStore(t)
-	s.Observe([]coreapi.Connection{conn("a", "x.example.com", "curl", 100, 1000, "HK", "Proxy")}) // only seeds
-	s.Observe([]coreapi.Connection{conn("a", "x.example.com", "curl", 150, 1500, "HK", "Proxy")})
-	s.Observe([]coreapi.Connection{conn("a", "x.example.com", "curl", 150, 1700, "HK", "Proxy"), conn("b", "y.example.com", "", 10, 20, "DIRECT")})
-	s.Observe(nil) // both closed
+	s.Observe(snap(0, 0, conn("a", "x.example.com", "curl", 100, 1000, "HK", "Proxy"))) // only seeds
+	s.Observe(snap(0, 0, conn("a", "x.example.com", "curl", 150, 1500, "HK", "Proxy")))
+	s.Observe(snap(0, 0, conn("a", "x.example.com", "curl", 150, 1700, "HK", "Proxy"), conn("b", "y.example.com", "", 10, 20, "DIRECT")))
+	s.Observe(snap(0, 0)) // both closed
 	r := s.Query(StatsQuery{Range: "today"})
 	if r.Up != 60 || r.Down != 720 {
 		t.Fatalf("totals up %d down %d", r.Up, r.Down)
@@ -49,9 +55,9 @@ func TestDeltas(t *testing.T) {
 
 func TestCounterRestart(t *testing.T) {
 	s := newStore(t)
-	s.Observe(nil)
-	s.Observe([]coreapi.Connection{conn("a", "a.com", "p", 100, 100, "N")})
-	s.Observe([]coreapi.Connection{conn("a", "a.com", "p", 30, 40, "N")})
+	s.Observe(snap(0, 0))
+	s.Observe(snap(0, 0, conn("a", "a.com", "p", 100, 100, "N")))
+	s.Observe(snap(0, 0, conn("a", "a.com", "p", 30, 40, "N")))
 	if r := s.Query(StatsQuery{Range: "today"}); r.Up != 130 || r.Down != 140 {
 		t.Fatalf("%+v", r)
 	}
@@ -75,12 +81,12 @@ func TestDomain(t *testing.T) {
 
 func TestCap(t *testing.T) {
 	s := newStore(t)
-	s.Observe(nil)
+	s.Observe(snap(0, 0))
 	var cs []coreapi.Connection
 	for i := 0; i < maxKeys+50; i++ {
 		cs = append(cs, conn(strconv.Itoa(i), "h"+strconv.Itoa(i)+".com", "app"+strconv.Itoa(i), 1, 1, "N"))
 	}
-	s.Observe(cs)
+	s.Observe(snap(0, 0, cs...))
 	d := s.days[noon.Format(dateFormat)]
 	if len(d.Apps) != maxKeys+1 || d.Apps[otherKey].Up != 50 {
 		t.Fatalf("apps %d other %+v", len(d.Apps), d.Apps[otherKey])
@@ -95,8 +101,8 @@ func TestPersistAndPrune(t *testing.T) {
 	s := newStore(t)
 	s.days[noon.AddDate(0, 0, -KeepDays).Format(dateFormat)] = newDay()
 	s.days[noon.AddDate(0, 0, -KeepDays+1).Format(dateFormat)] = newDay()
-	s.Observe(nil)
-	s.Observe([]coreapi.Connection{conn("a", "a.com", "p", 5, 6, "N")}) // a new day prunes
+	s.Observe(snap(0, 0))
+	s.Observe(snap(0, 0, conn("a", "a.com", "p", 5, 6, "N"))) // a new day prunes
 	if len(s.days) != 2 {
 		t.Fatalf("days %d", len(s.days))
 	}
@@ -115,5 +121,25 @@ func TestPersistAndPrune(t *testing.T) {
 	s3.now = s.now
 	if r := s3.Query(StatsQuery{Range: "7d"}); r.Up != 0 || len(r.Apps) != 0 {
 		t.Fatalf("%+v", r)
+	}
+}
+
+func TestShortConnectionsCountAsOther(t *testing.T) {
+	s := newStore(t)
+	s.Observe(snap(1000, 1000)) // only seeds
+	// 300 down went through a connection seen open; 500 more through ones
+	// that came and went between the snapshots.
+	s.Observe(snap(1000, 1800, conn("a", "a.com", "p", 0, 300, "N")))
+	r := s.Query(StatsQuery{Range: "today"})
+	if r.Up != 0 || r.Down != 800 {
+		t.Fatalf("totals %+v", r)
+	}
+	if len(r.Sites) != 2 || r.Sites[0].Down != 300 || !r.Sites[1].Other || r.Sites[1].Down != 500 {
+		t.Fatalf("sites %+v", r.Sites)
+	}
+	// The core restarted: its counters start over.
+	s.Observe(snap(10, 20))
+	if r := s.Query(StatsQuery{Range: "today"}); r.Up != 10 || r.Down != 820 {
+		t.Fatalf("after restart %+v", r)
 	}
 }

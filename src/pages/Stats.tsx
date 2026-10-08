@@ -1,10 +1,10 @@
 import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { bytes } from "../lib/format";
 import { useAsync, useInterval } from "../lib/hooks";
 import { useT } from "../lib/i18n";
-import { run } from "../lib/store";
+import { patchSettings, run, useApp } from "../lib/store";
 import { Stats as API, type StatsItem, type StatsPoint } from "../mygo";
 import { Button, Card, confirm, Empty, Segmented } from "../ui";
 
@@ -34,7 +34,7 @@ function Bars({ points, hourly }: { points: StatsPoint[]; hourly: boolean }) {
 }
 
 /** Ranking lists what carried the traffic, each row filled to its share of the busiest. */
-function Ranking({ title, items }: { title: string; items: StatsItem[] }) {
+function Ranking({ title, items, note }: { title: string; items: StatsItem[]; note?: ReactNode }) {
   const t = useT();
   const max = Math.max(1, ...items.map((i) => i.up + i.down));
   return (
@@ -43,16 +43,19 @@ function Ranking({ title, items }: { title: string; items: StatsItem[] }) {
         <div className="faint stats-none">{t("stats.noData")}</div>
       ) : (
         items.map((it) => {
-          const name = it.other ? t("stats.other") : it.name;
+          const name = it.other ? t("stats.other") : it.name === "—" ? t("stats.unknownApp") : it.name;
+          // A sliver of a fill would read as an edge stripe.
+          const share = (it.up + it.down) / max;
           return (
             <div key={it.other ? "\0other" : it.name} className="stats-row" title={`${name}  ↓ ${bytes(it.down)}  ↑ ${bytes(it.up)}`}>
-              <span className="stats-fill" style={{ width: `${((it.up + it.down) / max) * 100}%` }} />
-              <span className={`stats-name${it.other ? " muted" : ""}`}>{name}</span>
+              {share >= 0.04 && <span className="stats-fill" style={{ width: `${share * 100}%` }} />}
+              <span className={`stats-name${it.other || it.name === "—" ? " muted" : ""}`}>{name}</span>
               <span className="stats-val tnum">{bytes(it.up + it.down)}</span>
             </div>
           );
         })
       )}
+      {note}
     </Card>
   );
 }
@@ -60,6 +63,7 @@ function Ranking({ title, items }: { title: string; items: StatsItem[] }) {
 export default function Stats() {
   const t = useT();
   const [range, setRange] = useState<Range>("today");
+  const findProcess = useApp((s) => s.settings?.clash.findProcessMode);
   const { data, reload } = useAsync(() => API.query({ range, top: 10 }), [range]);
   useInterval(() => void reload(), 10000);
   const clear = async () => {
@@ -114,7 +118,20 @@ export default function Stats() {
               <Bars points={range === "today" ? data.hours : data.days} hourly={range === "today"} />
             </Card>
             <div className="grid-cards">
-              <Ranking title={t("stats.apps")} items={data.apps} />
+              <Ranking
+                title={t("stats.apps")}
+                items={data.apps}
+                note={
+                  findProcess !== "always" && data.apps.every((a) => a.other || a.name === "—") ? (
+                    <div className="stats-note muted">
+                      <span>{t("stats.appsHint")}</span>
+                      <Button size="sm" onClick={() => void run(() => patchSettings({ clash: { findProcessMode: "always" } }), t("settings.saveFailed"))}>
+                        {t("stats.appsEnable")}
+                      </Button>
+                    </div>
+                  ) : undefined
+                }
+              />
               <Ranking title={t("stats.sites")} items={data.sites} />
               <Ranking title={t("stats.nodes")} items={data.nodes} />
             </div>

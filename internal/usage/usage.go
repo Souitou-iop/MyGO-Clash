@@ -75,6 +75,7 @@ type Store struct {
 	mu     sync.Mutex
 	days   map[string]*Day // by local date
 	last   map[string]Entry
+	total  Entry // the core's counters at the last snapshot
 	seeded bool
 	dirty  bool
 }
@@ -100,17 +101,26 @@ func Open(path string) *Store {
 	return s
 }
 
-// Observe counts what the connections moved since the last call. The first
-// call only takes their totals: a core that outlived the app has been
-// counting for longer than the app was there.
-func (s *Store) Observe(conns []coreapi.Connection) {
+// Observe counts what moved since the last snapshot. The core's own totals
+// count everything; the connections tell where it went, but not for those
+// that opened and closed between two snapshots (most web requests), whose
+// share is counted as other. The first call only takes the counters: a
+// core that outlived the app has been counting for longer than the app was
+// there.
+func (s *Store) Observe(snap coreapi.Connections) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := s.now()
-	var day *Day
-	seen := make(map[string]Entry, len(conns))
-	for i := range conns {
-		c := &conns[i]
+	total := Entry{Up: snap.UploadTotal, Down: snap.DownloadTotal}
+	seen := make(map[string]Entry, len(snap.Connections))
+	type part struct {
+		c        *coreapi.Connection
+		up, down int64
+	}
+	var parts []part
+	var named Entry
+	for i := range snap.Connections {
+		c := &snap.Connections[i]
 		cur := Entry{Up: c.Upload, Down: c.Download}
 		seen[c.ID] = cur
 		if !s.seeded {
@@ -124,19 +134,42 @@ func (s *Store) Observe(conns []coreapi.Connection) {
 		if up == 0 && down == 0 {
 			continue
 		}
-		if day == nil {
-			day = s.day(now)
-		}
-		day.add(up, down)
-		h := day.Hours[now.Hour()]
-		h.add(up, down)
-		day.Hours[now.Hour()] = h
-		bump(day.Apps, process(c), up, down)
-		bump(day.Sites, Site(c.Metadata), up, down)
-		bump(day.Nodes, node(c), up, down)
-		s.dirty = true
+		parts = append(parts, part{c, up, down})
+		named.add(up, down)
 	}
-	s.last, s.seeded = seen, true
+	moved := Entry{Up: total.Up - s.total.Up, Down: total.Down - s.total.Down}
+	if moved.Up < 0 || moved.Down < 0 { // the core started over
+		moved = total
+	}
+	seeded := s.seeded
+	s.last, s.total, s.seeded = seen, total, true
+	if !seeded {
+		return
+	}
+	// The totals and the connections come from one snapshot, but stay
+	// safe should they disagree.
+	moved.Up, moved.Down = max(moved.Up, named.Up), max(moved.Down, named.Down)
+	if moved.Up == 0 && moved.Down == 0 {
+		return
+	}
+	day := s.day(now)
+	day.add(moved.Up, moved.Down)
+	h := day.Hours[now.Hour()]
+	h.add(moved.Up, moved.Down)
+	day.Hours[now.Hour()] = h
+	for _, p := range parts {
+		bump(day.Apps, process(p.c), p.up, p.down)
+		bump(day.Sites, Site(p.c.Metadata), p.up, p.down)
+		bump(day.Nodes, node(p.c), p.up, p.down)
+	}
+	if up, down := moved.Up-named.Up, moved.Down-named.Down; up > 0 || down > 0 {
+		for _, m := range []map[string]Entry{day.Apps, day.Sites, day.Nodes} {
+			e := m[otherKey]
+			e.add(up, down)
+			m[otherKey] = e
+		}
+	}
+	s.dirty = true
 }
 
 // day returns the day of t, adding it (and pruning the old ones).

@@ -60,3 +60,15 @@ func TestAbuserRisk(t *testing.T) {
 		}
 	}
 }
+
+func TestByOwner(t *testing.T) {
+	if q := byOwner(IPQuality{Kind: KindUnknown, Org: "Amazon.com, Inc."}); q.Kind != KindDatacenter {
+		t.Fatalf("amazon: %s", q.Kind)
+	}
+	if q := byOwner(IPQuality{Kind: KindUnknown, Org: "China Telecom"}); q.Kind != KindUnknown {
+		t.Fatalf("telecom: %s", q.Kind)
+	}
+	if q := byOwner(IPQuality{Kind: KindResidential, Org: "Google Fiber"}); q.Kind != KindResidential {
+		t.Fatalf("named kind changed: %s", q.Kind)
+	}
+}

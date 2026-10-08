@@ -318,7 +318,7 @@ func (a *App) collectUsage() {
 			if !ok {
 				return
 			}
-			a.usage.Observe(snap.Connections)
+			a.usage.Observe(snap)
 		}
 	}
 }

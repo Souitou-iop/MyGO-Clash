@@ -64,13 +64,39 @@ func IPQualityOf(ctx context.Context, proxy, ip string) (IPQuality, error) {
 	wg.Wait()
 	switch {
 	case okA && okB:
-		return mergeQuality(a, b), nil
+		return byOwner(mergeQuality(a, b)), nil
 	case okA:
-		return a, nil
+		return byOwner(a), nil
 	case okB:
-		return b, nil
+		return byOwner(b), nil
 	}
 	return IPQuality{}, errors.New("no reputation service answered")
+}
+
+// cloudOwners name the hosting companies whose addresses are data
+// centers, by words of their names.
+var cloudOwners = []string{
+	"amazon", "google", "microsoft", "azure", "oracle", "alibaba", "aliyun", "tencent",
+	"digitalocean", "linode", "akamai", "vultr", "choopa", "constant company", "hetzner", "ovh",
+	"cloudflare", "m247", "datacamp", "leaseweb", "contabo", "it7 networks", "bandwagon", "gcore", "g-core",
+	"kamatera", "scaleway", "online s.a.s", "dmit", "racknerd", "colocrossing", "hostinger",
+	"hostwinds", "psychz", "zenlayer", "kirino", "byteplus", "huawei cloud",
+}
+
+// byOwner names a data center the services left unnamed: their free
+// answers often leave the kind out, while the owner is a cloud.
+func byOwner(q IPQuality) IPQuality {
+	if q.Kind != KindUnknown {
+		return q
+	}
+	org := strings.ToLower(q.Org)
+	for _, w := range cloudOwners {
+		if strings.Contains(org, w) {
+			q.Kind = KindDatacenter
+			break
+		}
+	}
+	return q
 }
 
 // mergeQuality combines two answers about one address. Where they
