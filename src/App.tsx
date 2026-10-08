@@ -3,6 +3,7 @@ import {
   Activity,
   ArrowUp,
   Cable,
+  ChartColumn,
   FileStack,
   Globe2,
   LayoutDashboard,
@@ -28,6 +29,7 @@ import { AskHost, Button, SideTips, Spinner, Toasts } from "./ui";
 const Proxies = lazy(() => import("./pages/Proxies"));
 const Profiles = lazy(() => import("./pages/Profiles"));
 const Connections = lazy(() => import("./pages/Connections"));
+const Stats = lazy(() => import("./pages/Stats"));
 const Rules = lazy(() => import("./pages/Rules"));
 const Logs = lazy(() => import("./pages/Logs"));
 const Tailscale = lazy(() => import("./pages/Tailscale"));
@@ -39,6 +41,7 @@ const icons: Record<Page, LucideIcon> = {
   proxies: Globe2,
   profiles: FileStack,
   connections: Cable,
+  stats: ChartColumn,
   rules: ListFilter,
   logs: ScrollText,
   tailscale: Waypoints,
@@ -124,6 +127,8 @@ function PageView({ page }: { page: Page }) {
       return <Profiles />;
     case "connections":
       return <Connections />;
+    case "stats":
+      return <Stats />;
     case "rules":
       return <Rules />;
     case "logs":

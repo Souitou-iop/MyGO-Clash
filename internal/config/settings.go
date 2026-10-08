@@ -373,7 +373,7 @@ func Defaults() Settings {
 				{"profile", true}, {"ip", true}, {"tailscale", true},
 				{"test", true}, {"core", true}, {"system", false},
 			},
-			Nav: []string{"home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "connectivity", "settings"},
+			Nav: []string{"home", "proxies", "profiles", "connections", "stats", "rules", "logs", "tailscale", "connectivity", "settings"},
 		},
 		SystemProxy: SystemProxy{
 			Host:             "127.0.0.1",

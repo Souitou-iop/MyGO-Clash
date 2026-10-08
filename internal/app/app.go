@@ -31,6 +31,7 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/profiles"
 	"github.com/mygo-clash/mygo-clash/internal/secure"
 	"github.com/mygo-clash/mygo-clash/internal/sysproxy"
+	"github.com/mygo-clash/mygo-clash/internal/usage"
 	"github.com/mygo-clash/mygo-clash/internal/webrtc"
 )
 
@@ -59,6 +60,7 @@ type App struct {
 	traffic *hub[coreapi.Traffic]
 	memory  *hub[coreapi.Memory]
 	conns   *hub[coreapi.Connections]
+	usage   *usage.Store
 	logs    *logRing
 
 	ts      *tailscaleManager
@@ -229,6 +231,7 @@ func (a *App) init() error {
 		return c.StreamMemory(ctx, emit)
 	})
 	a.conns = newHub(a.pollConnections)
+	a.usage = usage.Open(filepath.Join(a.dirs.Data, "usage.json"))
 	a.logs = newLogRing(2000)
 	a.ts = newTailscaleManager(a)
 	a.syncer = newSyncer(a)
@@ -521,6 +524,9 @@ func (a *App) cleanup() {
 		return
 	}
 	a.stop()
+	if err := a.usage.Flush(); err != nil {
+		log.Printf("save the traffic statistics: %v", err)
+	}
 	a.guard.Stop()
 	if a.settings.Get().SystemProxy.Enabled {
 		if err := sysproxy.Set(sysproxy.Proxy{Enabled: false}); err != nil {
