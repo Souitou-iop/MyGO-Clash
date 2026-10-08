@@ -256,8 +256,8 @@ func panelTheme(dark, oled bool) *ui.Theme {
 	var t *ui.Theme
 	if dark {
 		t = ui.DarkTheme()
-		t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#141416"), ui.Hex("#1e1e22"), ui.Hex("#28282d"), ui.Hex("#323238")
-		t.Border, t.Text, t.TextMuted = ui.Hex("#2e2e34"), ui.Hex("#ececef"), ui.Hex("#8e8e97")
+		t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#1c1c1f"), ui.Hex("#26262b"), ui.Hex("#303036"), ui.Hex("#3a3a41")
+		t.Border, t.Text, t.TextMuted = ui.Hex("#36363d"), ui.Hex("#ececef"), ui.Hex("#8e8e97")
 		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#46acdb"), ui.Hex("#5db8e2"), ui.Hex("#3698c6"), ui.Hex("#04131b")
 		t.Danger, t.Warning, t.Success = ui.Hex("#ff6b61"), ui.Hex("#f0c766"), ui.Hex("#5cc985")
 		t.Selection, t.Focus = ui.RGBA(70, 172, 219, 0.22), ui.RGBA(70, 172, 219, 0.55)

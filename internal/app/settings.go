@@ -349,7 +349,7 @@ func windowBackground(st config.Settings) string {
 	if st.OLED {
 		return "light-dark(#f4f4f5, #000000)"
 	}
-	return "light-dark(#f4f4f5, #111113)"
+	return "light-dark(#f4f4f5, #1a1a1d)"
 }
 
 func (a *App) applyTheme(st config.Settings) {
