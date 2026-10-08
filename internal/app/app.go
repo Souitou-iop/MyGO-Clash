@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -80,6 +81,7 @@ type App struct {
 	lightTimer  *time.Timer
 	quitting    bool
 	cleaned     bool
+	released    bool // the system proxy is off for good
 	pendingURLs []string
 	pendingPage string // for the main window being created; see navigate
 	hotkeys     []string
@@ -111,6 +113,7 @@ func Main() {
 		}
 	})
 	mygo.App.OnBeforeQuit(a.beforeQuit)
+	mygo.App.OnQuit(a.cleanup)
 	useUpdater()
 	mygo.App.WhenReady(a.start)
 	if err := mygo.App.Run(); err != nil {
@@ -152,6 +155,9 @@ func (a *App) start() {
 		mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
 	}
 	a.registerHotkeys(st)
+	if !st.SystemProxy.Enabled {
+		go a.clearStaleProxy(st)
+	}
 	go a.startCore(context.Background())
 	go a.profiles.RunScheduler(a.ctx, a.onProfileUpdated)
 	go a.background()
@@ -497,22 +503,74 @@ func (a *App) handleURL(raw string) {
 
 // ---- Quitting ----
 
-func (a *App) beforeQuit(e *mygo.QuitEvent) {
+// beforeQuit lets the windows close for good and puts the system's network
+// back first. It never holds the quit up: on macOS that would cancel a
+// shutdown. The rest waits for OnQuit, which runs on every way out, Windows
+// ending the session (which skips this) included.
+func (a *App) beforeQuit(*mygo.QuitEvent) {
 	a.mu.Lock()
-	if a.cleaned {
-		a.mu.Unlock()
-		return
-	}
 	a.quitting = true
 	a.mu.Unlock()
-	e.PreventDefault()
-	go func() {
-		a.cleanup()
-		a.mu.Lock()
-		a.cleaned = true
-		a.mu.Unlock()
-		mygo.App.Quit()
-	}()
+	a.releaseSystem()
+}
+
+// releaseSystem puts the system's settings back: the system proxy off and
+// the browsers' WebRTC policy unset. Left behind, the proxy would point
+// every app at a port nothing listens on after a restart.
+func (a *App) releaseSystem() {
+	select {
+	case <-a.ready:
+	default:
+		return
+	}
+	a.mu.Lock()
+	done := a.released
+	a.released = true
+	a.mu.Unlock()
+	if done {
+		return
+	}
+	a.guard.Stop()
+	if a.settings.Get().SystemProxy.Enabled || a.snapshot().SystemProxy {
+		if err := sysproxy.Set(sysproxy.Proxy{Enabled: false}); err != nil {
+			log.Printf("turn the system proxy off: %v", err)
+		}
+	}
+	if err := webrtc.Apply(webrtc.Unset, filepath.Join(a.dirs.Data, "webrtc-policy.json")); err != nil {
+		log.Printf("webrtc policy: %v", err)
+	}
+}
+
+// clearStaleProxy turns off a system proxy the app left pointing at itself
+// when it could not quit properly (killed, or the power cut): with the
+// app's proxy off, nothing would listen there.
+func (a *App) clearStaleProxy(st config.Settings) {
+	sys, err := sysproxy.Get()
+	if err != nil || !sys.Enabled || !ours(sys, st) {
+		return
+	}
+	log.Printf("switch: system proxy off (left on by the last run)")
+	if err := sysproxy.Set(sysproxy.Proxy{Enabled: false}); err != nil {
+		log.Printf("turn the system proxy off: %v", err)
+	}
+}
+
+// ours reports whether the system's proxy is one the app sets: its own
+// address, or its PAC server.
+func ours(sys sysproxy.Proxy, st config.Settings) bool {
+	if sys.PAC != "" {
+		u, err := url.Parse(sys.PAC)
+		return err == nil && isLoopback(u.Hostname()) && u.Path == "/commands/pac"
+	}
+	return sys.Port == st.Clash.MixedPort && (strings.EqualFold(sys.Host, st.SystemProxy.Host) || isLoopback(sys.Host))
+}
+
+func isLoopback(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // cleanup puts the system back as it was: the system proxy off and the
@@ -523,22 +581,21 @@ func (a *App) cleanup() {
 	default:
 		return
 	}
+	a.mu.Lock()
+	done := a.cleaned
+	a.cleaned, a.quitting = true, true
+	a.mu.Unlock()
+	if done {
+		return
+	}
+	a.releaseSystem()
 	a.stop()
 	if err := a.usage.Flush(); err != nil {
 		log.Printf("save the traffic statistics: %v", err)
 	}
-	a.guard.Stop()
-	if a.settings.Get().SystemProxy.Enabled {
-		if err := sysproxy.Set(sysproxy.Proxy{Enabled: false}); err != nil {
-			log.Printf("turn the system proxy off: %v", err)
-		}
-	}
-	if err := webrtc.Apply(webrtc.Unset, filepath.Join(a.dirs.Data, "webrtc-policy.json")); err != nil {
-		log.Printf("webrtc policy: %v", err)
-	}
 	a.pac.Close()
 	a.syncer.stop()
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	a.core.Stop(ctx)
 	mygo.GlobalShortcut.UnregisterAll()
