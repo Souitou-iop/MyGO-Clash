@@ -2,6 +2,22 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.1-beta
+
+开着系统代理关机不再导致重启后断网；界面改为中性灰加一种实色；三个平台的安装程序都重做了。/ Shutting down with the system proxy on no longer leaves you offline after a restart; the look is now neutral grays and one solid color; the installers of all three platforms are redone.
+
+### ✨ 新增功能 / New Features
+
+- 界面换成中性灰配 MyGO 官方主蓝（#0B88BB）实色，去掉渐变、光晕与雨纹；选中的卡片改为细边加浅色填充，圆角更利落；快捷面板同步。深色主题改为石墨灰，纯黑留给 OLED / The look is now neutral grays with MyGO's own blue (#0B88BB) as one solid accent, without gradients, glows or rain; selected cards take a hairline and a soft fill, corners are tighter, and the quick panel follows. The dark theme is now graphite, leaving pure black to OLED
+- Windows 安装程序仿照 Clash Verge 重做：先选语言（16 种）；检测已安装版本，可修复、升级、降级或全新安装；安装前让正在运行的应用正常退出（系统代理随之恢复）；卸载时可勾选同时删除应用数据，并移除 TUN 服务 / The Windows installer is redone after Clash Verge's: a language first (16 of them); it finds the installed version to repair, upgrade, downgrade or install afresh; it asks a running app to quit properly, which puts the system proxy back; uninstalling can delete the app's data too, and removes the TUN service
+- macOS 磁盘映像有了自己的窗口：背景、拖拽箭头、图标位置与卷宗图标 / The macOS disk image has its own window: background, arrow, icon positions and volume icon
+- Linux 的 deb、rpm 与 Arch 包加入安装与卸载脚本：升级时更新并重启正在运行的 TUN 服务，卸载时移除服务，安装后刷新菜单与图标缓存 / The Linux deb, rpm and Arch packages have install and remove scripts: an upgrade refreshes and restarts a running TUN service, removal takes the service away, and the menus and icon caches are refreshed
+
+### 🐛 修复 / Fixes
+
+- Windows 关机时不再把系统代理留在指向本应用的端口上，以前重启后若应用没有自启就会断网；macOS 关机不再被本应用取消 / Shutting Windows down no longer leaves the system proxy pointing at the app's port, which left you offline after a restart unless the app started with it; on macOS the app no longer cancels a shutdown
+- 应用被强制结束或断电后留下的系统代理，下次启动时（系统代理为关闭状态）会自动清除 / A system proxy left behind by a forced quit or a power cut is cleared at the next start, when the app's system proxy is off
+
 ## 0.2.0-beta
 
 流量都去了哪、这个网站会走哪条规则、出口 IP 是不是机房，现在都能直接看到；另有托盘测速、局域网代理密码与 Windows 防泄露。/ See where your traffic went, which rule a site will hit, and whether your exit IP is a data center; plus latency tests in the tray, a password for the LAN proxy, and leak protection on Windows.
