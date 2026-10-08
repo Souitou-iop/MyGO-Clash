@@ -92,6 +92,7 @@ var messages = map[string]string{
 	"connected":    "Connected",
 	"disconnected": "Not connected",
 	"syncNow":      "Sync Now",
+	"proxyOff":     "System proxy and TUN off",
 }
 
 // translations are messages in the other languages, by language.

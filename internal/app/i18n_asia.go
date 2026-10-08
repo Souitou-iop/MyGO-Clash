@@ -80,6 +80,7 @@ func init() {
 		"connected":    "Terhubung",
 		"disconnected": "Tidak terhubung",
 		"syncNow":      "Sinkronkan sekarang",
+		"proxyOff":     "Proxy sistem dan TUN mati",
 	}
 	translations["vi"] = map[string]string{
 		"importing":       "Đang nhập hồ sơ…",
@@ -159,6 +160,7 @@ func init() {
 		"connected":    "Đã kết nối",
 		"disconnected": "Chưa kết nối",
 		"syncNow":      "Đồng bộ ngay",
+		"proxyOff":     "Proxy hệ thống và TUN đang tắt",
 	}
 	translations["fa"] = map[string]string{
 		"importing":       "در حال وارد کردن پروفایل…",
@@ -238,6 +240,7 @@ func init() {
 		"connected":    "متصل",
 		"disconnected": "متصل نیست",
 		"syncNow":      "همگام‌سازی اکنون",
+		"proxyOff":     "پروکسی سیستم و TUN خاموش است",
 	}
 	translations["ar"] = map[string]string{
 		"importing":       "جارٍ استيراد الملف الشخصي…",
@@ -317,5 +320,6 @@ func init() {
 		"connected":    "متصل",
 		"disconnected": "غير متصل",
 		"syncNow":      "المزامنة الآن",
+		"proxyOff":     "وكيل النظام و TUN متوقفان",
 	}
 }

@@ -79,6 +79,7 @@ func init() {
 		"connected":    "已连接",
 		"disconnected": "未连接",
 		"syncNow":      "立即同步",
+		"proxyOff":     "系统代理与 TUN 均未开启",
 	}
 	translations["zh-TW"] = map[string]string{
 		"importing":       "正在匯入訂閱…",
@@ -158,5 +159,6 @@ func init() {
 		"connected":    "已連線",
 		"disconnected": "未連線",
 		"syncNow":      "立即同步",
+		"proxyOff":     "系統代理與 TUN 皆未開啟",
 	}
 }

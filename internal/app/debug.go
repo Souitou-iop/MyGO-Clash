@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -71,6 +72,14 @@ func (a *App) startDebug() {
 	mux.HandleFunc("POST /navigate", func(w http.ResponseWriter, r *http.Request) {
 		a.navigate(r.URL.Query().Get("page"))
 		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("GET /tray", func(w http.ResponseWriter, r *http.Request) {
+		// The tray's tooltip and the head of its menu, which /capture can't see.
+		s := a.snapshot()
+		a.tray.mu.Lock()
+		node := a.tray.node
+		a.tray.mu.Unlock()
+		fmt.Fprintln(w, toolTip(a.name, statusLines(a, s, node)))
 	})
 	mux.HandleFunc("POST /panel", func(w http.ResponseWriter, r *http.Request) {
 		a.panel.toggle()

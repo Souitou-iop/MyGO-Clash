@@ -24,6 +24,7 @@ type trayUI struct {
 	mu        sync.Mutex
 	variant   art.Variant
 	menuKey   string // the state the menu was built from
+	node      string // nodePath when the menu was built
 	menu      *mygo.Menu
 	timer     *time.Timer
 	speedStop func()
@@ -131,16 +132,15 @@ func (t *trayUI) refresh() {
 	if changed {
 		_ = t.tray.SetIcon(art.Tray(trayPx(), v, template), template)
 	}
-	tip := fmt.Sprintf("%s · %s", t.a.name, statusLabel(t.a, s.Core))
-	if s.ProfileName != "" {
-		tip += " · " + s.ProfileName
-	}
-	t.tray.SetToolTip(tip)
+	t.mu.Lock()
+	node := t.node
+	t.mu.Unlock()
+	t.tray.SetToolTip(toolTip(t.a.name, statusLines(t.a, s, node)))
 }
 
 // menuKey is the part of the state the menu shows, outside the settings.
 func menuKey(s AppState) string {
-	return fmt.Sprint(s.Core.Status, s.TunAvailable, s.Service.Installed, s.Service.Outdated, s.ProfileName)
+	return fmt.Sprint(s.Core.Status, s.TunAvailable, s.Service.Installed, s.Service.Outdated, s.ProfileName, s.Mode, s.SystemProxy, s.Tun)
 }
 
 func statusLabel(a *App, c coremgr.State) string {
@@ -172,15 +172,20 @@ func (t *trayUI) build() {
 	a := t.a
 	st := a.settings.Get()
 	s := a.snapshot()
+	view := t.view()
+	node := nodePath(view, s.Mode)
 	t.mu.Lock()
 	t.menuKey = menuKey(s)
+	t.node = node
 	t.mu.Unlock()
 	item := func(key string, fn func()) *mygo.MenuItem {
 		return &mygo.MenuItem{Label: tr(a, key), Click: func(*mygo.MenuItem, *mygo.Window) { fn() }}
 	}
 	var items []*mygo.MenuItem
-	head := a.name + " — " + statusLabel(a, s.Core)
-	items = append(items, &mygo.MenuItem{Label: head, Disabled: true})
+	for _, line := range statusLines(a, s, node) {
+		items = append(items, &mygo.MenuItem{Label: line, Disabled: true})
+	}
+	items = append(items, mygo.Separator())
 	items = append(items, item("dashboard", a.showMain), item("quickPanel", func() { a.panel.toggle() }), mygo.Separator())
 
 	modes := []*mygo.MenuItem{}
@@ -196,7 +201,7 @@ func (t *trayUI) build() {
 	}
 
 	if st.Tray.Groups != "off" {
-		if groups := t.groups(); len(groups) > 0 {
+		if groups := t.groups(view); len(groups) > 0 {
 			if st.Tray.Groups == "inline" {
 				items = append(items, mygo.Separator())
 				items = append(items, groups...)
@@ -264,17 +269,24 @@ func (t *trayUI) build() {
 	t.refresh()
 }
 
-// groups returns a submenu for each selector group, with its members.
-func (t *trayUI) groups() []*mygo.MenuItem {
-	a := t.a
-	c := a.core.Client()
-	if c == nil {
+// view is the proxies of the running core, or nil.
+func (t *trayUI) view() *ProxiesView {
+	if t.a.core.Client() == nil {
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	view, err := Proxies{a}.View(ctx)
+	v, err := Proxies{t.a}.View(ctx)
 	if err != nil {
+		return nil
+	}
+	return &v
+}
+
+// groups returns a submenu for each selector group, with its members.
+func (t *trayUI) groups(view *ProxiesView) []*mygo.MenuItem {
+	a := t.a
+	if view == nil {
 		return nil
 	}
 	var out []*mygo.MenuItem
