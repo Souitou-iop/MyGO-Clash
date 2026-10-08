@@ -10,13 +10,16 @@ import (
 // Base is the part of the configuration the app owns: settings the user
 // makes in the app, which win over what profiles and extensions say.
 type Base struct {
-	Mode          string // rule, global, direct
-	MixedPort     int
-	SocksPort     int // 0: off
-	HTTPPort      int // 0: off
-	RedirPort     int // 0: off
-	TProxyPort    int // 0: off
-	AllowLAN      bool
+	Mode       string // rule, global, direct
+	MixedPort  int
+	SocksPort  int // 0: off
+	HTTPPort   int // 0: off
+	RedirPort  int // 0: off
+	TProxyPort int // 0: off
+	AllowLAN   bool
+	// LANAuth is the "user:pass" logins of the proxy ports for other
+	// devices; empty asks for none.
+	LANAuth       []string
 	IPv6          bool
 	LogLevel      string
 	UnifiedDelay  bool
@@ -68,6 +71,21 @@ func strList(s []string) []any {
 		out[i] = v
 	}
 	return out
+}
+
+// lanSkipAuth are the sources let in without a login: this device, so that
+// the system proxy, TUN and local apps keep working.
+var lanSkipAuth = []any{"127.0.0.1/8", "::1/128"}
+
+// ApplyLANAuth makes the proxy ports ask other devices for a login, when
+// allow-lan is on. It runs after the extensions, which cannot lift it. The
+// profile's own logins and skipped ranges give way.
+func ApplyLANAuth(cfg *yamlx.Map, users []string) {
+	if allow, _ := cfg.Bool("allow-lan"); !allow || len(users) == 0 {
+		return
+	}
+	cfg.Set("authentication", strList(users))
+	cfg.Set("skip-auth-prefixes", slices.Clone(lanSkipAuth))
 }
 
 func setPort(cfg *yamlx.Map, key string, port int) {

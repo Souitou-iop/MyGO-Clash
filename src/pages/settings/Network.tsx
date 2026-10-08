@@ -1,4 +1,4 @@
-import { Globe, Monitor, Network as NetIcon, ShieldCheck, ShieldOff, Webcam, Wrench } from "lucide-react";
+import { Dices, Eye, EyeOff, Globe, KeyRound, Monitor, Network as NetIcon, ShieldCheck, ShieldOff, Webcam, Wrench } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
@@ -248,13 +248,68 @@ function ServiceSection() {
   );
 }
 
+// enable turns the login on with the save: the dialog came from the switch.
+function LanAuthDialog({ open, enable, onClose }: { open: boolean; enable: boolean; onClose: () => void }) {
+  const t = useT();
+  const s = useApp((st) => st.settings!);
+  const [a, setA] = useState(s.clash.lanAuth);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    setA(s.clash.lanAuth);
+    setShown(false);
+  }, [open, s.clash.lanAuth]);
+  const invalid = a.username.trim() === "" || a.password === "" || a.username.includes(":");
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={t("settings.lanAuthTitle")}
+      footer={
+        <>
+          <Button onClick={onClose}>{t("common.cancel")}</Button>
+          <Button
+            variant="primary"
+            disabled={invalid}
+            onClick={async () => {
+              const ok = await run(() => patchSettings({ clash: { lanAuth: { ...a, username: a.username.trim(), enabled: a.enabled || enable } } }), t("settings.saveFailed"));
+              if (ok) onClose();
+            }}
+          >
+            {t("common.save")}
+          </Button>
+        </>
+      }
+    >
+      <div className="form">
+        <Field label={t("settings.lanAuthUser")} error={a.username.includes(":") ? ":" : undefined}>
+          <Input className="mono" value={a.username} onChange={(e) => setA({ ...a, username: e.target.value })} />
+        </Field>
+        <Field label={t("settings.lanAuthPass")} hint={t("settings.lanAuthHint")}>
+          <div className="row">
+            <Input className="mono" type={shown ? "text" : "password"} value={a.password} onChange={(e) => setA({ ...a, password: e.target.value })} style={{ flex: 1 }} />
+            <Button icon={shown ? <EyeOff size={14} /> : <Eye size={14} />} onClick={() => setShown(!shown)} tip={shown ? t("common.hide") : t("common.show")} />
+            <Button
+              icon={<Dices size={14} />}
+              onClick={() => SettingsAPI.randomSecret().then((p) => {
+                setA({ ...a, password: p });
+                setShown(true);
+              })}
+              tip={t("settings.lanAuthRandom")}
+            />
+          </div>
+        </Field>
+      </div>
+    </Dialog>
+  );
+}
+
 export default function Network() {
   const t = useT();
   const s = useApp((st) => st.settings!);
   const state = useApp((st) => st.state);
   const os = useApp((st) => st.info?.os);
   const patch = usePatch();
-  const [dialog, setDialog] = useState<"" | "sysproxy" | "tun">("");
+  const [dialog, setDialog] = useState<"" | "sysproxy" | "tun" | "lanauth" | "lanauth-on">("");
   const [busy, setBusy] = useState("");
   const toggle = async (key: string, p: Parameters<typeof patch>[0]) => {
     setBusy(key);
@@ -288,6 +343,22 @@ export default function Network() {
         <Row label={t("settings.allowLan")} desc={t("settings.allowLanDesc")} icon={<Monitor size={16} />}>
           <Switch checked={s.clash.allowLan} onChange={(v) => patch({ clash: { allowLan: v } })} />
         </Row>
+        {s.clash.allowLan && (
+          <Row label={t("settings.lanAuth")} desc={t("settings.lanAuthDesc")} icon={<KeyRound size={16} />}>
+            <Button size="sm" onClick={() => setDialog("lanauth")}>
+              {t("common.configure")}
+            </Button>
+            <Switch
+              checked={s.clash.lanAuth.enabled}
+              onChange={(v) => {
+                // Without a login there is nothing to ask for yet.
+                const a = s.clash.lanAuth;
+                if (v && (!a.username || !a.password)) setDialog("lanauth-on");
+                else patch({ clash: { lanAuth: { enabled: v } } });
+              }}
+            />
+          </Row>
+        )}
       </Section>
       {os === "windows" && (
         <Section title={t("settings.leakProtection")}>
@@ -302,6 +373,7 @@ export default function Network() {
       <ServiceSection />
       <SystemProxyDialog open={dialog === "sysproxy"} onClose={() => setDialog("")} />
       <TunDialog open={dialog === "tun"} onClose={() => setDialog("")} />
+      <LanAuthDialog open={dialog.startsWith("lanauth")} enable={dialog === "lanauth-on"} onClose={() => setDialog("")} />
     </>
   );
 }
