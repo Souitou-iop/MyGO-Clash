@@ -5,6 +5,11 @@
 //
 //	go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"
 //
+// All of the packages get maintainer scripts (scripts.go): mygo's Debian
+// package has none, so they are added to it. They remove the app's systemd
+// service with the package, restart it on an upgrade, and refresh the
+// desktop and icon caches.
+//
 // The RPM and Arch packages hold the files of the Debian package: the app in
 // /opt, its command in /usr/bin, its desktop entry and icons. The AppImage
 // holds the app's directory as the build left it. It needs mksquashfs
@@ -105,6 +110,32 @@ func packageDir(dir string) error {
 		return err
 	}
 	description, _, _ := strings.Cut(control["Description"], "\n")
+
+	// mygo's Debian package has no maintainer scripts; add them. The other
+	// formats get the same ones.
+	debHooks, err := debScripts(name)
+	if err != nil {
+		return err
+	}
+	if err := addDebScripts(debs[0], debHooks); err != nil {
+		return fmt.Errorf("%s: %w", filepath.Base(debs[0]), err)
+	}
+	log.Printf("added maintainer scripts to %s", debs[0])
+	hooks := map[string]map[string]string{}
+	for format, build := range map[string]func(string) (map[string]string, error){"rpm": rpmScripts, "archlinux": archScripts} {
+		s, err := build(name)
+		if err != nil {
+			return err
+		}
+		dir := filepath.Join(tmp, format+"-scripts")
+		if err := os.Mkdir(dir, 0o755); err != nil {
+			return err
+		}
+		if hooks[format], err = writeScripts(dir, s); err != nil {
+			return err
+		}
+	}
+
 	for _, format := range []string{"rpm", "archlinux"} {
 		info := nfpm.WithDefaults(&nfpm.Info{
 			Name:        name,
@@ -122,6 +153,13 @@ func packageDir(dir string) error {
 				ArchLinux: nfpm.ArchLinux{Packager: control["Maintainer"]},
 			},
 		})
+		h := hooks[format]
+		if format == "rpm" {
+			info.Scripts = nfpm.Scripts{PostInstall: h["post"], PreRemove: h["preun"], PostRemove: h["postun"]}
+		} else {
+			info.Scripts = nfpm.Scripts{PostInstall: h["post_install"], PreRemove: h["pre_remove"], PostRemove: h["post_remove"]}
+			info.ArchLinux.Scripts = nfpm.ArchLinuxScripts{PostUpgrade: h["post_upgrade"]}
+		}
 		if err := writePackage(info, format, dir); err != nil {
 			return fmt.Errorf("%s: %w", format, err)
 		}
