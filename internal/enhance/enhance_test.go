@@ -296,3 +296,29 @@ func TestSortAndBuiltins(t *testing.T) {
 		t.Fatalf("sorted %v", got)
 	}
 }
+
+func TestLANAuth(t *testing.T) {
+	users := []string{"me:pa:ss"}
+	// Off: the profile's own settings stay.
+	cfg := parse(t, "authentication: ['a:b']\nskip-auth-prefixes: [10.0.0.0/8]")
+	ApplyBase(cfg, Base{Mode: "rule", MixedPort: 7897, AllowLAN: true})
+	ApplyLANAuth(cfg, nil)
+	if got := cfg.Slice("authentication"); len(got) != 1 || got[0] != "a:b" {
+		t.Errorf("no login asked: authentication = %v", got)
+	}
+	// On with allow-lan: our login, and only this device skips it.
+	ApplyLANAuth(cfg, users)
+	if got := cfg.Slice("authentication"); len(got) != 1 || got[0] != "me:pa:ss" {
+		t.Errorf("authentication = %v", got)
+	}
+	if got := cfg.Slice("skip-auth-prefixes"); len(got) != 2 || got[0] != "127.0.0.1/8" || got[1] != "::1/128" {
+		t.Errorf("skip-auth-prefixes = %v", got)
+	}
+	// Without allow-lan the ports are local anyway: nothing is written.
+	cfg = parse(t, "mode: rule")
+	ApplyBase(cfg, Base{Mode: "rule", MixedPort: 7897})
+	ApplyLANAuth(cfg, users)
+	if _, ok := cfg.Get("authentication"); ok {
+		t.Error("authentication set without allow-lan")
+	}
+}

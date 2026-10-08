@@ -41,6 +41,8 @@ func TestPatchMergesAndValidates(t *testing.T) {
 		`{"sync":{"enabled":true,"url":"http://dav.example.com"}}`,
 		`{"tun":{"routeExcludeAddress":["not-a-cidr"]}}`,
 		`{"clash":{"controller":{"enabled":true,"address":"0.0.0.0:9090","secret":""}}}`,
+		`{"clash":{"lanAuth":{"enabled":true,"username":"","password":"x"}}}`,
+		`{"clash":{"lanAuth":{"enabled":true,"username":"a:b","password":"x"}}}`,
 	} {
 		before := s.Get()
 		if _, _, err := s.Patch([]byte(bad)); err == nil {
@@ -49,6 +51,11 @@ func TestPatchMergesAndValidates(t *testing.T) {
 		if after := s.Get(); after.Clash.MixedPort != before.Clash.MixedPort || after.Accent != before.Accent {
 			t.Errorf("%s changed the settings", bad)
 		}
+	}
+
+	_, cur, err = s.Patch([]byte(`{"clash":{"lanAuth":{"enabled":true,"username":" me ","password":"p:w"}}}`))
+	if err != nil || cur.Clash.LANAuth.Username != "me" || cur.Clash.LANAuth.Password != "p:w" {
+		t.Fatalf("lanAuth: %+v %v", cur.Clash.LANAuth, err)
 	}
 
 	reloaded, err := Load(path)

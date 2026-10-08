@@ -193,6 +193,7 @@ type Clash struct {
 	TProxyPort      int        `json:"tproxyPort"`
 	TProxyEnabled   bool       `json:"tproxyEnabled"`
 	AllowLAN        bool       `json:"allowLan"`
+	LANAuth         LANAuth    `json:"lanAuth"`
 	IPv6            bool       `json:"ipv6"`
 	LogLevel        string     `json:"logLevel"` // debug, info, warning, error, silent
 	UnifiedDelay    bool       `json:"unifiedDelay"`
@@ -200,6 +201,14 @@ type Clash struct {
 	FindProcessMode string     `json:"findProcessMode"` // "", always, strict, off
 	Interface       string     `json:"interface"`
 	Controller      Controller `json:"controller"`
+}
+
+// LANAuth is the login the proxy ports ask of other devices when allow-lan
+// is on. This device is let in without it.
+type LANAuth struct {
+	Enabled  bool   `json:"enabled"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 // Controller is the core's REST API on a TCP port, for dashboards.
@@ -597,6 +606,15 @@ func (s *Settings) Normalize() error {
 	checkPort("HTTP", c.HTTPPort, c.HTTPEnabled)
 	checkPort("redir", c.RedirPort, c.RedirEnabled && runtime.GOOS != "windows")
 	checkPort("TProxy", c.TProxyPort, c.TProxyEnabled && runtime.GOOS == "linux")
+	c.LANAuth.Username = strings.TrimSpace(c.LANAuth.Username)
+	if c.LANAuth.Enabled {
+		switch {
+		case c.LANAuth.Username == "" || c.LANAuth.Password == "":
+			bad("the LAN proxy login needs a username and a password")
+		case strings.Contains(c.LANAuth.Username, ":"):
+			bad("the LAN proxy username cannot contain a colon")
+		}
+	}
 	if c.Controller.Enabled {
 		host, port, err := net.SplitHostPort(c.Controller.Address)
 		if err != nil || port == "" {

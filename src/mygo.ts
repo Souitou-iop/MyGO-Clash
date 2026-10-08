@@ -79,6 +79,7 @@ export interface Clash {
   tproxyPort: number;
   tproxyEnabled: boolean;
   allowLan: boolean;
+  lanAuth: LANAuth;
   ipv6: boolean;
   /** debug, info, warning, error, silent */
   logLevel: string;
@@ -226,6 +227,16 @@ export interface IPInfo {
   /** the Cloudflare data center */
   colo?: string;
   source: string;
+}
+
+/**
+ * LANAuth is the login the proxy ports ask of other devices when allow-lan
+ * is on. This device is let in without it.
+ */
+export interface LANAuth {
+  enabled: boolean;
+  username: string;
+  password: string;
 }
 
 /** Latency is how delays are tested. */

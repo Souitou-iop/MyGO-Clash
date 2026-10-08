@@ -135,6 +135,7 @@ func (m *Manager) Generate(ctx context.Context, in Inputs) (*Runtime, error) {
 		}
 	}
 	enhance.EnsureLANBind(cfg)
+	enhance.ApplyLANAuth(cfg, in.Base.LANAuth)
 	enhance.DefaultGeoX(cfg)
 
 	if in.Tailnet != nil {

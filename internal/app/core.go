@@ -145,6 +145,9 @@ func (a *App) inputs(st config.Settings) profiles.Inputs {
 			RouteExcludeAddress: st.Tun.RouteExcludeAddress,
 		},
 	}
+	if c.LANAuth.Enabled && c.LANAuth.Username != "" && c.LANAuth.Password != "" {
+		base.LANAuth = []string{c.LANAuth.Username + ":" + c.LANAuth.Password}
+	}
 	if c.Controller.Enabled {
 		base.ExternalController = c.Controller.Address
 		base.Secret = c.Controller.Secret
