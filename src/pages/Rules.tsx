@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, CornerLeftUp, Info, MoreHorizontal, Pencil, RefreshCw, SquareArrowOutUpRight } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, CornerLeftUp, Crosshair, Info, MoreHorizontal, Pencil, RefreshCw, SquareArrowOutUpRight } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { RuleTest } from "../components/RuleTest";
 import { EditorDialog } from "../components/profiles/EditorDialog";
 import { RULE_TYPES, SeqEditor, type RuleDraft } from "../components/profiles/SeqEditor";
 import { PageHeader } from "../components/Page";
@@ -86,6 +87,34 @@ export default function Rules() {
     const uid = await run(() => Profiles.extension(profile, "rules"), t("common.failed"));
     if (uid) setSeq({ uid, title: `${t("profiles.ext.rules")} · ${profileName}`, draft });
   };
+  // Brings a rule of the test into view: the filters would hide it, so
+  // they go, and the list scrolls once it has been rebuilt.
+  const [testing, setTesting] = useState(false);
+  const [locate, setLocate] = useState<number | null>(null);
+  const [flash, setFlash] = useState<number | null>(null);
+  useEffect(() => {
+    if (locate === null || tab !== "rules") return;
+    const pos = rules.findIndex((r) => r.index === locate);
+    if (pos < 0) return;
+    virt.scrollToIndex(pos, { align: "center" });
+    setFlash(locate);
+    setLocate(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locate, rules, tab]);
+  useEffect(() => {
+    if (flash === null) return;
+    const timer = setTimeout(() => setFlash(null), 2600);
+    return () => clearTimeout(timer);
+  }, [flash]);
+  const showRule = (index: number) => {
+    setSearch("");
+    setType("");
+    setStatus("");
+    setSort({ key: "index", desc: false });
+    setTab("rules");
+    setTesting(false);
+    setLocate(index);
+  };
   const goGroup = (name: string) => {
     useApp.setState({ focusGroup: name });
     navigate("proxies");
@@ -99,6 +128,11 @@ export default function Rules() {
   return (
     <>
       <PageHeader title={t("nav.rules")} sub={data && <span className="muted" style={{ fontSize: 12 }}>{t("rules.count", { n: all.length })}</span>}>
+        {running && (
+          <Button size="sm" variant="ghost" icon={<Crosshair size={14} />} onClick={() => setTesting(true)} tip={t("rules.test.tip")}>
+            {t("rules.test")}
+          </Button>
+        )}
         {running && profile && (
           <Button size="sm" variant="ghost" icon={<Pencil size={14} />} onClick={() => edit()} tip={t("rules.editTip")}>
             {t("rules.edit")}
@@ -195,7 +229,7 @@ export default function Rules() {
                       const group = groups.has(r.proxy);
                       const draftable = RULE_TYPES.includes(syntax(r)) && syntax(r) !== "MATCH" && !!profile;
                       return (
-                        <div key={r.index} className={`table-row${disabled ? " off" : ""}`} style={{ gridTemplateColumns: COLS, position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${row.start}px)` }}>
+                        <div key={r.index} className={`table-row${disabled ? " off" : ""}${flash === r.index ? " selected" : ""}`} style={{ gridTemplateColumns: COLS, position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${row.start}px)` }}>
                           <span className="cell faint tnum">{r.index + 1}</span>
                           <span className="cell">
                             <Badge>{syntax(r)}</Badge>
@@ -277,6 +311,7 @@ export default function Rules() {
           </div>
         )}
       </div>
+      <RuleTest open={testing} onClose={() => setTesting(false)} onLocate={showRule} />
       <SeqEditor
         uid={seq?.uid ?? null}
         profileUid={profile}

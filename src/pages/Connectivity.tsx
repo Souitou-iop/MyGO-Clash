@@ -1,6 +1,7 @@
 import { CheckCircle2, CircleDashed, Eye, EyeOff, HelpCircle, Loader2, MinusCircle, Play, RefreshCw, XCircle } from "lucide-react";
 import { Channel } from "mygo-runtime";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { IPQualityRows } from "../components/IPQuality";
 import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
 import { delayClass, delayText, flag, relative } from "../lib/format";
@@ -148,6 +149,7 @@ function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs
                     <dd title={info.isp}>{info.isp || "—"}</dd>
                     <dt>ASN</dt>
                     <dd>{info.asn ? `AS${info.asn}` : "—"}</dd>
+                    <IPQualityRows ip={info.ip} />
                     {info.colo && (
                       <>
                         <dt>{t("connectivity.colo")}</dt>

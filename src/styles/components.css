@@ -720,6 +720,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The kind of line an exit address is, and its risk. */
+.kv dd.ipq {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 /* ---------- Badges ---------- */
 
 .badge {

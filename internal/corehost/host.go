@@ -203,6 +203,7 @@ func (h *host) routes(r chi.Router) {
 	r.Patch(coreapi.PathGeneral, h.general)
 	r.Post(coreapi.PathGeoUpdate, h.geoUpdate)
 	r.Post(coreapi.PathRulesDisable, h.rulesDisable)
+	r.Post(coreapi.PathRulesMatch, h.rulesMatch)
 	r.Post(coreapi.PathShutdown, func(w mhttp.ResponseWriter, r *mhttp.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		go func() {

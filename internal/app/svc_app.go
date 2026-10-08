@@ -361,6 +361,13 @@ func (s Tools) ExitIP(ctx context.Context, view string) (tools.IPInfo, error) {
 	return tools.ExitIP(ctx, s.a.proxyURL(), view)
 }
 
+// IPQuality tells whether the address is a home, data center or mobile
+// line, and how risky it looks. It fails quietly into an error the page
+// may ignore: the services are free and sometimes busy.
+func (s Tools) IPQuality(ctx context.Context, ip string) (tools.IPQuality, error) {
+	return tools.IPQualityOf(ctx, s.a.proxyURL(), ip)
+}
+
 // Sites returns the sites the home page tests.
 func (s Tools) Sites() []tools.Site { return tools.DefaultSites }
 

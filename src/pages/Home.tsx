@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Channel } from "mygo-runtime";
 import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { IPQualityRows } from "../components/IPQuality";
 import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
 import { TrafficGraph } from "../components/TrafficGraph";
@@ -571,6 +572,7 @@ function IPCard() {
             <dd title={info.isp}>{info.isp || "—"}</dd>
             <dt>ASN</dt>
             <dd>{info.asn ? `AS${info.asn}` : "—"}</dd>
+            <IPQualityRows ip={info.ip} />
           </dl>
         </div>
       )}
