@@ -283,12 +283,18 @@ func (t *trayUI) groups() []*mygo.MenuItem {
 			continue
 		}
 		group := g
-		var members []*mygo.MenuItem
+		test := &mygo.MenuItem{Label: tr(a, "testDelay"), Click: func(*mygo.MenuItem, *mygo.Window) {
+			go a.testGroup(group.Name, group.TestURL)
+		}}
+		if testingGroup(group.Name) {
+			test.Label, test.Disabled = tr(a, "testDelay")+"…", true
+		}
+		members := []*mygo.MenuItem{test, mygo.Separator()}
 		for _, m := range g.All {
 			member := m
 			label := m.Name
-			if m.Delay > 0 {
-				label += fmt.Sprintf("   %d ms", m.Delay)
+			if d := delayLabel(a, m.Delay); d != "" {
+				label += "   " + d
 			}
 			members = append(members, &mygo.MenuItem{Label: label, Type: mygo.MenuItemRadio, Checked: m.Name == g.Now,
 				Click: func(*mygo.MenuItem, *mygo.Window) {
@@ -298,7 +304,7 @@ func (t *trayUI) groups() []*mygo.MenuItem {
 						}
 					}()
 				}})
-			if len(members) >= 80 {
+			if len(members) >= 82 {
 				break // menus are not lists
 			}
 		}

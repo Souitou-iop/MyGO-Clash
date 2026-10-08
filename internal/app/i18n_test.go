@@ -65,3 +65,11 @@ func TestMatchLanguage(t *testing.T) {
 		}
 	}
 }
+
+func TestDelayKind(t *testing.T) {
+	for d, want := range map[int]delayKind{-1: delayNone, 0: delayBad, 1: delayGood, 199: delayGood, 200: delayOK, 599: delayOK, 600: delayBad} {
+		if got := delayKindOf(d); got != want {
+			t.Errorf("delayKindOf(%d) = %v, want %v", d, got, want)
+		}
+	}
+}

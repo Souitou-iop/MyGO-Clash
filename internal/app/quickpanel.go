@@ -225,17 +225,15 @@ func (p *quickPanel) refreshGroups(ctx context.Context, win *mygo.Window) {
 // delayColor colors a delay as the web UI does: untested (-1) muted,
 // failed (0) as danger.
 func delayColor(t *ui.Theme, d int) ui.Color {
-	switch {
-	case d < 0:
-		return t.TextMuted
-	case d == 0:
-		return t.Danger
-	case d < 200:
+	switch delayKindOf(d) {
+	case delayGood:
 		return t.Success
-	case d < 500:
+	case delayOK:
 		return t.Warning
+	case delayBad:
+		return t.Danger
 	}
-	return t.Danger
+	return t.TextMuted
 }
 
 // panelThemes caches panelTheme's light, dark and pure black themes.
@@ -379,13 +377,13 @@ func (p *quickPanel) view(c *ui.Context) {
 				}
 				if ui.Button(c, label).Disabled(p.testing).Clicked() {
 					p.testing = true
-					group := cur.Name
+					group, testURL := cur.Name, cur.TestURL
 					win := p.window()
 					go func() {
-						ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
-						defer cancel()
-						_, _ = Proxies{a}.GroupDelay(ctx, group, "")
+						a.testGroup(group, testURL)
 						if win != nil {
+							ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
+							defer cancel()
 							p.refreshGroups(ctx, win)
 							win.Update(func() { p.testing = false })
 						}
