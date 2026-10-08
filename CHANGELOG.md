@@ -4,6 +4,8 @@ The section of each version is what the app's update window shows.
 
 ## 0.2.2-beta
 
+桌面上多了一个悬浮网速窗，托盘的悬停提示只剩一行状态。/ A speed window floats over your desktop, and the tray's tooltip is one line of status.
+
 ### ✨ 新增功能 / New Features
 
 - 新增「悬浮网速窗」（设置 → 托盘）：置顶的小窗口显示上传、下载与下载曲线，可选标准（两行加曲线）或迷你（一行）样式；拖到哪里就停在哪里，靠近屏幕边缘时吸附，屏幕拔掉后回到主屏右下角；悬停显示当前状态，双击打开主窗口，右键弹出托盘菜单；可调不透明度、锁定位置（锁定后点击穿透）；Windows 上有程序全屏时自动隐藏 / A *Floating speed window* (Settings → Tray): a small window over the others with upload, download and a graph of downloads, standard (two lines and the graph) or mini (one line); it stays where you drag it, snaps to the screen's edges, and comes back to the primary screen when its screen is gone; point at it for the status, double-click for the main window, right-click for the tray menu; its opacity can be set and it can be locked in place, letting clicks through; on Windows it hides while an app runs full screen
