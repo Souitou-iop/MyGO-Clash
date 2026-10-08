@@ -80,6 +80,12 @@ jobs:
         env:
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
         run: bun run build -platform "${{ matrix.platform }}"
+      - name: Make the Windows installers
+        # Replaces the installer mygo makes, under the same name, with the
+        # one of packaging/windows: language choice, reinstall and upgrade
+        # pages, closing the running app, removing the service on uninstall.
+        if: matrix.name == 'Windows'
+        run: go run ./tools/winsetup build/windows-amd64 build/windows-arm64
       - name: Name the Windows installers after their architecture
         # Both are "<name> Setup <version>.exe" otherwise.
         if: matrix.name == 'Windows'

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "GOFLAGS=-tags=with_gvisor go tool mygo dev",
     "build": "GOFLAGS=-tags=with_gvisor go tool mygo build",
+    "build:windows-installer": "go run ./tools/winsetup build/windows-amd64 build/windows-arm64",
     "generate": "GOFLAGS=-tags=with_gvisor go tool mygo generate",
     "dev:web": "vite",
     "build:web": "tsc --noEmit && vite build",

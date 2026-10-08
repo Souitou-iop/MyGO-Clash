@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -94,7 +95,19 @@ func Main() {
 	if !mygo.App.RequestSingleInstanceLock() {
 		return // the running instance takes over
 	}
+	if slices.Contains(os.Args[1:], quitArg) {
+		return // asked to quit an app that is not running
+	}
 	mygo.App.OnSecondInstance(func(args []string, _ string) {
+		for _, arg := range args {
+			if arg == quitArg {
+				// The Windows installer and uninstaller ask the running app
+				// to quit this way, so that it puts the system proxy back
+				// instead of being killed.
+				a.quit()
+				return
+			}
+		}
 		for _, arg := range args {
 			if isDeepLink(arg) {
 				a.handleURL(arg)
@@ -117,6 +130,10 @@ func Main() {
 		log.Fatal(err)
 	}
 }
+
+// quitArg, as the only argument of a second start, makes the running app
+// quit: `MyGO-Clash.exe --quit`.
+const quitArg = "--quit"
 
 func isDeepLink(s string) bool {
 	return strings.HasPrefix(s, "clash://") || strings.HasPrefix(s, "mygo-clash://")
