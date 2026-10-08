@@ -117,6 +117,7 @@ func (a *App) onCoreReady(ctx context.Context, c *coreapi.Client) {
 	}
 	a.restoreSelections(ctx)
 	a.applySystemProxy(a.settings.Get())
+	a.applyWebRTC(a.settings.Get())
 	a.ts.coreReady()
 }
 

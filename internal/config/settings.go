@@ -58,6 +58,9 @@ type Settings struct {
 	UI          UI          `json:"ui"`
 	SystemProxy SystemProxy `json:"systemProxy"`
 	Tun         Tun         `json:"tun"`
+	// WebRTCGuard keeps WebRTC in browsers from showing the address behind
+	// the proxy, through their policies (Windows).
+	WebRTCGuard bool        `json:"webrtcGuard"`
 	Clash       Clash       `json:"clash"`
 	DNS         DNS         `json:"dns"`
 	Latency     Latency     `json:"latency"`
@@ -379,8 +382,11 @@ func Defaults() Settings {
 			GuardInterval:    30,
 		},
 		Tun: Tun{
-			Stack:               "mixed",
-			AutoRoute:           true,
+			Stack:     "mixed",
+			AutoRoute: true,
+			// On Windows it also stops the DNS leak of multi-homed name
+			// resolution: queries to the other adapters are blocked.
+			StrictRoute:         runtime.GOOS == "windows",
 			AutoDetectInterface: true,
 			DNSHijack:           []string{"any:53"},
 			MTU:                 1500,

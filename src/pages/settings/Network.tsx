@@ -1,4 +1,4 @@
-import { Globe, Monitor, Network as NetIcon, ShieldCheck, ShieldOff, Wrench } from "lucide-react";
+import { Globe, Monitor, Network as NetIcon, ShieldCheck, ShieldOff, Webcam, Wrench } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
@@ -252,6 +252,7 @@ export default function Network() {
   const t = useT();
   const s = useApp((st) => st.settings!);
   const state = useApp((st) => st.state);
+  const os = useApp((st) => st.info?.os);
   const patch = usePatch();
   const [dialog, setDialog] = useState<"" | "sysproxy" | "tun">("");
   const [busy, setBusy] = useState("");
@@ -288,6 +289,16 @@ export default function Network() {
           <Switch checked={s.clash.allowLan} onChange={(v) => patch({ clash: { allowLan: v } })} />
         </Row>
       </Section>
+      {os === "windows" && (
+        <Section title={t("settings.leakProtection")}>
+          <Row label={t("settings.dnsLeak")} desc={t("settings.dnsLeakDesc")} icon={<ShieldCheck size={16} />}>
+            <Switch checked={s.tun.strictRoute} onChange={(v) => patch({ tun: { strictRoute: v } })} />
+          </Row>
+          <Row label={t("settings.webrtcGuard")} desc={t("settings.webrtcGuardDesc")} icon={<Webcam size={16} />}>
+            <Switch checked={s.webrtcGuard} onChange={(v) => patch({ webrtcGuard: v })} />
+          </Row>
+        </Section>
+      )}
       <ServiceSection />
       <SystemProxyDialog open={dialog === "sysproxy"} onClose={() => setDialog("")} />
       <TunDialog open={dialog === "tun"} onClose={() => setDialog("")} />

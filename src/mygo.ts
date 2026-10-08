@@ -599,6 +599,11 @@ export interface Settings {
   ui: UI;
   systemProxy: SystemProxy;
   tun: Tun;
+  /**
+   * WebRTCGuard keeps WebRTC in browsers from showing the address behind
+   * the proxy, through their policies (Windows).
+   */
+  webrtcGuard: boolean;
   clash: Clash;
   dns: DNS;
   latency: Latency;

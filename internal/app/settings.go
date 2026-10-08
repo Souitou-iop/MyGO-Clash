@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/coreapi"
 	"github.com/mygo-clash/mygo-clash/internal/service"
 	"github.com/mygo-clash/mygo-clash/internal/sysproxy"
+	"github.com/mygo-clash/mygo-clash/internal/webrtc"
 )
 
 // changeSettings saves new settings and does what they change.
@@ -111,6 +113,9 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 		if err := a.applySystemProxy(cur); err != nil {
 			errs = append(errs, err)
 		}
+	}
+	if changed(func(s config.Settings) any { return []any{s.WebRTCGuard, s.SystemProxy.Enabled, s.Tun.Enabled} }) {
+		a.applyWebRTC(cur)
 	}
 	if changed(func(s config.Settings) any { return s.Sync }) {
 		a.syncer.restart()
@@ -308,6 +313,34 @@ func logSwitches(ctx context.Context, old, cur config.Settings) {
 	}
 	if old.Clash.Mode != cur.Clash.Mode {
 		log.Printf("switch: mode %s → %s (%s)", old.Clash.Mode, cur.Clash.Mode, src)
+	}
+}
+
+// webrtcHandling is what the browsers' WebRTC may use while the proxy
+// runs as the settings say: in TUN mode, the tunnel only, which carries
+// UDP; with the system proxy, UDP only through the proxy, so TCP; and as
+// it likes when nothing is proxied.
+func webrtcHandling(st config.Settings, tunAvailable bool) webrtc.Handling {
+	switch {
+	case !st.WebRTCGuard:
+		return webrtc.Unset
+	case st.Tun.Enabled && tunAvailable:
+		return webrtc.PublicOnly
+	case st.SystemProxy.Enabled:
+		return webrtc.ProxiedOnly
+	}
+	return webrtc.Unset
+}
+
+// applyWebRTC sets the browsers' WebRTC policy for the settings.
+func (a *App) applyWebRTC(st config.Settings) {
+	h := webrtcHandling(st, a.snapshot().TunAvailable)
+	if err := webrtc.Apply(h, filepath.Join(a.dirs.Data, "webrtc-policy.json")); err != nil {
+		log.Printf("webrtc policy: %v", err)
+		return
+	}
+	if h != webrtc.Unset {
+		log.Printf("webrtc policy: %s", h)
 	}
 }
 

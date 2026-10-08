@@ -31,6 +31,7 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/profiles"
 	"github.com/mygo-clash/mygo-clash/internal/secure"
 	"github.com/mygo-clash/mygo-clash/internal/sysproxy"
+	"github.com/mygo-clash/mygo-clash/internal/webrtc"
 )
 
 // Version is the app's version, set by main.
@@ -525,6 +526,9 @@ func (a *App) cleanup() {
 		if err := sysproxy.Set(sysproxy.Proxy{Enabled: false}); err != nil {
 			log.Printf("turn the system proxy off: %v", err)
 		}
+	}
+	if err := webrtc.Apply(webrtc.Unset, filepath.Join(a.dirs.Data, "webrtc-policy.json")); err != nil {
+		log.Printf("webrtc policy: %v", err)
 	}
 	a.pac.Close()
 	a.syncer.stop()
