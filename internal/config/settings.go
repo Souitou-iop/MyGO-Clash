@@ -66,6 +66,7 @@ type Settings struct {
 	Latency     Latency     `json:"latency"`
 	Hotkeys     Hotkeys     `json:"hotkeys"`
 	Tray        Tray        `json:"tray"`
+	SpeedWindow SpeedWindow `json:"speedWindow"`
 	Lightweight Lightweight `json:"lightweight"`
 	Logs        Logs        `json:"logs"`
 	Tailscale   Tailscale   `json:"tailscale"`
@@ -302,6 +303,22 @@ type Tray struct {
 	InlineModes bool   `json:"inlineModes"`
 }
 
+// SpeedWindow is a small window of the traffic that floats over the
+// others. It belongs to the device: it never syncs.
+type SpeedWindow struct {
+	Enabled bool `json:"enabled"`
+	// Style is "standard", two lines with a graph, or "mini", one line.
+	Style string `json:"style"`
+	// Opacity is in percent, 30 to 100.
+	Opacity int `json:"opacity"`
+	// Locked lets the pointer through to what is under the window.
+	Locked bool `json:"locked"`
+	// X and Y are where it was left on the screen, when Placed.
+	X      int  `json:"x"`
+	Y      int  `json:"y"`
+	Placed bool `json:"placed"`
+}
+
 // Lightweight mode closes the window to save memory, keeping the core,
 // the tray and the quick panel.
 type Lightweight struct {
@@ -451,8 +468,9 @@ func Defaults() Settings {
 			TimeoutMs:        5000,
 			AutoCheckMinutes: 10,
 		},
-		Hotkeys: Hotkeys{Bindings: map[string]string{}},
-		Tray:    Tray{Groups: "submenu", ShowSpeed: false},
+		Hotkeys:     Hotkeys{Bindings: map[string]string{}},
+		Tray:        Tray{Groups: "submenu", ShowSpeed: false},
+		SpeedWindow: SpeedWindow{Style: "standard", Opacity: 100},
 		Lightweight: Lightweight{
 			DelayMinutes: 10,
 		},
@@ -680,6 +698,13 @@ func (s *Settings) Normalize() error {
 			delete(s.Hotkeys.Bindings, action)
 		}
 	}
+	if !oneOf(s.SpeedWindow.Style, "standard", "mini") {
+		s.SpeedWindow.Style = d.SpeedWindow.Style
+	}
+	if s.SpeedWindow.Opacity == 0 {
+		s.SpeedWindow.Opacity = d.SpeedWindow.Opacity
+	}
+	s.SpeedWindow.Opacity = max(30, min(s.SpeedWindow.Opacity, 100))
 	if !oneOf(s.Tray.Groups, "submenu", "inline", "off") {
 		s.Tray.Groups = d.Tray.Groups
 	}

@@ -34,9 +34,14 @@ func (a *App) startDebug() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /capture", func(w http.ResponseWriter, r *http.Request) {
 		var win *mygo.Window
-		if r.URL.Query().Get("w") == "panel" {
+		switch r.URL.Query().Get("w") {
+		case "panel":
 			win = a.panel.window()
-		} else {
+		case "speed":
+			a.speed.mu.Lock()
+			win = a.speed.win
+			a.speed.mu.Unlock()
+		default:
 			a.mu.Lock()
 			win = a.win
 			a.mu.Unlock()
@@ -79,7 +84,17 @@ func (a *App) startDebug() {
 		a.tray.mu.Lock()
 		node := a.tray.node
 		a.tray.mu.Unlock()
-		fmt.Fprintln(w, toolTip(a.name, statusLine(a, s, node)))
+		fmt.Fprintln(w, toolTip(statusLine(a, s, node)))
+	})
+	mux.HandleFunc("POST /speed", func(w http.ResponseWriter, r *http.Request) {
+		// Expands the speed window as the pointer would (?expand=1).
+		a.speed.mu.Lock()
+		win := a.speed.win
+		a.speed.mu.Unlock()
+		if win != nil {
+			win.Update(func() { a.speed.pinned = r.URL.Query().Get("expand") == "1" })
+		}
+		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("POST /panel", func(w http.ResponseWriter, r *http.Request) {
 		a.panel.toggle()

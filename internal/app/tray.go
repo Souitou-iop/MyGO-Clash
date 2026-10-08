@@ -135,7 +135,7 @@ func (t *trayUI) refresh() {
 	t.mu.Lock()
 	node := t.node
 	t.mu.Unlock()
-	t.tray.SetToolTip(toolTip(t.a.name, statusLine(t.a, s, node)))
+	t.tray.SetToolTip(toolTip(statusLine(t.a, s, node)))
 }
 
 // menuKey is the part of the state the menu shows, outside the settings.

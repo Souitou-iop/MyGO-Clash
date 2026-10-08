@@ -66,6 +66,7 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 	if a.tray != nil {
 		a.tray.speed(cur.Tray.ShowSpeed)
 	}
+	a.speed.apply(cur.SpeedWindow)
 
 	// The core: how it runs, then what it runs.
 	needRestart := old.CoreMode != cur.CoreMode
@@ -437,4 +438,4 @@ func syncable(s config.Settings) map[string]any {
 }
 
 // deviceKeys are settings of one device, which never sync.
-var deviceKeys = []string{"sync", "coreMode", "silentStart", "hotkeys", "lightweight", "logs", "backup", "dns", "updates"}
+var deviceKeys = []string{"sync", "coreMode", "silentStart", "hotkeys", "lightweight", "logs", "backup", "dns", "updates", "speedWindow"}

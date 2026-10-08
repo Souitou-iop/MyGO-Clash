@@ -69,6 +69,7 @@ type App struct {
 	syncer  *syncer
 	tray    *trayUI
 	panel   *quickPanel
+	speed   *speedWindow
 	updates *updateChecker
 
 	outdatedTold atomic.Bool // the user heard that the service needs updating
@@ -165,6 +166,8 @@ func (a *App) start() {
 	log.Printf("switch: at start, system proxy %s, TUN %s, mode %s", onOff(st.SystemProxy.Enabled), onOff(st.Tun.Enabled), st.Clash.Mode)
 	a.tray = newTrayUI(a)
 	a.panel = newQuickPanel(a)
+	a.speed = newSpeedWindow(a)
+	a.speed.apply(a.settings.Get().SpeedWindow)
 	a.updates = newUpdateChecker(a)
 	if !st.SilentStart && !mygo.App.WasOpenedAtLogin() {
 		a.showMain()

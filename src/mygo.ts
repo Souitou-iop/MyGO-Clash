@@ -691,6 +691,7 @@ export interface Settings {
   latency: Latency;
   hotkeys: Hotkeys;
   tray: Tray;
+  speedWindow: SpeedWindow;
   lightweight: Lightweight;
   logs: Logs;
   tailscale: Tailscale;
@@ -714,6 +715,24 @@ export interface SiteResult {
   delayMs: number;
   status: number;
   error?: string;
+}
+
+/**
+ * SpeedWindow is a small window of the traffic that floats over the
+ * others. It belongs to the device: it never syncs.
+ */
+export interface SpeedWindow {
+  enabled: boolean;
+  /** Style is "standard", two lines with a graph, or "mini", one line. */
+  style: string;
+  /** Opacity is in percent, 30 to 100. */
+  opacity: number;
+  /** Locked lets the pointer through to what is under the window. */
+  locked: boolean;
+  /** X and Y are where it was left on the screen, when Placed. */
+  x: number;
+  y: number;
+  placed: boolean;
 }
 
 /** State describes the core. */

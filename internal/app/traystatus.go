@@ -65,17 +65,12 @@ func leafNode(v *ProxiesView, mode string) string {
 	return node
 }
 
-// toolTip puts the line under the app's name. Windows keeps 127 UTF-16
-// units of it; Linux shows the title on one line, if at all.
-func toolTip(name, line string) string {
-	if runtime.GOOS == "linux" {
-		return name + " · " + line
-	}
-	tip := name + "\n" + line
+// toolTip is the status line; Windows keeps 127 UTF-16 units of it.
+func toolTip(line string) string {
 	if runtime.GOOS == "windows" {
-		tip = clipUTF16(tip, 127)
+		return clipUTF16(line, 127)
 	}
-	return tip
+	return line
 }
 
 // clipUTF16 cuts s to n UTF-16 units, between characters.
