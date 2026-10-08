@@ -304,6 +304,25 @@ func (a *App) pollConnections(ctx context.Context, emit func(coreapi.Connections
 	}
 }
 
+// collectUsage counts the traffic of the connections for the statistics,
+// from the same snapshots the connections page gets. Being a subscriber
+// keeps them coming while the page is not open.
+func (a *App) collectUsage() {
+	ch, stop := a.conns.Subscribe()
+	defer stop()
+	for {
+		select {
+		case <-a.ctx.Done():
+			return
+		case snap, ok := <-ch:
+			if !ok {
+				return
+			}
+			a.usage.Observe(snap.Connections)
+		}
+	}
+}
+
 // ---- Logs ----
 
 // logRing keeps the core's recent logs, and streams new ones.
@@ -357,6 +376,7 @@ func (r *logRing) clear() {
 // background runs the periodic work: automatic delay tests and backups.
 func (a *App) background() {
 	a.logs.follow(a)
+	go a.collectUsage()
 	minute := time.NewTicker(time.Minute)
 	defer minute.Stop()
 	var lastDelay, lastBackup time.Time
@@ -366,6 +386,9 @@ func (a *App) background() {
 		case <-a.ctx.Done():
 			return
 		case <-minute.C:
+		}
+		if err := a.usage.Flush(); err != nil {
+			log.Printf("save the traffic statistics: %v", err)
 		}
 		st := a.settings.Get()
 		if st.Latency.AutoCheck && time.Since(lastDelay) >= time.Duration(st.Latency.AutoCheckMinutes)*time.Minute {

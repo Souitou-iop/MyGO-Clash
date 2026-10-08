@@ -10,6 +10,7 @@ func (a *App) bind() {
 	mygo.BindAs("Profiles", Profiles{a})
 	mygo.BindAs("Proxies", Proxies{a})
 	mygo.BindAs("Connections", Connections{a})
+	mygo.BindAs("Stats", Stats{a})
 	mygo.BindAs("Rules", Rules{a})
 	mygo.BindAs("Logs", Logs{a})
 	mygo.BindAs("Core", Core{a})

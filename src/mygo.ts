@@ -661,6 +661,51 @@ export interface State {
   restarts: number;
 }
 
+/**
+ * StatsItem is the traffic of an app, site or node. Other collects the
+ * rest, and has no name.
+ */
+export interface StatsItem {
+  name: string;
+  other?: boolean;
+  up: number;
+  down: number;
+}
+
+/** StatsPoint is the traffic of a day, or of an hour of a day. */
+export interface StatsPoint {
+  /** the date, or the hour */
+  label: string;
+  up: number;
+  down: number;
+}
+
+/**
+ * StatsQuery asks for a range of days. Range is "today", "7d" or "30d";
+ * anything else uses From and To ("2006-01-02", both included). Top is
+ * how many apps, sites and nodes to list.
+ */
+export interface StatsQuery {
+  range: string;
+  from?: string;
+  to?: string;
+  top: number;
+}
+
+/** StatsReport is the answer to a query. */
+export interface StatsReport {
+  from: string;
+  to: string;
+  up: number;
+  down: number;
+  days: StatsPoint[];
+  /** when the range is a single day */
+  hours: StatsPoint[];
+  apps: StatsItem[];
+  sites: StatsItem[];
+  nodes: StatsItem[];
+}
+
 /** StoreApp is an app container: a Store app. */
 export interface StoreApp {
   /** SID identifies it; exemptions are by SID. */
@@ -1322,6 +1367,21 @@ export const Connections = {
   /** Stream sends the open connections every second. */
   stream(ch: Channel<Connections>): Promise<void> {
     return call("Connections.Stream", ch);
+  },
+} as const;
+
+/** Stats is the traffic statistics page. */
+export const Stats = {
+  /** Clear forgets the statistics. */
+  clear(): Promise<void> {
+    return call("Stats.Clear");
+  },
+  /**
+   * Query totals the traffic of a range of days, and ranks its apps, sites
+   * and nodes.
+   */
+  query(q: StatsQuery): Promise<StatsReport> {
+    return call("Stats.Query", q);
   },
 } as const;
 
