@@ -18,6 +18,8 @@ import (
 //
 //	GET  /capture           a PNG of the main window
 //	GET  /capture?w=panel   a PNG of the quick panel
+//	GET  /capture?w=speed   a PNG of the speed window
+//	GET  /tray              the tray's status line
 //	POST /eval              runs the body as JavaScript in the page
 //	POST /navigate?page=p   shows a page
 //	POST /panel             toggles the quick panel
@@ -85,16 +87,6 @@ func (a *App) startDebug() {
 		node := a.tray.node
 		a.tray.mu.Unlock()
 		fmt.Fprintln(w, toolTip(statusLine(a, s, node)))
-	})
-	mux.HandleFunc("POST /speed", func(w http.ResponseWriter, r *http.Request) {
-		// Expands the speed window as the pointer would (?expand=1).
-		a.speed.mu.Lock()
-		win := a.speed.win
-		a.speed.mu.Unlock()
-		if win != nil {
-			win.Update(func() { a.speed.pinned = r.URL.Query().Get("expand") == "1" })
-		}
-		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("POST /panel", func(w http.ResponseWriter, r *http.Request) {
 		a.panel.toggle()

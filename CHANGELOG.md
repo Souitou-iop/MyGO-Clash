@@ -2,6 +2,16 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.3-beta
+
+悬浮网速窗不再占任务栏，也能放到任务栏上了。/ The speed window stays off the taskbar, and can sit on it.
+
+### 🔧 改进 / Improvements
+
+- 悬浮网速窗不再在 Windows 任务栏上多出一个图标，Alt+Tab 里也不会出现 / The speed window no longer adds a button to the Windows taskbar, nor shows in Alt+Tab
+- 悬浮网速窗可以放在屏幕上任何位置，包括任务栏上，并会一直显示在任务栏之上；只在靠近任务栏或屏幕边缘时吸附 / The speed window can be left anywhere on a screen, the taskbar included, and stays over the taskbar; it snaps only near the taskbar or the screen's edges
+- 去掉悬停展开：标准样式直接显示状态行（模式 · 接管方式 · 节点），网速与曲线在下面一行 / No more growing under the pointer: the standard style shows the status line (mode · what carries the traffic · node) at all times, with the speeds and the graph below it
+
 ## 0.2.2-beta
 
 桌面上多了一个悬浮网速窗，托盘的悬停提示只剩一行状态。/ A speed window floats over your desktop, and the tray's tooltip is one line of status.

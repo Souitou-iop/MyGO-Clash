@@ -15,9 +15,9 @@ import (
 
 // speedWindow is a small window of native UI that floats over the others
 // with the traffic, for Windows, where the tray has no room for it, and
-// for whoever wants it elsewhere. It is dragged around and stays where it
-// is left; the pointer over it shows the tray's status line; a double
-// click opens the main window and a right click the tray's menu.
+// for whoever wants it elsewhere. It is dragged anywhere on a screen, the
+// taskbar too, and stays where it is left; a double click opens the main
+// window and a right click the tray's menu.
 type speedWindow struct {
 	a *App
 
@@ -33,11 +33,8 @@ type speedWindow struct {
 	line    string  // statusLine
 	dot     dotKind
 	// The view's own state, on the main thread.
-	style    string
-	expanded bool
-	base     mygo.Point // the window's place, not expanded
-	drag     *dragStart
-	pinned   bool // expanded whatever the pointer does, for the debug server
+	style string
+	drag  *dragStart
 }
 
 type dotKind int
@@ -54,10 +51,11 @@ type dragStart struct {
 	moved       bool
 }
 
-// The window's sizes: collapsed and with the status line under the pointer.
-var speedSizes = map[string][2]mygo.Rectangle{
-	"standard": {{Width: 168, Height: 44}, {Width: 232, Height: 62}},
-	"mini":     {{Width: 176, Height: 28}, {Width: 232, Height: 46}},
+// The window's sizes: the standard one has the status line and the graph,
+// the mini one only the traffic, low enough for a taskbar.
+var speedSizes = map[string]mygo.Rectangle{
+	"standard": {Width: 212, Height: 46},
+	"mini":     {Width: 176, Height: 28},
 }
 
 const histLen = 30
@@ -91,14 +89,16 @@ func (w *speedWindow) apply(st config.SpeedWindow) {
 	}
 	if prev.Style != st.Style {
 		win.Update(func() {
-			w.style, w.expanded = st.Style, false
-			w.resize(win)
+			w.style = st.Style
+			x, y := win.Position()
+			size := speedSizes[w.style]
+			win.SetBounds(mygo.Rectangle{X: x, Y: y, Width: size.Width, Height: size.Height})
 		})
 	}
 }
 
 func (w *speedWindow) open(st config.SpeedWindow) {
-	size := speedSizes[st.Style][0]
+	size := speedSizes[st.Style]
 	pos := speedPlace(st, size, mygo.Screen.Displays(), mygo.Screen.PrimaryDisplay())
 	win := mygo.NewWindow(mygo.WindowOptions{
 		Title: w.a.name, Width: size.Width, Height: size.Height, Hidden: true,
@@ -111,13 +111,14 @@ func (w *speedWindow) open(st config.SpeedWindow) {
 	w.win, w.stop, w.full = win, cancel, false
 	w.mu.Unlock()
 	win.Update(func() {
-		w.style, w.expanded, w.base = st.Style, false, pos
+		w.style = st.Style
 		w.hist = w.hist[:0]
 	})
 	win.SetPosition(pos.X, pos.Y)
 	win.SetOpacity(float64(st.Opacity) / 100)
 	win.SetIgnoreMouseEvents(st.Locked)
 	win.SetVisibleOnAllWorkspaces(true)
+	toolWindow(win)
 	win.ShowInactive()
 	go w.live(ctx, win)
 }
@@ -135,8 +136,8 @@ func (w *speedWindow) close() {
 	}
 }
 
-// live feeds the window the traffic and the state, and hides it while an
-// app runs full screen (Windows).
+// live feeds the window the traffic and the state, keeps it over the
+// taskbar, and hides it while an app runs full screen (Windows).
 func (w *speedWindow) live(ctx context.Context, win *mygo.Window) {
 	ch, unsub := w.a.traffic.Subscribe()
 	defer unsub()
@@ -151,6 +152,7 @@ func (w *speedWindow) live(ctx context.Context, win *mygo.Window) {
 			if !ok {
 				return
 			}
+			keepOnTop(win)
 			win.Update(func() {
 				w.traffic = t
 				w.hist = append(w.hist, t.Down)
@@ -200,21 +202,6 @@ func (w *speedWindow) status(win *mygo.Window) {
 	win.Update(func() { w.line, w.dot = line, dot })
 }
 
-// resize sizes the window for its style and whether it is expanded,
-// growing toward the middle of the screen, so that it never leaves it.
-// On the main thread.
-func (w *speedWindow) resize(win *mygo.Window) {
-	sizes := speedSizes[w.style]
-	size := sizes[0]
-	pos := w.base
-	if w.expanded {
-		size = sizes[1]
-		wa := mygo.Screen.DisplayNearestPoint(w.base).WorkArea
-		pos = growInside(w.base, sizes[0], size, wa)
-	}
-	win.SetBounds(mygo.Rectangle{X: pos.X, Y: pos.Y, Width: size.Width, Height: size.Height})
-}
-
 // view draws the window.
 func (w *speedWindow) view(c *ui.Context) {
 	a := w.a
@@ -241,36 +228,31 @@ func (w *speedWindow) view(c *ui.Context) {
 	case dotError:
 		dot = t.Danger
 	}
-	mini := w.style == "mini"
+	up, down := "↑ "+shortRate(w.traffic.Up)+"/s", "↓ "+shortRate(w.traffic.Down)+"/s"
 
-	root := ui.Column(c).Fill().Padding(0, 10).Gap(2).Justify(ui.Center).Background(t.Background).Border(1, t.Border)
+	root := ui.Row(c).Fill().Padding(0, 10).Gap(8).AlignItems(ui.Center).Background(t.Background).Border(1, t.Border)
 	root.Children(func() {
-		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
+		if w.style == "mini" {
 			ui.Box(c).Size(7, 7).Radius(3.5).Background(dot)
-			up, down := "↑ "+shortRate(w.traffic.Up)+"/s", "↓ "+shortRate(w.traffic.Down)+"/s"
-			if mini {
-				ui.Text(c, up).FontSize(12).FontFeatures("tnum").TextColor(upC).Width(66)
-				ui.Text(c, down).FontSize(12).FontFeatures("tnum").TextColor(downC).Width(66)
-				return
-			}
-			ui.Column(c).Width(70).Children(func() {
-				ui.Text(c, up).FontSize(12).FontFeatures("tnum").TextColor(upC)
-				ui.Text(c, down).FontSize(12).FontFeatures("tnum").TextColor(downC)
-			})
-			ui.Spacer(c)
-			hist := w.hist
-			ui.Box(c).Size(52, 24).Draw(func(p *ui.Painter, r ui.Rect) { spark(p, r, hist, downC) })
-		})
-		if w.expanded {
-			ui.Text(c, w.line).FontSize(11).TextColor(t.TextMuted).SingleLine()
+			ui.Text(c, up).FontSize(12).FontFeatures("tnum").TextColor(upC).Width(66)
+			ui.Text(c, down).FontSize(12).FontFeatures("tnum").TextColor(downC).Width(66)
+			return
 		}
+		ui.Column(c).Grow(1).Gap(3).Children(func() {
+			ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
+				ui.Box(c).Size(7, 7).Radius(3.5).Background(dot)
+				ui.Text(c, w.line).FontSize(11).TextColor(t.TextMuted).SingleLine()
+			})
+			ui.Row(c).Gap(4).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, up).FontSize(12).FontFeatures("tnum").TextColor(upC).Width(70)
+				ui.Text(c, down).FontSize(12).FontFeatures("tnum").TextColor(downC).Width(70)
+				ui.Spacer(c)
+				hist := w.hist
+				ui.Box(c).Size(44, 16).Draw(func(p *ui.Painter, r ui.Rect) { spark(p, r, hist, downC) })
+			})
+		})
 	})
 
-	// Hovering shows the status line.
-	if hover := root.Hovered() || w.pinned; hover != w.expanded && w.drag == nil {
-		w.expanded = hover
-		w.resize(win)
-	}
 	if root.DoubleClicked() {
 		go a.showMain()
 	}
@@ -305,18 +287,11 @@ func (w *speedWindow) dragging(root *ui.Element, win *mygo.Window) {
 			return
 		}
 		x, y := win.Position()
-		if w.expanded {
-			// Back to the collapsed window's place.
-			sizes := speedSizes[w.style]
-			wa := mygo.Screen.DisplayNearestPoint(mygo.Point{X: x, Y: y}).WorkArea
-			g := growInside(mygo.Point{X: x, Y: y}, sizes[0], sizes[1], wa)
-			x, y = x-(g.X-x), y-(g.Y-y)
-		}
-		size := speedSizes[w.style][0]
-		wa := mygo.Screen.DisplayNearestPoint(mygo.Point{X: x + size.Width/2, Y: y + size.Height/2}).WorkArea
-		w.base = snapEdges(mygo.Point{X: x, Y: y}, size, wa)
-		w.resize(win)
-		go w.save(w.base)
+		size := speedSizes[w.style]
+		d := mygo.Screen.DisplayNearestPoint(mygo.Point{X: x + size.Width/2, Y: y + size.Height/2})
+		p := snapEdges(mygo.Point{X: x, Y: y}, size, d.Bounds, d.WorkArea)
+		win.SetPosition(p.X, p.Y)
+		go w.save(p)
 		return
 	}
 	if w.drag != nil {
@@ -359,8 +334,8 @@ func spark(p *ui.Painter, r ui.Rect, hist []int64, c ui.Color) {
 func speedPlace(st config.SpeedWindow, size mygo.Rectangle, displays []mygo.Display, primary mygo.Display) mygo.Point {
 	if st.Placed {
 		for _, d := range displays {
-			wa := d.WorkArea
-			if st.X >= wa.X && st.Y >= wa.Y && st.X+size.Width <= wa.X+wa.Width && st.Y+size.Height <= wa.Y+wa.Height {
+			b := d.Bounds
+			if st.X >= b.X && st.Y >= b.Y && st.X+size.Width <= b.X+b.Width && st.Y+size.Height <= b.Y+b.Height {
 				return mygo.Point{X: st.X, Y: st.Y}
 			}
 		}
@@ -369,32 +344,32 @@ func speedPlace(st config.SpeedWindow, size mygo.Rectangle, displays []mygo.Disp
 	return mygo.Point{X: wa.X + wa.Width - size.Width - 16, Y: wa.Y + wa.Height - size.Height - 16}
 }
 
-// snapEdges keeps the window inside the work area, against an edge it was
-// left near.
-func snapEdges(p mygo.Point, size, wa mygo.Rectangle) mygo.Point {
-	const near = 12
-	right, bottom := wa.X+wa.Width-size.Width, wa.Y+wa.Height-size.Height
-	if p.X-wa.X < near {
-		p.X = wa.X
-	} else if right-p.X < near {
-		p.X = right
-	}
-	if p.Y-wa.Y < near {
-		p.Y = wa.Y
-	} else if bottom-p.Y < near {
-		p.Y = bottom
-	}
+// snapEdges keeps the window on the screen whose bounds are b, against an
+// edge of its work area wa it was left near. Over the taskbar, outside the
+// work area, it stays where it is put.
+func snapEdges(p mygo.Point, size, b, wa mygo.Rectangle) mygo.Point {
+	p.X = snapAxis(p.X, size.Width, b.X, b.X+b.Width, wa.X, wa.X+wa.Width)
+	p.Y = snapAxis(p.Y, size.Height, b.Y, b.Y+b.Height, wa.Y, wa.Y+wa.Height)
 	return p
 }
 
-// growInside is where a window at p grows from small to big: away from
-// the edges it is nearest to, so it stays in the work area.
-func growInside(p mygo.Point, small, big, wa mygo.Rectangle) mygo.Point {
-	if p.X+small.Width/2 > wa.X+wa.Width/2 {
-		p.X -= big.Width - small.Width
+// snapAxis places a span of n at v on one axis, between lo and hi, moved to
+// an edge of the work area between waLo and waHi when it is near it and
+// mostly inside.
+func snapAxis(v, n, lo, hi, waLo, waHi int) int {
+	const near = 12
+	switch {
+	case abs(v-waLo) < near:
+		v = waLo
+	case abs(v+n-waHi) < near:
+		v = waHi - n
 	}
-	if p.Y+small.Height/2 > wa.Y+wa.Height/2 {
-		p.Y -= big.Height - small.Height
+	return min(max(v, lo), hi-n)
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
 	}
-	return p
+	return v
 }
