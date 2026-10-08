@@ -101,6 +101,35 @@ type UI struct {
 	// Nav lists the pages of the sidebar in order; pages missing from it
 	// are hidden.
 	Nav []string `json:"nav"`
+	// NavKnown lists the pages the sidebar has offered, so a page added
+	// in an update shows up once, while one the user hid stays hidden.
+	NavKnown []string `json:"navKnown,omitempty"`
+}
+
+// navBefore02 are the pages of the sidebar before 0.2.0, which settings
+// saved before then knew without saying.
+var navBefore02 = []string{"home", "proxies", "profiles", "connections", "rules", "logs", "tailscale", "connectivity", "settings"}
+
+// addNewPages inserts into nav the pages of defaults it has never offered,
+// each after the page that precedes it by default.
+func addNewPages(nav, known, defaults []string) []string {
+	if known == nil {
+		known = navBefore02
+	}
+	for i, p := range defaults {
+		if slices.Contains(known, p) || slices.Contains(nav, p) {
+			continue
+		}
+		at := 0
+		for j := i - 1; j >= 0; j-- {
+			if k := slices.Index(nav, defaults[j]); k >= 0 {
+				at = k + 1
+				break
+			}
+		}
+		nav = slices.Insert(nav, at, p)
+	}
+	return nav
 }
 
 // HomeCard is a card of the home page.
@@ -543,7 +572,11 @@ func (s *Settings) Normalize() error {
 	}
 	if len(s.UI.Nav) == 0 {
 		s.UI.Nav = d.UI.Nav
-	} else if !slices.Contains(s.UI.Nav, "settings") {
+	} else {
+		s.UI.Nav = addNewPages(s.UI.Nav, s.UI.NavKnown, d.UI.Nav)
+	}
+	s.UI.NavKnown = slices.Clone(d.UI.Nav)
+	if !slices.Contains(s.UI.Nav, "settings") {
 		s.UI.Nav = append(s.UI.Nav, "settings") // settings cannot be hidden
 	}
 	s.UI.HomeCards = normalizeHomeCards(s.UI.HomeCards, d.UI.HomeCards)

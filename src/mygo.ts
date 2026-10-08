@@ -1018,6 +1018,11 @@ export interface UI {
    * are hidden.
    */
   nav: string[];
+  /**
+   * NavKnown lists the pages the sidebar has offered, so a page added
+   * in an update shows up once, while one the user hid stays hidden.
+   */
+  navKnown?: string[];
 }
 
 /** Unlock is the availability of a service. */

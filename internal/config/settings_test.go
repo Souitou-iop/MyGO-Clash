@@ -111,11 +111,26 @@ func TestHomeCardsMigrate(t *testing.T) {
 func TestNavUnlockBecomesConnectivity(t *testing.T) {
 	s := Defaults()
 	s.UI.Nav = []string{"home", "unlock", "proxies"}
+	s.UI.NavKnown = Defaults().UI.Nav // nothing new to add
 	if err := s.Normalize(); err != nil {
 		t.Fatal(err)
 	}
 	want := []string{"home", "connectivity", "proxies", "settings"}
 	if !slices.Equal(s.UI.Nav, want) {
 		t.Fatalf("nav = %v, want %v", s.UI.Nav, want)
+	}
+}
+
+func TestAddNewPages(t *testing.T) {
+	defaults := []string{"home", "proxies", "profiles", "connections", "stats", "rules", "logs", "tailscale", "connectivity", "settings"}
+	// Saved before stats existed: it shows up after connections.
+	got := addNewPages([]string{"home", "connections", "rules", "settings"}, nil, defaults)
+	if want := []string{"home", "connections", "stats", "rules", "settings"}; !slices.Equal(got, want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	// Hidden by the user after it was offered: stays hidden.
+	got = addNewPages([]string{"home", "connections", "rules", "settings"}, defaults, defaults)
+	if want := []string{"home", "connections", "rules", "settings"}; !slices.Equal(got, want) {
+		t.Fatalf("got %v, want %v", got, want)
 	}
 }
