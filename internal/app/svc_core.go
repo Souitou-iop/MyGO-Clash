@@ -326,6 +326,16 @@ func (s Rules) UpdateProvider(ctx context.Context, name string) error {
 	return c.UpdateRuleProvider(ctx, name)
 }
 
+// Test finds the rule a connection to target (a domain, an address or a
+// URL) would hit, and the proxy it would go through.
+func (s Rules) Test(ctx context.Context, req coreapi.MatchRequest) (coreapi.MatchResult, error) {
+	c, err := s.a.core.Must()
+	if err != nil {
+		return coreapi.MatchResult{}, err
+	}
+	return c.MatchRule(ctx, req)
+}
+
 // SetDisabled disables or enables a rule until the next reload.
 func (s Rules) SetDisabled(ctx context.Context, index int, disabled bool) error {
 	c, err := s.a.core.Must()

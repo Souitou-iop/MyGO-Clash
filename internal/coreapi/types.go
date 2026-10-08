@@ -17,6 +17,7 @@ const (
 	PathGeneral       = "/mygo/general"
 	PathGeoUpdate     = "/mygo/geo/update"
 	PathRulesDisable  = "/mygo/rules/disable"
+	PathRulesMatch    = "/mygo/rules/match"
 	PathShutdown      = "/mygo/shutdown"
 	PathTSStatus      = "/mygo/tailscale/status"
 	PathTSWatch       = "/mygo/tailscale/watch"
@@ -84,6 +85,50 @@ type ValidateRequest struct {
 type GeneralPatch struct {
 	Mode     string `json:"mode,omitempty"`
 	LogLevel string `json:"logLevel,omitempty"`
+}
+
+// MatchRequest asks which rule a connection would hit.
+type MatchRequest struct {
+	// Target is a domain, an IP address or a URL.
+	Target string `json:"target"`
+	// Network is "tcp" (the default) or "udp".
+	Network string `json:"network,omitempty"`
+	// Port is the destination port; 0 takes the URL's, else 443.
+	Port int `json:"port,omitempty"`
+	// Process is the name of the program that connects, for process rules.
+	Process string `json:"process,omitempty"`
+}
+
+// MatchHop is a step of the path a connection takes: a group, then the
+// member it selects, down to the proxy that dials.
+type MatchHop struct {
+	Name string `json:"name"`
+	Type string `json:"type"` // Selector, URLTest, Shadowsocks, Direct...
+}
+
+// MatchResult is the rule a connection would hit and where it would go.
+type MatchResult struct {
+	Host    string `json:"host"` // the domain or address tested, as normalized
+	Network string `json:"network"`
+	Port    int    `json:"port"`
+	Mode    string `json:"mode"` // rule, global or direct
+	// Source says what decided: "rule", "mode" (global or direct mode, so
+	// no rule was consulted) or "none" (no rule matched and the core
+	// falls back to DIRECT).
+	Source string `json:"source"`
+	// Index is the position in the rules list; -1 without a rule.
+	Index    int    `json:"index"`
+	RuleType string `json:"ruleType,omitempty"`
+	Payload  string `json:"payload,omitempty"`
+	// Policy is the proxy or group the rule names.
+	Policy string `json:"policy"`
+	// Chain is the path from Policy down to the proxy that dials.
+	Chain []MatchHop `json:"chain"`
+	// IPs are the addresses the name resolved to while matching, or the
+	// address that was given.
+	IPs []string `json:"ips"`
+	// Disabled counts the rules switched off by hand, which are skipped.
+	Disabled int `json:"disabled"`
 }
 
 // ErrorBody is the body of the core's error responses.

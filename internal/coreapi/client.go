@@ -193,6 +193,14 @@ func (c *Client) DisableRules(ctx context.Context, rules map[int]bool) error {
 	return c.do(ctx, http.MethodPost, PathRulesDisable, nil, rules, nil)
 }
 
+// MatchRule finds the rule a connection to a target would hit, and the
+// proxy it would go through.
+func (c *Client) MatchRule(ctx context.Context, req MatchRequest) (MatchResult, error) {
+	var res MatchResult
+	err := c.do(ctx, http.MethodPost, PathRulesMatch, nil, req, &res)
+	return res, err
+}
+
 // Shutdown stops the core.
 func (c *Client) Shutdown(ctx context.Context) error {
 	return c.do(ctx, http.MethodPost, PathShutdown, nil, nil, nil)

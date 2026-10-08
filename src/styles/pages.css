@@ -1227,6 +1227,78 @@
   margin-bottom: 10px;
 }
 
+/* The rule test: the input, the rule hit and the path to the proxy. */
+.rt-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rt-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rt-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 16px;
+  margin: 0;
+  font-size: 13px;
+  align-items: center;
+}
+
+.rt-kv dt {
+  color: var(--text-muted);
+}
+
+.rt-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rt-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rt-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.rt-hop {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.rt-hop > .faint {
+  font-size: 11px;
+}
+
+.rt-hop.last {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent-fg);
+  font-weight: 620;
+}
+
+.rt-foot {
+  font-size: 11.5px;
+}
+
 /* A rule turned off fades, but not its switch and actions. */
 .table-row.off > .cell:nth-child(-n + 5) {
   opacity: 0.45;

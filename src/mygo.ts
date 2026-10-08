@@ -230,6 +230,24 @@ export interface IPInfo {
 }
 
 /**
+ * IPQuality is what public reputation services say about an address:
+ * whether it belongs to a home, a data center or a carrier, whether it is
+ * a known proxy, and how risky it looks.
+ */
+export interface IPQuality {
+  ip: string;
+  kind: string;
+  /** a known proxy of any kind */
+  proxy: boolean;
+  vpn: boolean;
+  tor: boolean;
+  /** 0 to 100, or -1 when no service scored it */
+  risk: number;
+  org?: string;
+  source: string;
+}
+
+/**
  * LANAuth is the login the proxy ports ask of other devices when allow-lan
  * is on. This device is let in without it.
  */
@@ -280,6 +298,59 @@ export interface Logs {
   maxFiles: number;
   /** 0: never */
   autoCleanDays: number;
+}
+
+/**
+ * MatchHop is a step of the path a connection takes: a group, then the
+ * member it selects, down to the proxy that dials.
+ */
+export interface MatchHop {
+  name: string;
+  /** Selector, URLTest, Shadowsocks, Direct... */
+  type: string;
+}
+
+/** MatchRequest asks which rule a connection would hit. */
+export interface MatchRequest {
+  /** Target is a domain, an IP address or a URL. */
+  target: string;
+  /** Network is "tcp" (the default) or "udp". */
+  network?: string;
+  /** Port is the destination port; 0 takes the URL's, else 443. */
+  port?: number;
+  /** Process is the name of the program that connects, for process rules. */
+  process?: string;
+}
+
+/** MatchResult is the rule a connection would hit and where it would go. */
+export interface MatchResult {
+  /** the domain or address tested, as normalized */
+  host: string;
+  network: string;
+  port: number;
+  /** rule, global or direct */
+  mode: string;
+  /**
+   * Source says what decided: "rule", "mode" (global or direct mode, so
+   * no rule was consulted) or "none" (no rule matched and the core
+   * falls back to DIRECT).
+   */
+  source: string;
+  /** Index is the position in the rules list; -1 without a rule. */
+  index: number;
+  ruleType?: string;
+  payload?: string;
+  /** Policy is the proxy or group the rule names. */
+  policy: string;
+  /** Chain is the path from Policy down to the proxy that dials. */
+  chain: MatchHop[];
+  /**
+   * IPs are the addresses the name resolved to while matching, or the
+   * address that was given.
+   */
+  ips: string[];
+  /** Disabled counts the rules switched off by hand, which are skipped. */
+  disabled: number;
 }
 
 /** Memory is a sample of /memory, in bytes. */
@@ -1407,6 +1478,13 @@ export const Rules = {
   setDisabled(index: number, disabled: boolean): Promise<void> {
     return call("Rules.SetDisabled", index, disabled);
   },
+  /**
+   * Test finds the rule a connection to target (a domain, an address or a
+   * URL) would hit, and the proxy it would go through.
+   */
+  test(req: MatchRequest): Promise<MatchResult> {
+    return call("Rules.Test", req);
+  },
   /** UpdateProvider downloads a rule provider again. */
   updateProvider(name: string): Promise<void> {
     return call("Rules.UpdateProvider", name);
@@ -1683,6 +1761,14 @@ export const Tools = {
    */
   ipInfo(direct: boolean): Promise<IPInfo> {
     return call("Tools.IPInfo", direct);
+  },
+  /**
+   * IPQuality tells whether the address is a home, data center or mobile
+   * line, and how risky it looks. It fails quietly into an error the page
+   * may ignore: the services are free and sometimes busy.
+   */
+  ipQuality(ip: string): Promise<IPQuality> {
+    return call("Tools.IPQuality", ip);
   },
   /** Sites returns the sites the home page tests. */
   sites(): Promise<Site[]> {
