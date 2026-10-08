@@ -79,7 +79,7 @@ func init() {
 		"connected":    "接続済み",
 		"disconnected": "未接続",
 		"syncNow":      "今すぐ同期",
-		"proxyOff":     "システムプロキシと TUN はオフ",
+		"proxyOff":     "プロキシオフ",
 	}
 	translations["ko"] = map[string]string{
 		"importing":       "프로필을 가져오는 중…",
@@ -159,6 +159,6 @@ func init() {
 		"connected":    "연결됨",
 		"disconnected": "연결 안 됨",
 		"syncNow":      "지금 동기화",
-		"proxyOff":     "시스템 프록시와 TUN 꺼짐",
+		"proxyOff":     "프록시 꺼짐",
 	}
 }

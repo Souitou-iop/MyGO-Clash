@@ -8,37 +8,31 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/coremgr"
 )
 
-// statusLines are what the tray says the app is doing: the mode and the
-// switches that carry traffic, the profile, and the node it goes out of.
-// The menu starts with them and the tooltip shows them.
-func statusLines(a *App, s AppState, node string) []string {
+// statusLine is the tray's glance at the app: the mode, the switch that
+// carries traffic and the node it goes out of, as "Rule · TUN · HK 01".
+// The menu starts with it and the tooltip shows it; the rest is in the app.
+func statusLine(a *App, s AppState, node string) string {
 	if s.Core.Status != coremgr.StatusRunning {
-		return []string{statusLabel(a, s.Core)}
+		return statusLabel(a, s.Core)
 	}
-	state := []string{tr(a, s.Mode)}
-	if s.SystemProxy {
-		state = append(state, tr(a, "systemProxy"))
-	}
-	if s.Tun {
-		state = append(state, "TUN")
-	}
-	if len(state) == 1 {
-		state = append(state, tr(a, "proxyOff"))
-	}
-	lines := []string{strings.Join(state, " · ")}
-	if s.ProfileName != "" {
-		lines = append(lines, tr(a, "profile")+": "+s.ProfileName)
+	parts := []string{tr(a, s.Mode)}
+	switch {
+	case s.Tun:
+		parts = append(parts, "TUN")
+	case s.SystemProxy:
+		parts = append(parts, tr(a, "systemProxy"))
+	default:
+		parts = append(parts, tr(a, "proxyOff"))
 	}
 	if node != "" && s.Mode != "direct" {
-		lines = append(lines, node)
+		parts = append(parts, node)
 	}
-	return lines
+	return strings.Join(parts, " · ")
 }
 
-// nodePath is the way out of the mode's main group, down to the node it
-// ends at: "Proxy › Auto › HK 01". Rule mode's main group is the first
-// selector the profile shows.
-func nodePath(v *ProxiesView, mode string) string {
+// leafNode is the node the mode's main group ends at, through nested
+// groups. Rule mode's main group is the first selector the profile shows.
+func leafNode(v *ProxiesView, mode string) string {
 	if v == nil {
 		return ""
 	}
@@ -53,34 +47,31 @@ func nodePath(v *ProxiesView, mode string) string {
 			}
 		}
 	}
-	if g == nil || g.Now == "" {
+	if g == nil {
 		return ""
 	}
 	byName := make(map[string]*ProxyGroup, len(v.Groups))
 	for i := range v.Groups {
 		byName[v.Groups[i].Name] = &v.Groups[i]
 	}
-	path := []string{g.Name, g.Now}
+	node := g.Now
 	for range 8 { // groups can't loop, but a broken view shouldn't hang us
-		next, ok := byName[path[len(path)-1]]
+		next, ok := byName[node]
 		if !ok || next.Now == "" {
 			break
 		}
-		path = append(path, next.Now)
+		node = next.Now
 	}
-	if len(path) > 3 {
-		path = []string{path[0], "…", path[len(path)-1]}
-	}
-	return strings.Join(path, " › ")
+	return node
 }
 
-// toolTip joins the lines under the app's name. Windows keeps 127 UTF-16
+// toolTip puts the line under the app's name. Windows keeps 127 UTF-16
 // units of it; Linux shows the title on one line, if at all.
-func toolTip(name string, lines []string) string {
+func toolTip(name, line string) string {
 	if runtime.GOOS == "linux" {
-		return name + " · " + strings.Join(lines, " · ")
+		return name + " · " + line
 	}
-	tip := name + "\n" + strings.Join(lines, "\n")
+	tip := name + "\n" + line
 	if runtime.GOOS == "windows" {
 		tip = clipUTF16(tip, 127)
 	}

@@ -6,7 +6,7 @@ import (
 	"unicode/utf16"
 )
 
-func TestNodePath(t *testing.T) {
+func TestLeafNode(t *testing.T) {
 	v := &ProxiesView{
 		Groups: []ProxyGroup{
 			{Name: "Auto", Type: "URLTest", Now: "HK 01"},
@@ -17,14 +17,14 @@ func TestNodePath(t *testing.T) {
 		Global: &ProxyGroup{Name: "GLOBAL", Type: "Selector", Now: "Media"},
 	}
 	for mode, want := range map[string]string{
-		"rule":   "Proxy › Auto › HK 01",
-		"global": "GLOBAL › … › HK 01",
+		"rule":   "HK 01",
+		"global": "HK 01",
 	} {
-		if got := nodePath(v, mode); got != want {
+		if got := leafNode(v, mode); got != want {
 			t.Errorf("%s: %q, want %q", mode, got, want)
 		}
 	}
-	if got := nodePath(nil, "rule"); got != "" {
+	if got := leafNode(nil, "rule"); got != "" {
 		t.Errorf("nil view: %q", got)
 	}
 }

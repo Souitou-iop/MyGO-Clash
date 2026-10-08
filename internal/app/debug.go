@@ -79,7 +79,7 @@ func (a *App) startDebug() {
 		a.tray.mu.Lock()
 		node := a.tray.node
 		a.tray.mu.Unlock()
-		fmt.Fprintln(w, toolTip(a.name, statusLines(a, s, node)))
+		fmt.Fprintln(w, toolTip(a.name, statusLine(a, s, node)))
 	})
 	mux.HandleFunc("POST /panel", func(w http.ResponseWriter, r *http.Request) {
 		a.panel.toggle()

@@ -24,7 +24,7 @@ type trayUI struct {
 	mu        sync.Mutex
 	variant   art.Variant
 	menuKey   string // the state the menu was built from
-	node      string // nodePath when the menu was built
+	node      string // leafNode when the menu was built
 	menu      *mygo.Menu
 	timer     *time.Timer
 	speedStop func()
@@ -135,7 +135,7 @@ func (t *trayUI) refresh() {
 	t.mu.Lock()
 	node := t.node
 	t.mu.Unlock()
-	t.tray.SetToolTip(toolTip(t.a.name, statusLines(t.a, s, node)))
+	t.tray.SetToolTip(toolTip(t.a.name, statusLine(t.a, s, node)))
 }
 
 // menuKey is the part of the state the menu shows, outside the settings.
@@ -173,7 +173,7 @@ func (t *trayUI) build() {
 	st := a.settings.Get()
 	s := a.snapshot()
 	view := t.view()
-	node := nodePath(view, s.Mode)
+	node := leafNode(view, s.Mode)
 	t.mu.Lock()
 	t.menuKey = menuKey(s)
 	t.node = node
@@ -182,9 +182,7 @@ func (t *trayUI) build() {
 		return &mygo.MenuItem{Label: tr(a, key), Click: func(*mygo.MenuItem, *mygo.Window) { fn() }}
 	}
 	var items []*mygo.MenuItem
-	for _, line := range statusLines(a, s, node) {
-		items = append(items, &mygo.MenuItem{Label: line, Disabled: true})
-	}
+	items = append(items, &mygo.MenuItem{Label: statusLine(a, s, node), Disabled: true})
 	items = append(items, mygo.Separator())
 	items = append(items, item("dashboard", a.showMain), item("quickPanel", func() { a.panel.toggle() }), mygo.Separator())
 

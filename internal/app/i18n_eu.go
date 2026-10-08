@@ -80,7 +80,7 @@ func init() {
 		"connected":    "Подключено",
 		"disconnected": "Не подключено",
 		"syncNow":      "Синхронизировать",
-		"proxyOff":     "Системный прокси и TUN выключены",
+		"proxyOff":     "Прокси выкл.",
 	}
 	translations["es"] = map[string]string{
 		"importing":       "Importando el perfil…",
@@ -160,7 +160,7 @@ func init() {
 		"connected":    "Conectado",
 		"disconnected": "Sin conexión",
 		"syncNow":      "Sincronizar ahora",
-		"proxyOff":     "Proxy del sistema y TUN desactivados",
+		"proxyOff":     "Proxy desactivado",
 	}
 	translations["pt-BR"] = map[string]string{
 		"importing":       "Importando o perfil…",
@@ -240,7 +240,7 @@ func init() {
 		"connected":    "Conectado",
 		"disconnected": "Desconectado",
 		"syncNow":      "Sincronizar agora",
-		"proxyOff":     "Proxy do sistema e TUN desligados",
+		"proxyOff":     "Proxy desligado",
 	}
 	translations["de"] = map[string]string{
 		"importing":       "Profil wird importiert…",
@@ -320,7 +320,7 @@ func init() {
 		"connected":    "Verbunden",
 		"disconnected": "Nicht verbunden",
 		"syncNow":      "Jetzt synchronisieren",
-		"proxyOff":     "Systemproxy und TUN aus",
+		"proxyOff":     "Proxy aus",
 	}
 	translations["fr"] = map[string]string{
 		"importing":       "Importation du profil…",
@@ -400,7 +400,7 @@ func init() {
 		"connected":    "Connecté",
 		"disconnected": "Non connecté",
 		"syncNow":      "Synchroniser maintenant",
-		"proxyOff":     "Proxy système et TUN désactivés",
+		"proxyOff":     "Proxy désactivé",
 	}
 	translations["tr"] = map[string]string{
 		"importing":       "Profil içe aktarılıyor…",
@@ -480,6 +480,6 @@ func init() {
 		"connected":    "Bağlı",
 		"disconnected": "Bağlı değil",
 		"syncNow":      "Şimdi eşitle",
-		"proxyOff":     "Sistem proxy’si ve TUN kapalı",
+		"proxyOff":     "Proxy kapalı",
 	}
 }
