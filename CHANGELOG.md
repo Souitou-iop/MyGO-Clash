@@ -2,6 +2,20 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.0-beta
+
+流量都去了哪、这个网站会走哪条规则、出口 IP 是不是机房，现在都能直接看到；另有托盘测速、局域网代理密码与 Windows 防泄露。/ See where your traffic went, which rule a site will hit, and whether your exit IP is a data center; plus latency tests in the tray, a password for the LAN proxy, and leak protection on Windows.
+
+### ✨ 新增功能 / New Features
+
+- 新增「流量统计」页：按今天（逐小时）、7 天、30 天查看上传下载总量，以及流量最多的应用、网站（按主域名合并）与节点；记录保存在本机 90 天，不参与同步，可一键清除。已有用户的侧边栏会自动出现这一页 / A new *Statistics* page shows upload and download for today (by hour), 7 or 30 days, with the apps, sites (by registrable domain) and nodes that carried the most; the history stays on this device for 90 days, is not synced, and can be cleared. It appears in existing sidebars by itself
+- 总量取自内核自身的计数，一秒内开合的短连接也算在内；来不及归到具体项的部分记为「其他」。按应用统计需要把「进程匹配」设为「总是查找」，页面上可一键开启 / Totals come from the core's own counters, so connections that open and close within a second count too; what can't be attributed shows as *Other*. Splitting by app needs process matching set to *Always*, which the page can turn on
+- 规则页新增「规则测试」：输入域名、IP 或网址，用内核正在使用的规则算出会命中哪一条、走哪个策略与完整代理链，以及解析到的地址，并可在列表中定位到该规则；测试不计入命中次数 / The Rules page has a *Rule test*: enter a domain, IP or URL to see, with the rules the core runs, which rule it hits, the policy and the full proxy chain, and the addresses it resolved to, then jump to the rule in the list; tests don't add to hit counts
+- 首页与连通性页的出口 IP 多了「IP 质量」：家宽 / 机房 / 移动网络等类型与 0–100 的风险分，并标出 VPN、代理、Tor，数据来自 ipapi.is 与 proxycheck.io / The exit IP on the home and connectivity pages shows its *IP quality*: residential, data center, mobile and so on, a 0–100 risk score, and VPN, proxy or Tor flags, from ipapi.is and proxycheck.io
+- 托盘的代理组菜单顶部新增「测试延迟」，延迟按快 / 中 / 慢标出颜色（macOS、Linux）；与快捷面板共用同一测试，不会重复运行 / Each proxy group in the tray menu starts with *Test latency*, and delays are marked fast, medium or slow by color (macOS, Linux); it shares one test with the quick panel, so they never run twice
+- 开启「允许局域网连接」后可设置「需要密码」：局域网里的其他设备须用用户名和密码才能使用代理，本机应用、系统代理与 TUN 不受影响 / With *Allow LAN* on, *Require password* makes other devices on the network sign in to use the proxy, while apps on this computer, the system proxy and TUN work as before
+- Windows：「代理与 TUN」新增「防泄露」分区。「DNS 防泄露」（严格路由）阻止 TUN 之外的网卡发出 DNS 查询，新安装默认开启，已有用户请手动打开；「防 WebRTC 泄露」为 Chrome、Edge、Brave 写入浏览器策略，网页拿不到真实 IP，关闭代理或退出应用时自动撤销，默认关闭（开启后浏览器会显示「由你的组织管理」） / Windows: *Proxy & TUN* has a *Leak protection* section. *DNS leak protection* (strict route) stops DNS queries from leaving through adapters other than TUN; it is on for new installs, and existing users should turn it on. *WebRTC leak protection* sets a browser policy for Chrome, Edge and Brave so pages can't learn your real IP, and is undone when the proxy is off or the app quits; it is off by default, as browsers then say they are *managed by your organization*
+
 ## 0.1.9-beta
 
 开关怎么变的、是谁变的，都写进应用日志。/ The app's log now says how each switch changed and what changed it.
