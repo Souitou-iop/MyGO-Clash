@@ -11,16 +11,10 @@
   --sidebar-w: var(--rail-w);
 }
 
-/* The sidebar is a window on a rainy night: faint streaks, and the glow of
-   the accents from below and above. */
 .sidebar {
   display: flex;
   flex-direction: column;
-  background:
-    var(--rain) 0 0 / 160px 160px,
-    radial-gradient(150% 34% at 0% 100%, var(--glow-a), transparent 72%),
-    radial-gradient(130% 26% at 100% 0%, var(--glow-b), transparent 72%),
-    var(--bg-sidebar);
+  background: var(--bg-sidebar);
   border-inline-end: 1px solid var(--border);
   min-height: 0;
   overflow: hidden;
@@ -58,7 +52,7 @@
   user-select: none;
 }
 
-/* The wordmark leans like the band's logo; "MyGO" wears the accents. */
+/* The wordmark leans like the band's logo; "MyGO" wears the accent. */
 .brand-name {
   letter-spacing: -0.015em;
 }
@@ -67,10 +61,7 @@
   font-style: italic;
   font-weight: 800;
   padding-right: 0.06em;
-  background: linear-gradient(100deg, var(--accent-2), var(--accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent-fg);
 }
 
 .brand-name,
@@ -338,19 +329,15 @@
 }
 
 /*
- * A solid button lit from above, as Linear's and Raycast's are: a light
- * line along the top edge, a rim a shade darker than the fill, and a short
- * shadow that sits it on the page. Pressed, the light goes and it sinks.
+ * A solid button: one flat fill with a rim a shade darker, and a hairline
+ * of shadow that sits it on the page. Pressed, it sinks.
  */
 .btn.primary {
   background-color: var(--accent);
   border-color: color-mix(in oklab, var(--accent) 88%, black);
   color: var(--accent-text);
   font-weight: 600;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    0 1px 2px color-mix(in oklab, var(--accent) 25%, rgb(0 0 0 / 0.18)),
-    0 3px 8px -3px color-mix(in oklab, var(--accent) 50%, transparent);
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.08);
 }
 
 .btn.primary:hover:not(:disabled) {
@@ -846,7 +833,7 @@
 .progress > div {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  background: var(--accent);
   transition: width 0.3s;
 }
 
@@ -1256,9 +1243,7 @@
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background:
-    var(--rain) 0 0 / 96px 96px,
-    var(--surface-2);
+  background: var(--surface-2);
   color: var(--text-faint);
   border: 1px solid var(--border);
 }
@@ -1493,7 +1478,6 @@ kbd {
 @keyframes breathe {
   50% {
     transform: scale(1.04);
-    filter: drop-shadow(0 6px 16px color-mix(in oklab, var(--accent) 40%, transparent));
   }
 }
 

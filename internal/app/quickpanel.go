@@ -256,22 +256,22 @@ func panelTheme(dark, oled bool) *ui.Theme {
 	var t *ui.Theme
 	if dark {
 		t = ui.DarkTheme()
-		t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#0f1626"), ui.Hex("#172036"), ui.Hex("#1e2a44"), ui.Hex("#26334f")
-		t.Border, t.Text, t.TextMuted = ui.Hex("#2a3858"), ui.Hex("#e6ecf7"), ui.Hex("#8796b4")
-		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#7cc0e4"), ui.Hex("#93cdeb"), ui.Hex("#66b0d8"), ui.Hex("#08131f")
-		t.Danger, t.Warning, t.Success = ui.Hex("#ff6b61"), ui.Hex("#f3cd72"), ui.Hex("#6bd38e")
-		t.Selection, t.Focus = ui.RGBA(124, 192, 228, 0.22), ui.RGBA(124, 192, 228, 0.55)
+		t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#141416"), ui.Hex("#1e1e22"), ui.Hex("#28282d"), ui.Hex("#323238")
+		t.Border, t.Text, t.TextMuted = ui.Hex("#2e2e34"), ui.Hex("#ececef"), ui.Hex("#8e8e97")
+		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#46acdb"), ui.Hex("#5db8e2"), ui.Hex("#3698c6"), ui.Hex("#04131b")
+		t.Danger, t.Warning, t.Success = ui.Hex("#ff6b61"), ui.Hex("#f0c766"), ui.Hex("#5cc985")
+		t.Selection, t.Focus = ui.RGBA(70, 172, 219, 0.22), ui.RGBA(70, 172, 219, 0.55)
 		if oled {
-			t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#000000"), ui.Hex("#0d1017"), ui.Hex("#151a24"), ui.Hex("#1d2330")
-			t.Border = ui.Hex("#1f2533")
+			t.Background, t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#000000"), ui.Hex("#101012"), ui.Hex("#19191c"), ui.Hex("#222226")
+			t.Border = ui.Hex("#232327")
 		}
 	} else {
 		t = ui.LightTheme()
-		t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#eef2f8"), ui.Hex("#e4eaf3"), ui.Hex("#d9e1ed")
-		t.Border, t.Text, t.TextMuted = ui.Hex("#d3dbe7"), ui.Hex("#121a2b"), ui.Hex("#62708a")
-		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#2a7ab0"), ui.Hex("#236a9a"), ui.Hex("#1d5b85"), ui.Hex("#ffffff")
-		t.Danger, t.Warning, t.Success = ui.Hex("#d63c49"), ui.Hex("#b8770e"), ui.Hex("#1d9a5b")
-		t.Selection, t.Focus = ui.RGBA(42, 122, 176, 0.16), ui.RGBA(42, 122, 176, 0.5)
+		t.Surface, t.SurfaceHover, t.SurfacePressed = ui.Hex("#f1f1f3"), ui.Hex("#e8e8eb"), ui.Hex("#dddde1")
+		t.Border, t.Text, t.TextMuted = ui.Hex("#dcdce1"), ui.Hex("#18181b"), ui.Hex("#6c6c75")
+		t.Accent, t.AccentHover, t.AccentPressed, t.AccentText = ui.Hex("#0b88bb"), ui.Hex("#0a79a7"), ui.Hex("#086a93"), ui.Hex("#ffffff")
+		t.Danger, t.Warning, t.Success = ui.Hex("#d1333f"), ui.Hex("#b26b00"), ui.Hex("#1f9254")
+		t.Selection, t.Focus = ui.RGBA(11, 136, 187, 0.16), ui.RGBA(11, 136, 187, 0.5)
 	}
 	t.Radius = 7
 	panelThemes[i] = t

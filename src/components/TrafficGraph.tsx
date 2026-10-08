@@ -86,7 +86,7 @@ export function TrafficGraph({ up, down, height, minimal }: { up: number[]; down
     ctx.clearRect(0, 0, w, h);
     const style = getComputedStyle(c);
     const down0 = style.getPropertyValue("--graph-down").trim() || style.getPropertyValue("--accent").trim() || "#7c5cff";
-    const up0 = style.getPropertyValue("--graph-up").trim() || style.getPropertyValue("--accent-2").trim() || "#ec6aa6";
+    const up0 = style.getPropertyValue("--graph-up").trim() || style.getPropertyValue("--accent-2").trim() || "#b8860b";
     const grid = style.getPropertyValue("--border").trim() || "#ddd";
     const max = Math.max(1024, ...up, ...down) * 1.15;
     const pad = minimal ? 1.5 : 3;
@@ -124,15 +124,12 @@ export function TrafficGraph({ up, down, height, minimal }: { up: number[]; down
         ctx.lineTo(w, h);
         ctx.lineTo(0, h);
         ctx.closePath();
-        const g = ctx.createLinearGradient(0, 0, 0, h);
-        g.addColorStop(0, rgba(color, fill));
-        g.addColorStop(1, rgba(color, 0));
-        ctx.fillStyle = g;
+        ctx.fillStyle = rgba(color, fill);
         ctx.fill();
       }
     };
-    draw(down, down0, minimal ? 1.25 : 1.75, 0.26);
-    draw(up, up0, minimal ? 1 : 1.4, minimal ? 0 : 0.12);
+    draw(down, down0, minimal ? 1.25 : 1.75, 0.12);
+    draw(up, up0, minimal ? 1 : 1.4, minimal ? 0 : 0.06);
   }, [up, down, size, theme, minimal, paused]);
   return (
     <canvas

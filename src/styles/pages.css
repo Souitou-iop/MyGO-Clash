@@ -113,35 +113,13 @@
   overflow: hidden;
 }
 
-/* While traffic is captured, the card is a rainy night: the accents glow
-   and a slow drizzle falls. The rain moves along its own slant, by whole
-   tiles, so it loops without a seam. */
+/* While traffic is captured, the card takes the accent's edge. */
 .control-card.on {
-  border-color: color-mix(in oklab, var(--accent) 32%, var(--border));
-  background:
-    radial-gradient(90% 150% at 0% 0%, var(--glow-a), transparent 58%),
-    radial-gradient(80% 150% at 100% 100%, var(--glow-b), transparent 62%),
-    var(--surface);
-}
-
-.control-card.on::before {
-  content: "";
-  position: absolute;
-  inset: -640px -160px 0 0;
-  background: var(--rain) 0 0 / 160px 160px;
-  pointer-events: none;
-  animation: drizzle 28s linear infinite;
-  will-change: transform;
+  border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
 }
 
 .control-card > * {
   position: relative;
-}
-
-@keyframes drizzle {
-  to {
-    transform: translate(-160px, 640px);
-  }
 }
 
 .control-top {
@@ -232,16 +210,9 @@
 }
 
 .status-orb.on {
-  background: var(--brand-gradient);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   border-color: transparent;
-  box-shadow:
-    0 6px 18px color-mix(in oklab, var(--accent) 30%, transparent),
-    0 0 0 4px color-mix(in oklab, var(--accent-2) 12%, transparent);
-}
-
-.status-orb.on svg {
-  filter: drop-shadow(0 0 4px rgb(255 255 255 / 0.6));
 }
 
 .status-orb.warn {
@@ -295,9 +266,8 @@
 }
 
 .toggle-tile.on {
-  border-color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 60%, var(--border));
   background: var(--accent-softer);
-  box-shadow: 0 0 0 1px var(--accent) inset;
 }
 
 .toggle-tile.error {
@@ -612,12 +582,11 @@
 }
 
 .proxy-item.active {
-  border-color: var(--accent);
-  background: var(--accent-softer);
-  box-shadow: 0 0 0 1px var(--accent) inset;
+  border-color: color-mix(in oklab, var(--accent) 60%, var(--border));
+  background: var(--accent-soft);
 }
 
-/* The node just chosen pops, with a ring out of it. */
+/* The node just chosen pops. */
 .proxy-item.active.picked {
   animation: pick 0.45s cubic-bezier(0.3, 0.7, 0.4, 1.3);
 }
@@ -625,14 +594,6 @@
 @keyframes pick {
   from {
     transform: scale(0.96);
-    box-shadow:
-      0 0 0 1px var(--accent) inset,
-      0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent);
-  }
-  to {
-    box-shadow:
-      0 0 0 1px var(--accent) inset,
-      0 0 0 8px color-mix(in oklab, var(--accent) 0%, transparent);
   }
 }
 
@@ -719,8 +680,8 @@
 }
 
 .profile-card.current {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent) inset, var(--shadow);
+  border-color: color-mix(in oklab, var(--accent) 60%, var(--border));
+  background: var(--accent-softer);
 }
 
 .profile-card.drop {
@@ -771,11 +732,7 @@
   align-items: center;
   gap: 18px;
   padding: 20px;
-  background:
-    var(--rain) 0 0 / 160px 160px,
-    radial-gradient(90% 160% at 0% 0%, var(--glow-a), transparent 58%),
-    radial-gradient(80% 160% at 100% 100%, var(--glow-b), transparent 62%),
-    var(--surface);
+  background: var(--surface);
 }
 
 /* Sync before it is set up: what it does, and the one thing to do. */
@@ -828,10 +785,9 @@
   border-radius: 15px;
   display: grid;
   place-items: center;
-  background: var(--brand-gradient);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   flex: none;
-  box-shadow: 0 6px 18px color-mix(in oklab, var(--accent) 35%, transparent);
 }
 
 .ts-choice {
@@ -881,9 +837,9 @@
   padding: 0;
 }
 
-/* MyGO's accent: Anon's pink meeting Tomori's blue. */
+/* MyGO's accent: the band's blue. */
 .swatch.mygo {
-  background: linear-gradient(135deg, #ff8fa3 0 50%, #4fa3d1 50% 100%);
+  background: #0b88bb;
 }
 
 .swatch.active {
@@ -1136,11 +1092,7 @@
   padding: 20px;
   position: relative;
   overflow: hidden;
-  background:
-    var(--rain) 0 0 / 160px 160px,
-    radial-gradient(70% 160% at 0% 0%, var(--glow-a), transparent 60%),
-    radial-gradient(60% 160% at 100% 100%, var(--glow-b), transparent 64%),
-    var(--surface);
+  background: var(--surface);
 }
 
 .about-icon {

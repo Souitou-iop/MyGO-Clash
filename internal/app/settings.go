@@ -347,9 +347,9 @@ func (a *App) applyWebRTC(st config.Settings) {
 // windowBackground is what the main window shows before its page paints.
 func windowBackground(st config.Settings) string {
 	if st.OLED {
-		return "light-dark(#f6f7f9, #000000)"
+		return "light-dark(#f4f4f5, #000000)"
 	}
-	return "light-dark(#f6f7f9, #101114)"
+	return "light-dark(#f4f4f5, #111113)"
 }
 
 func (a *App) applyTheme(st config.Settings) {

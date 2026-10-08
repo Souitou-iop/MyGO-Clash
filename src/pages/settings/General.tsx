@@ -240,7 +240,7 @@ export default function General() {
             <input
               type="color"
               className="swatch-input"
-              value={s.accent || "#2a7ab0"}
+              value={s.accent || "#0b88bb"}
               onChange={(e) => patch({ accent: e.target.value })}
               aria-label={t("accent.custom")}
               data-tip={t("accent.custom")}
