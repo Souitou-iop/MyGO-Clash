@@ -36,6 +36,7 @@ type tailscaleManager struct {
 	cancel     context.CancelFunc
 	routingKey string // what the configuration depends on
 	trayKey    string // what the tray menu shows
+	triedKey   string // the shared auth key this device has tried to sign in with
 }
 
 func newTailscaleManager(a *App) *tailscaleManager {
@@ -186,6 +187,7 @@ func (m *tailscaleManager) setStatus(s coreapi.TailscaleStatus) {
 	if m.a.panel != nil {
 		m.a.panel.invalidate()
 	}
+	m.autoLogin(s)
 	if s.Source == "embedded" && s.StateVersion > saved {
 		go m.persistState()
 	}
@@ -434,4 +436,78 @@ func itoa(n int) string {
 		n /= 10
 	}
 	return string(b)
+}
+
+// secretTSAuthKey holds the auth key the user shares through sync, as
+// sharedKey says.
+const secretTSAuthKey = "tailscale.authKey"
+
+// sharedKey is an auth key that sync carries to the user's other devices,
+// each of which signs in with it as a device of its own.
+type sharedKey struct {
+	Key     string `json:"key"`
+	Updated int64  `json:"updated"` // when it was set, for sync to tell the newer
+}
+
+func (a *App) sharedAuthKey() (sharedKey, bool) {
+	var k sharedKey
+	if json.Unmarshal([]byte(a.secrets.Get(secretTSAuthKey)), &k) != nil || k.Key == "" {
+		return sharedKey{}, false
+	}
+	return k, true
+}
+
+// autoLogin signs the embedded node in with the shared auth key, once for
+// each key, when it needs to sign in: a new device that sync has reached.
+func (m *tailscaleManager) autoLogin(s coreapi.TailscaleStatus) {
+	if s.Source != "embedded" || s.BackendState != "NeedsLogin" {
+		return
+	}
+	k, ok := m.a.sharedAuthKey()
+	if !ok {
+		return
+	}
+	m.mu.Lock()
+	tried := m.triedKey == k.Key
+	m.triedKey = k.Key
+	m.mu.Unlock()
+	if tried {
+		return
+	}
+	go func() {
+		_, err := Tailscale{m.a}.Login(m.a.ctx, k.Key)
+		m.a.notifyErr("tailscale", tr(m.a, "tsKeyLoginFailed"), err)
+	}()
+}
+
+// ShareAuthKey keeps an auth key to share with the user's other devices
+// through sync (end to end encrypted, when the sync is), where it signs
+// them in. The key is not used here: Login does.
+func (s Tailscale) ShareAuthKey(ctx context.Context, authKey string) error {
+	authKey = strings.TrimSpace(authKey)
+	if authKey == "" {
+		return errors.New("no auth key")
+	}
+	data, _ := json.Marshal(sharedKey{Key: authKey, Updated: time.Now().Unix()})
+	if err := s.a.secrets.Set(secretTSAuthKey, string(data)); err != nil {
+		return err
+	}
+	s.a.syncer.changed()
+	return nil
+}
+
+// StopSharingAuthKey forgets the shared auth key here, and from the
+// server at the next sync.
+func (s Tailscale) StopSharingAuthKey(ctx context.Context) error {
+	if err := s.a.secrets.Set(secretTSAuthKey, ""); err != nil {
+		return err
+	}
+	s.a.syncer.changed()
+	return nil
+}
+
+// AuthKeyShared reports whether an auth key is shared through sync.
+func (s Tailscale) AuthKeyShared() bool {
+	_, ok := s.a.sharedAuthKey()
+	return ok
 }

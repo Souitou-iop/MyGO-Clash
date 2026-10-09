@@ -51,6 +51,7 @@ function Login({ status }: { status: TailscaleStatus }) {
   const t = useT();
   const [url, setUrl] = useState(status.authUrl ?? "");
   const [key, setKey] = useState("");
+  const [share, setShare] = useState(true);
   const [busy, setBusy] = useState("");
   const shown = url || status.authUrl || "";
   return (
@@ -97,7 +98,10 @@ function Login({ status }: { status: TailscaleStatus }) {
                 disabled={!key.trim()}
                 onClick={async () => {
                   setBusy("key");
-                  await run(() => API.login(key), t("ts.loginFailed"));
+                  await run(async () => {
+                    await API.login(key);
+                    if (share) await API.shareAuthKey(key);
+                  }, t("ts.loginFailed"));
                   setKey("");
                   setBusy("");
                 }}
@@ -105,6 +109,12 @@ function Login({ status }: { status: TailscaleStatus }) {
                 {t("ts.useKey")}
               </Button>
             </div>
+            <label className="row" style={{ gap: 8, marginTop: 8, alignItems: "center", cursor: "pointer" }}>
+              <Switch checked={share} onChange={setShare} />
+              <span className="muted" style={{ fontSize: 12 }}>
+                {t("ts.shareKey")}
+              </span>
+            </label>
           </Field>
         </div>
         {shown && (
@@ -130,6 +140,8 @@ function Login({ status }: { status: TailscaleStatus }) {
 
 function Self({ status, mode }: { status: TailscaleStatus; mode: Mode }) {
   const t = useT();
+  const { data: keyShared, reload: reloadShared } = useAsync(() => API.authKeyShared(), [status.backendState]);
+  const [shareKey, setShareKey] = useState("");
   const self = status.self;
   if (!self) return null;
   return (
@@ -181,6 +193,32 @@ function Self({ status, mode }: { status: TailscaleStatus; mode: Mode }) {
           </>
         )}
       </dl>
+      {mode === "embedded" && keyShared === false && (
+        <div className="row" style={{ marginTop: 10, gap: 8 }}>
+          <Input type="password" value={shareKey} onChange={(e) => setShareKey(e.target.value)} placeholder="tskey-auth-…" style={{ flex: 1 }} />
+          <Button
+            icon={<KeyRound size={14} />}
+            disabled={!shareKey.trim()}
+            onClick={async () => {
+              await run(() => API.shareAuthKey(shareKey), t("common.failed"));
+              setShareKey("");
+              reloadShared();
+            }}
+          >
+            {t("ts.shareBtn")}
+          </Button>
+        </div>
+      )}
+      {mode === "embedded" && keyShared && (
+        <div className="row" style={{ marginTop: 10, gap: 8, alignItems: "center", justifyContent: "space-between" }}>
+          <span className="muted" style={{ fontSize: 12 }}>
+            {t("ts.keyShared")}
+          </span>
+          <Button size="sm" onClick={async () => { await run(() => API.stopSharingAuthKey(), t("common.failed")); reloadShared(); }}>
+            {t("ts.stopSharing")}
+          </Button>
+        </div>
+      )}
       {(status.health?.length ?? 0) > 0 && (
         <div className="col" style={{ marginTop: 10, gap: 4 }}>
           {status.health!.map((h, i) => (

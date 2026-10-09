@@ -316,6 +316,7 @@ const (
 	pathSettings  = "settings"
 	pathDNS       = "dns"
 	pathTailscale = "tailscale"
+	pathTSKey     = "tailscale/authkey"
 	pathOrder     = "profiles/order"
 	itemPrefix    = "profiles/item/"
 )
@@ -365,6 +366,11 @@ func (s appSource) snapshot(cats map[string]bool) (map[string]cloudsync.Item, er
 	if cats["tailscale"] {
 		out[pathTailscale] = cloudsync.Item{Data: canonical(syncable(st)["tailscale"]), Modified: mtime}
 	}
+	if cats["tailscale"] {
+		if k, ok := s.a.sharedAuthKey(); ok {
+			out[pathTSKey] = cloudsync.Item{Data: canonical(k), Modified: time.Unix(k.Updated, 0)}
+		}
+	}
 	if cats["profiles"] {
 		b, err := s.a.profiles.Export()
 		if err != nil {
@@ -406,6 +412,16 @@ func (s appSource) Apply(ctx context.Context, changes map[string][]byte) error {
 			var m map[string]any
 			if err := json.Unmarshal(data, &m); err == nil {
 				mergeSyncable(settingsPatch, map[string]any{"tailscale": m})
+			}
+		case path == pathTSKey:
+			if data == nil {
+				errs = append(errs, s.a.secrets.Set(secretTSAuthKey, ""))
+				continue
+			}
+			var k sharedKey
+			if json.Unmarshal(data, &k) == nil && k.Key != "" {
+				errs = append(errs, s.a.secrets.Set(secretTSAuthKey, string(canonical(k))))
+				s.a.ts.autoLogin(s.a.ts.current())
 			}
 		case path == pathDNS && data != nil:
 			var d config.DNS

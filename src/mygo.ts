@@ -1635,6 +1635,10 @@ export const System = {
 
 /** Tailscale is the tailnet page. */
 export const Tailscale = {
+  /** AuthKeyShared reports whether an auth key is shared through sync. */
+  authKeyShared(): Promise<boolean> {
+    return call("Tailscale.AuthKeyShared");
+  },
   /**
    * Login logs the embedded node in: with an auth key, or interactively, in
    * which case it returns the URL to open.
@@ -1670,11 +1674,26 @@ export const Tailscale = {
     return call("Tailscale.SetRunning", on);
   },
   /**
+   * ShareAuthKey keeps an auth key to share with the user's other devices
+   * through sync (end to end encrypted, when the sync is), where it signs
+   * them in. The key is not used here: Login does.
+   */
+  shareAuthKey(authKey: string): Promise<void> {
+    return call("Tailscale.ShareAuthKey", authKey);
+  },
+  /**
    * Status returns the tailnet's status: the embedded node's, or the
    * installed client's.
    */
   status(): Promise<TailscaleStatus> {
     return call("Tailscale.Status");
+  },
+  /**
+   * StopSharingAuthKey forgets the shared auth key here, and from the
+   * server at the next sync.
+   */
+  stopSharingAuthKey(): Promise<void> {
+    return call("Tailscale.StopSharingAuthKey");
   },
   /** SystemStatus checks the installed Tailscale app, whatever the mode. */
   systemStatus(): Promise<TailscaleStatus> {
