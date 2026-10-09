@@ -256,6 +256,7 @@ func (s *syncer) engine() (*cloudsync.Engine, error) {
 		Client: c, Dir: st.Sync.Dir, Keys: keys, Source: appSource{a: s.a},
 		Policy: st.Sync.ConflictPolicy, DeviceName: s.deviceName(),
 		Mergeable: func(p string) bool { return p == "settings" || p == "dns" || p == "tailscale" },
+		Wanted:    appSource{a: s.a}.wanted,
 	}, nil
 }
 
@@ -341,6 +342,20 @@ func (s appSource) categories() map[string]bool {
 		out[c] = true
 	}
 	return out
+}
+
+// wanted reports whether the categories of the settings include path.
+func (s appSource) wanted(path string) bool {
+	cats := s.categories()
+	switch {
+	case path == pathSettings:
+		return cats["settings"]
+	case path == pathDNS:
+		return cats["dns"]
+	case path == pathTailscale || path == pathTSKey:
+		return cats["tailscale"]
+	}
+	return cats["profiles"] // the order, the profiles and their extensions
 }
 
 func (s appSource) Snapshot(ctx context.Context) (map[string]cloudsync.Item, error) {

@@ -440,3 +440,33 @@ func TestMergeJSON(t *testing.T) {
 		t.Fatalf("list %v", l)
 	}
 }
+
+// A device that does not sync a path neither takes it from the server nor
+// takes it from there for the others.
+func TestWantedLeavesPathsAlone(t *testing.T) {
+	s := newServer(t, true)
+	a := newDevice(t, s, "a", "passphrase-1", "newest")
+	b := newDevice(t, s, "b", "passphrase-1", "newest")
+	b.eng.Wanted = func(p string) bool { return p != "secret" }
+	a.src.set("secret", "key")
+	a.src.set("settings", `{"v":1}`)
+	a.sync(t)
+	b.sync(t)
+	if b.src.get("secret") != "" {
+		t.Fatal("b took a path it does not sync")
+	}
+	if b.src.get("settings") == "" {
+		t.Fatal("b did not take the path it syncs")
+	}
+	// b syncs again, and then a: the path is still on the server.
+	b.sync(t)
+	a.sync(t)
+	if a.src.get("secret") != "key" {
+		t.Fatal("b deleted a path it does not sync")
+	}
+	c := newDevice(t, s, "c", "passphrase-1", "newest")
+	c.sync(t)
+	if c.src.get("secret") != "key" {
+		t.Fatal("the server lost a path that b does not sync")
+	}
+}

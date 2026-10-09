@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.6-beta
+
+Tailscale 的认证密钥可以通过同步分享，新设备同步后自动登录；同步类别现在对每台设备都真正生效。/ A Tailscale auth key can be shared through sync, and new devices sign in with it; the sync categories now hold on each device.
+
+### ✨ 新增功能 / New Features
+
+- 用认证密钥登录 Tailscale 时，可以选择通过同步分享此密钥（端到端加密）：你的其他设备同步到后，若 Tailscale 为内置节点模式且需要登录，会自动用它登录一次，各自是独立的设备，不会互相冲突；已登录的设备也可在“本设备”卡片里补充分享，或停止分享 / When signing in to Tailscale with an auth key, it can be shared through sync (end to end encrypted): your other devices that receive it sign in with it once, when their Tailscale is the embedded node and needs to sign in, each as a device of its own, without clashing; a signed-in device can share a key from its "This device" card, or stop sharing it
+- 认证密钥的提示改为推荐可重复使用的密钥，并说明同步 Tailscale 类别时包含什么 / The hint of the auth key now recommends a reusable one, and says what the sync of the Tailscale category carries
+
+### 🐛 修复 / Fixes
+
+- 修复关闭了某个同步类别的设备，仍会从服务器拉取该类别的内容，下一次同步又把它当成本机删除、推回服务器，使其他设备也丢失这些内容 / Fixed a device that turned a sync category off still taking its data from the server, and on the next sync pushing it back as deleted, so that the other devices lost it too
+
 ## 0.2.5-beta
 
 快捷面板重做，macOS 上点击菜单栏图标默认打开它；以后升级应用不再每次都要更新 TUN 服务。/ The quick panel is reworked and opens on a click of the menu bar icon by default on macOS; updating the app no longer asks to update the TUN service every time.

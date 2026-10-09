@@ -193,6 +193,10 @@ type Engine struct {
 	DeviceName string
 	// Mergeable reports the paths whose versions merge.
 	Mergeable func(path string) bool
+	// Wanted reports the paths this device syncs, nil for all: the others
+	// are left as they are here and on the server, not pulled, and not
+	// pushed as deleted.
+	Wanted func(path string) bool
 	// Now is the clock, for tests.
 	Now func() time.Time
 }
@@ -381,6 +385,9 @@ func (e *Engine) plan(ctx context.Context, local map[string]Item, hashes map[str
 	var steps []step
 	var conflicts []Conflict
 	for _, p := range sorted {
+		if e.Wanted != nil && !e.Wanted(p) {
+			continue
+		}
 		it, lExists := local[p]
 		var lp *Item
 		if lExists {

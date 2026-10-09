@@ -36,7 +36,6 @@ type tailscaleManager struct {
 	cancel     context.CancelFunc
 	routingKey string // what the configuration depends on
 	trayKey    string // what the tray menu shows
-	triedKey   string // the shared auth key this device has tried to sign in with
 }
 
 func newTailscaleManager(a *App) *tailscaleManager {
@@ -344,6 +343,11 @@ func (s Tailscale) Logout(ctx context.Context, forget bool) error {
 	if err != nil {
 		return err
 	}
+	// Signing out is the user's choice: the shared key must not sign this
+	// device in again.
+	if k, ok := s.a.sharedAuthKey(); ok {
+		_ = s.a.secrets.Set(secretTSKeyTried, k.Key)
+	}
 	if err := c.TailscaleLogout(ctx); err != nil {
 		return err
 	}
@@ -442,6 +446,10 @@ func itoa(n int) string {
 // sharedKey says.
 const secretTSAuthKey = "tailscale.authKey"
 
+// secretTSKeyTried is the shared auth key this device has signed in with,
+// or tried to, so that it does not again.
+const secretTSKeyTried = "tailscale.authKeyTried"
+
 // sharedKey is an auth key that sync carries to the user's other devices,
 // each of which signs in with it as a device of its own.
 type sharedKey struct {
@@ -467,9 +475,13 @@ func (m *tailscaleManager) autoLogin(s coreapi.TailscaleStatus) {
 	if !ok {
 		return
 	}
+	// Once for each key, whatever restarts come between: not again after a
+	// failure, nor after the user signed out.
 	m.mu.Lock()
-	tried := m.triedKey == k.Key
-	m.triedKey = k.Key
+	tried := m.a.secrets.Get(secretTSKeyTried) == k.Key
+	if !tried {
+		_ = m.a.secrets.Set(secretTSKeyTried, k.Key)
+	}
 	m.mu.Unlock()
 	if tried {
 		return
