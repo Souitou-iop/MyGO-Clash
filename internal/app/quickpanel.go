@@ -476,11 +476,30 @@ func (p *quickPanel) view(c *ui.Context) {
 			})
 		})
 
-		// Mode.
-		if ui.Segmented(c, &p.selected, tr(a, "rule"), tr(a, "global"), tr(a, "direct")).Label(tr(a, "mode")).Changed() {
-			mode := []string{"rule", "global", "direct"}[p.selected]
-			go a.setMode("quick panel", mode)
-		}
+		// Mode: three segments of one width, across the panel.
+		ui.Row(c).Gap(2).Padding(2).Radius(9).Background(t.Surface).Label(tr(a, "mode")).Children(func() {
+			for i, m := range []string{"rule", "global", "direct"} {
+				seg := ui.ButtonBase(c).Key(m).Grow(1).Basis(0).Height(28).Radius(7).AlignItems(ui.Center).Justify(ui.Center)
+				switch {
+				case p.selected == i:
+					seg.Background(t.Background).Border(1, t.Border)
+				case seg.Hovered():
+					seg.Background(t.SurfaceHover)
+				}
+				seg.Children(func() {
+					txt := ui.Text(c, tr(a, m)).FontSize(13).SingleLine()
+					if p.selected == i {
+						txt.Bold()
+					} else {
+						txt.TextColor(t.TextMuted)
+					}
+				})
+				if seg.Clicked() && p.selected != i {
+					p.selected = i
+					go a.setMode("quick panel", m)
+				}
+			}
+		})
 
 		// Switches.
 		ui.Row(c).Gap(8).Children(func() {
