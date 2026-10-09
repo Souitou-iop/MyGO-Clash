@@ -491,7 +491,7 @@ export default function SyncTab() {
                 width={170}
               />
             </Row>
-            <Row label={t("sync.what")} desc={t("sync.whatDesc")}>
+            <Row label={t("sync.what")} desc={cats.has("tailscale") ? `${t("sync.whatDesc")} · ${t("sync.tsNote")}` : t("sync.whatDesc")}>
               <div className="row" style={{ gap: 6 }}>
                 {["profiles", "settings", "dns", "tailscale"].map((c) => (
                   <button
