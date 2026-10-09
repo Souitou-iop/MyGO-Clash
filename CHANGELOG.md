@@ -2,6 +2,20 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.5-beta
+
+快捷面板重做，macOS 上点击菜单栏图标默认打开它；以后升级应用不再每次都要更新 TUN 服务。/ The quick panel is reworked and opens on a click of the menu bar icon by default on macOS; updating the app no longer asks to update the TUN service every time.
+
+### ✨ 新增功能 / New Features
+
+- 快捷面板重做：高度随内容自适应；上传下载合为一行并带最近 30 秒的下载曲线；系统代理和 TUN 改为磁贴；节点列表单行显示、当前节点带勾，节点多时可搜索；底部可直接切换订阅；顶部有设置和主窗口入口；按 Esc 关闭 / The quick panel is reworked: it is sized to what it shows; the speeds share a line with a graph of the last 30 seconds of download; the system proxy and TUN are tiles; proxies are single lines with a check mark on the current one and a search field when there are many; the footer switches the profile; the header opens the settings and the window; Escape closes it
+- 全新安装的 macOS 默认点击菜单栏图标打开快捷面板，右键仍是菜单；已有设置不变，可在 设置 → 通用 → 托盘 中更改 / On a new installation, macOS opens the quick panel on a click of the menu bar icon and the menu on a right click; existing settings stay, and can be changed in Settings → General → Tray
+
+### 🔧 改进 / Improvements
+
+- TUN 服务只在应用与服务之间的接口变化时才要求更新；仅版本落后时 TUN 照常可用，设置里的按钮变为"更新"。这个版本之后，旧服务仍需最后更新一次 / The TUN service is asked to update only when what the app and the service say to each other changes; one that is merely behind keeps TUN working, and the button in the settings reads Update. A service installed before this version needs one last update
+- 点击托盘图标关闭快捷面板时，不再被同一次点击重新打开 / A click on the tray icon that closes the quick panel no longer opens it again
+
 ## 0.2.4-beta
 
 修复 macOS 上 TUN 服务装不上、所有平台检查更新报错的问题。/ Fixes the macOS service that would not install, and the update check that failed on every platform.
