@@ -1,8 +1,10 @@
 # Builds every platform when a version tag such as v0.2.0 is pushed, and
 # uploads the installers, packages and signed updates to a draft release.
 # Publishing the draft makes it the version that installed apps update to.
-# A pre-release tag such as v0.2.0-beta is published as a pre-release once
-# every platform is built: installed apps are never offered pre-releases.
+# A tag with a suffix such as v0.2.0-beta is published, as the latest release,
+# once every platform is built, without waiting for a click: installed apps
+# look for updates at the latest release, which GitHub never takes from a
+# pre-release, so a pre-release would leave every update check with a 404.
 #
 # Running the workflow by hand with a tag, from the commit to release, tags
 # that commit on GitHub instead.
@@ -46,10 +48,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            prerelease=""
-            case "$TAG" in *-*) prerelease="--prerelease" ;; esac
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
-              --draft $prerelease --target "$GITHUB_SHA" --title "MyGO-Clash $TAG" --notes-file notes.md
+              --draft --target "$GITHUB_SHA" --title "MyGO-Clash $TAG" --notes-file notes.md
           fi
 
   build:
@@ -138,7 +138,7 @@ jobs:
 
   finish:
     # Links the uploaded files from the notes, under their names on GitHub,
-    # and publishes a pre-release.
+    # and publishes a suffixed tag as the latest release.
     needs: build
     if: ${{ !cancelled() && (needs.build.result == 'success' || inputs.notes_only) }}
     runs-on: ubuntu-latest
@@ -150,8 +150,8 @@ jobs:
         run: |
           .github/release-notes.sh "$TAG" > notes.md
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
-      - name: Publish the pre-release
+      - name: Publish the release
         if: contains(inputs.tag || github.ref_name, '-')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false --latest

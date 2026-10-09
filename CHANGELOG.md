@@ -2,6 +2,15 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.4-beta
+
+修复 macOS 上 TUN 服务装不上、所有平台检查更新报错的问题。/ Fixes the macOS service that would not install, and the update check that failed on every platform.
+
+### 🐛 修复 / Fixes
+
+- 修复 macOS 上点击"安装服务"一直转圈：系统会杀掉从 PrivilegedHelperTools 里启动的 ad-hoc 签名程序，服务现在装在自己的目录里；装完没有起来时会报错，不再一直等 / Fixed "Install service" spinning forever on macOS: the system killed the ad-hoc signed program started from PrivilegedHelperTools, so the service now lives in its own folder, and an install whose service does not start reports an error instead of waiting
+- 修复所有平台检查更新都提示出错：之前的版本都是预发布，而更新清单取自 GitHub 的最新正式版（对预发布返回 404）；现在带后缀的版本也作为最新版发布。已安装的 0.2.3 及更早版本需要手动下载安装这一版，之后就能正常检查更新 / Fixed the update check failing on every platform: earlier versions were pre-releases, while the update manifests come from GitHub's latest release (a 404 for a pre-release); suffixed versions are now published as the latest release too. 0.2.3 and earlier need this version installed by hand, after which update checks work
+
 ## 0.2.3-beta
 
 悬浮网速窗不再占任务栏，也能放到任务栏上了。/ The speed window stays off the taskbar, and can sit on it.
