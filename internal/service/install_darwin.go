@@ -24,11 +24,14 @@ type Paths struct {
 // Layout returns the paths of the service of the app named slug.
 func Layout(slug string) Paths {
 	label := "io.mygo." + slug + ".service"
+	home := "/Library/Application Support/" + label
 	return Paths{
-		Label:      label,
-		Bin:        "/Library/PrivilegedHelperTools/" + label,
+		Label: label,
+		// Not in PrivilegedHelperTools: the system kills an ad-hoc signed
+		// program that launchd starts from there.
+		Bin:        home + "/service",
 		Unit:       "/Library/LaunchDaemons/" + label + ".plist",
-		Home:       "/Library/Application Support/" + label,
+		Home:       home,
 		Socket:     "/var/run/" + label + ".sock",
 		CoreSocket: "/var/run/" + label + "/core.sock",
 		Logs:       "/Library/Logs/" + label,
@@ -68,8 +71,15 @@ func install(cfg Config) error {
 		return err
 	}
 	_ = exec.Command("launchctl", "bootout", "system/"+p.Label).Run()
+	_ = os.Remove(legacyBin(p.Label))
 	if err := copyExecutable(exe, p.Bin); err != nil {
 		return err
+	}
+	// The copy's signature belongs to the app bundle (its Info.plist and
+	// resources): outside the bundle the system kills it on launch, and
+	// launchd would respawn it forever. Signed again, it stands alone.
+	if out, err := exec.Command("/usr/bin/codesign", "--force", "--sign", "-", p.Bin).CombinedOutput(); err != nil {
+		return fmt.Errorf("codesign: %v: %s", err, out)
 	}
 	if err := os.MkdirAll(p.Logs, 0o755); err != nil {
 		return err
@@ -93,13 +103,16 @@ func uninstall(slug string) error {
 	}
 	p := Layout(slug)
 	_ = exec.Command("launchctl", "bootout", "system/"+p.Label).Run()
-	for _, path := range []string{p.Unit, p.Bin, p.Socket} {
+	for _, path := range []string{p.Unit, p.Bin, legacyBin(p.Label), p.Socket} {
 		_ = os.Remove(path)
 	}
 	_ = os.RemoveAll(filepath.Dir(p.CoreSocket))
 	_ = os.RemoveAll(p.Home)
 	return nil
 }
+
+// legacyBin is where earlier versions put the program.
+func legacyBin(label string) string { return "/Library/PrivilegedHelperTools/" + label }
 
 func xmlEscape(s string) string {
 	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;").Replace(s)

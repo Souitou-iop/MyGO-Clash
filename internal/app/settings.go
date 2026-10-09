@@ -188,6 +188,9 @@ func (a *App) installService(ctx context.Context, enableTun bool) error {
 	for time.Now().Before(deadline) && !a.checkService(ctx).Usable() {
 		time.Sleep(300 * time.Millisecond)
 	}
+	if !a.checkService(ctx).Usable() {
+		return errors.New("the service was installed but did not start")
+	}
 	a.startCore(ctx)
 	if !enableTun {
 		return nil
