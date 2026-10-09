@@ -401,12 +401,22 @@ type Backup struct {
 	Keep              int  `json:"keep"`
 }
 
+// defaultTrayClick is what a click on the tray icon does on a new
+// installation: on macOS the quick panel, which the menu bar's popovers
+// have made the way to do it; elsewhere the menu.
+func defaultTrayClick() string {
+	if runtime.GOOS == "darwin" {
+		return "panel"
+	}
+	return "menu"
+}
+
 // Defaults returns the settings of a new installation.
 func Defaults() Settings {
 	s := Settings{
 		Theme:           "system",
 		StartPage:       "home",
-		TrayClick:       "menu",
+		TrayClick:       defaultTrayClick(),
 		CopyEnvType:     "posix",
 		Notifications:   true,
 		BuiltinEnhanced: true,

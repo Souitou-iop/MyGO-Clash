@@ -82,6 +82,8 @@ var messages = map[string]string{
 	"tsNeedsLogin": "Needs login",
 	"testDelay":    "Test Delays",
 	"timeout":      "Timeout",
+	"on":           "On",
+	"off":          "Off",
 	"noProfile":    "No profile",
 	"upload":       "Up",
 	"download":     "Down",

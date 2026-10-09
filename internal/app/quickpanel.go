@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,9 +39,24 @@ type quickPanel struct {
 	selected int // the mode's segment
 	sysOn    bool
 	tunOn    bool
+
+	history  []int64 // the download speeds of the last seconds, for the graph
+	query    string  // filters the proxies of the group
+	profile  string  // the name of the current profile
+	profiles ProfilesView
+	height   int       // the content's height, fitted to what shows
+	hiddenAt time.Time // when the panel hid, to tell a click on the icon that closed it
 }
 
-const panelW, panelH = 340, 580
+const (
+	panelW        = 340
+	panelMinH     = 330
+	panelMaxH     = 640
+	panelRowH     = 32
+	panelMaxRows  = 9
+	panelSearchAt = 8 // members from which a search field shows
+	historyLen    = 30
+)
 
 func newQuickPanel(a *App) *quickPanel { return &quickPanel{a: a} }
 
@@ -59,6 +75,14 @@ func (p *quickPanel) toggle() {
 		p.hide()
 		return
 	}
+	// A click on the icon blurs the open panel, which hides it, before the
+	// click itself comes: that one must not open it again.
+	p.mu.Lock()
+	justHid := time.Since(p.hiddenAt) < 300*time.Millisecond
+	p.mu.Unlock()
+	if justHid {
+		return
+	}
 	p.show()
 }
 
@@ -66,7 +90,7 @@ func (p *quickPanel) show() {
 	win := p.window()
 	if win == nil {
 		opts := mygo.WindowOptions{
-			Title: p.a.name, Width: panelW, Height: panelH, Hidden: true,
+			Title: p.a.name, Width: panelW, Height: p.contentHeight(), Hidden: true,
 			Frameless: true, AlwaysOnTop: true, SkipTaskbar: true,
 			DisableResize: true, DisableMinimize: true, DisableMaximize: true, DisableFullScreen: true,
 			Content: ui.View(p.view),
@@ -93,6 +117,7 @@ func (p *quickPanel) hide() {
 		p.stop()
 		p.stop = nil
 	}
+	p.hiddenAt = time.Now()
 	win := p.win
 	p.mu.Unlock()
 	if win != nil && !win.IsDestroyed() {
@@ -112,7 +137,7 @@ func (p *quickPanel) place(win *mygo.Window) {
 			if b.Y < d.Bounds.Y+d.Bounds.Height/2 {
 				y = b.Y + b.Height + 6
 			} else {
-				y = b.Y - panelH - 6
+				y = b.Y - p.contentHeight() - 6
 			}
 			placed = true
 		}
@@ -125,21 +150,23 @@ func (p *quickPanel) place(win *mygo.Window) {
 	if !placed {
 		x, y = wa.X+wa.Width-panelW-12, wa.Y+12
 		if runtime.GOOS == "windows" {
-			y = wa.Y + wa.Height - panelH - 12
+			y = wa.Y + wa.Height - p.contentHeight() - 12
 		}
 	}
 	x = max(wa.X+8, min(x, wa.X+wa.Width-panelW-8))
-	y = max(wa.Y+8, min(y, wa.Y+wa.Height-panelH-8))
+	y = max(wa.Y+8, min(y, wa.Y+wa.Height-p.contentHeight()-8))
 	win.SetPosition(x, y)
 }
 
 // load reads the app's state into the panel's.
 func (p *quickPanel) load(win *mygo.Window) {
-	st, state, ts := p.a.settings.Get(), p.a.snapshot(), p.a.ts.current()
+	st, state, ts, pv := p.a.settings.Get(), p.a.snapshot(), p.a.ts.current(), p.a.profilesView()
 	win.Update(func() {
 		p.st, p.state, p.ts = st, state, ts
 		p.selected = slices.Index([]string{"rule", "global", "direct"}, st.Clash.Mode)
 		p.sysOn, p.tunOn = st.SystemProxy.Enabled, st.Tun.Enabled && state.TunAvailable
+		p.profiles, p.profile = pv, state.ProfileName
+		p.fit(win)
 	})
 }
 
@@ -173,7 +200,13 @@ func (p *quickPanel) live(win *mygo.Window) {
 				if !ok {
 					return
 				}
-				win.Update(func() { p.traffic = t })
+				win.Update(func() {
+					p.traffic = t
+					p.history = append(p.history, t.Down)
+					if len(p.history) > historyLen {
+						p.history = p.history[len(p.history)-historyLen:]
+					}
+				})
 			}
 		}
 	}()
@@ -219,6 +252,7 @@ func (p *quickPanel) refreshGroups(ctx context.Context, win *mygo.Window) {
 				}
 			}
 		}
+		p.fit(win)
 	})
 }
 
@@ -278,6 +312,65 @@ func panelTheme(dark, oled bool) *ui.Theme {
 	return t
 }
 
+// current is the group the list shows, nil when there is none.
+func (p *quickPanel) current() *ProxyGroup {
+	for i := range p.groups {
+		if p.groups[i].Name == p.group {
+			return &p.groups[i]
+		}
+	}
+	return nil
+}
+
+// members are the proxies of g that the search keeps.
+func (p *quickPanel) members(g *ProxyGroup) []ProxyItem {
+	if g == nil || p.query == "" {
+		if g == nil {
+			return nil
+		}
+		return g.All
+	}
+	q := strings.ToLower(p.query)
+	var out []ProxyItem
+	for _, m := range g.All {
+		if strings.Contains(strings.ToLower(m.Name), q) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// contentHeight is the height the panel has, or will have.
+func (p *quickPanel) contentHeight() int {
+	if p.height == 0 {
+		return 520
+	}
+	return p.height
+}
+
+// fit sizes the panel to what it shows, as a popover is: the list is as
+// long as the group, up to a limit. On the main thread.
+func (p *quickPanel) fit(win *mygo.Window) {
+	g := p.current()
+	rows := min(max(len(p.members(g)), 3), panelMaxRows)
+	h := 281 + rows*panelRowH
+	if g != nil && len(g.All) > panelSearchAt {
+		h += 40
+	}
+	if p.ts.Source == "embedded" || p.ts.Source == "system" {
+		h += 18
+	}
+	h = min(max(h, panelMinH), panelMaxH)
+	if h == p.height {
+		return
+	}
+	p.height = h
+	win.SetContentSize(panelW, h)
+	if win.IsVisible() {
+		p.place(win)
+	}
+}
+
 // view builds the panel.
 func (p *quickPanel) view(c *ui.Context) {
 	a := p.a
@@ -286,8 +379,53 @@ func (p *quickPanel) view(c *ui.Context) {
 	if runtime.GOOS == "darwin" {
 		c.Root().Background(ui.Transparent)
 	}
-	ui.Column(c).Fill().Padding(14).Gap(12).Children(func() {
-		// Header: status and speeds.
+	if c.Shortcut(0, ui.KeyEscape) {
+		p.hide()
+	}
+
+	// iconButton is a small button with an icon, for the header and the
+	// footer.
+	iconButton := func(key string, icon *ui.SVG, tip string) bool {
+		b := ui.ButtonBase(c).Key(key).Size(28, 28).Radius(7).AlignItems(ui.Center).Justify(ui.Center).Label(tip)
+		if b.Hovered() {
+			b.Background(t.SurfaceHover)
+		}
+		b.Children(func() { ui.Icon(c, icon).FontSize(15).TextColor(t.TextMuted) })
+		b.Tooltip(tip)
+		return b.Clicked()
+	}
+	// tile is a switch drawn as a tile, in the accent color while on.
+	tile := func(key string, icon *ui.SVG, label, sub string, on bool) bool {
+		b := ui.ButtonBase(c).Key(key).Row().Grow(1).Gap(9).Padding(9, 11).Radius(10).AlignItems(ui.Center)
+		bg, fg, muted := t.Surface, t.Text, t.TextMuted
+		switch {
+		case on && b.Hovered():
+			bg, fg, muted = t.AccentHover, t.AccentText, t.AccentText.Alpha(0.78)
+		case on:
+			bg, fg, muted = t.Accent, t.AccentText, t.AccentText.Alpha(0.78)
+		case b.Hovered():
+			bg = t.SurfaceHover
+		}
+		b.Background(bg)
+		b.Children(func() {
+			ui.Icon(c, icon).FontSize(17).TextColor(fg)
+			ui.Column(c).Grow(1).Gap(1).Children(func() {
+				ui.Text(c, label).FontSize(12.5).Bold().TextColor(fg).SingleLine()
+				ui.Text(c, sub).FontSize(11).TextColor(muted).SingleLine()
+			})
+		})
+		return b.Clicked()
+	}
+
+	onOff := func(on bool) string {
+		if on {
+			return tr(a, "on")
+		}
+		return tr(a, "off")
+	}
+
+	ui.Column(c).Fill().Padding(12).Gap(10).Children(func() {
+		// Header: the core's state, and the way to the window and the settings.
 		ui.Row(c).Gap(8).AlignItems(ui.Center).DragWindow().Children(func() {
 			dot := t.TextMuted
 			switch p.state.Core.Status {
@@ -299,58 +437,67 @@ func (p *quickPanel) view(c *ui.Context) {
 				dot = t.Warning
 			}
 			ui.Box(c).Size(8, 8).Radius(4).Background(dot)
-			ui.Text(c, a.name).Bold().FontSize(14)
-			ui.Text(c, statusLabel(a, p.state.Core)).TextColor(t.TextMuted).FontSize(12)
+			ui.Text(c, a.name).Bold().FontSize(14).SingleLine()
+			ui.Text(c, statusLabel(a, p.state.Core)).TextColor(t.TextMuted).FontSize(12).SingleLine()
 			ui.Spacer(c)
-			if ui.Button(c, tr(a, "dashboard")).Padding(3, 10).FontSize(12).Clicked() {
+			if iconButton("settings", iconSettings, tr(a, "settings")) {
+				p.hide()
+				a.navigate("settings")
+			}
+			if iconButton("dashboard", iconWindow, tr(a, "dashboard")) {
 				p.hide()
 				a.showMain()
 			}
 		})
-		ui.Row(c).Gap(10).Children(func() {
-			for _, s := range []struct {
-				label string
-				v     int64
-			}{{tr(a, "upload"), p.traffic.Up}, {tr(a, "download"), p.traffic.Down}} {
-				ui.Column(c).Grow(1).Padding(8, 10).Radius(8).Background(t.Surface).Children(func() {
-					ui.Text(c, s.label).FontSize(11).TextColor(t.TextMuted)
-					ui.Text(c, shortRate(s.v)+"/s").FontSize(18).Bold().FontFeatures("tnum")
-				})
+
+		// Speeds, and the last seconds of the download.
+		ui.Row(c).Gap(6).AlignItems(ui.Center).Padding(0, 2).Children(func() {
+			ui.Icon(c, iconUp).FontSize(13).TextColor(t.Accent)
+			ui.Text(c, shortRate(p.traffic.Up)+"/s").FontSize(13).Bold().FontFeatures("tnum").Width(64)
+			ui.Icon(c, iconDown).FontSize(13).TextColor(t.Success)
+			ui.Text(c, shortRate(p.traffic.Down)+"/s").FontSize(13).Bold().FontFeatures("tnum").Width(64)
+			ui.Spacer(c)
+			var peak int64 = 1
+			for _, v := range p.history {
+				peak = max(peak, v)
 			}
+			ui.Row(c).Gap(1.5).AlignItems(ui.End).Height(20).Children(func() {
+				for i := 0; i < historyLen; i++ {
+					var v int64
+					if j := i - (historyLen - len(p.history)); j >= 0 {
+						v = p.history[j]
+					}
+					h := float32(2)
+					if v > 0 {
+						h = max(2, 20*float32(v)/float32(peak))
+					}
+					ui.Box(c).Key(i).Size(2.5, h).Radius(1).Background(t.Success.Alpha(0.35 + 0.65*float32(i)/historyLen))
+				}
+			})
 		})
 
-		// Mode and switches.
+		// Mode.
 		if ui.Segmented(c, &p.selected, tr(a, "rule"), tr(a, "global"), tr(a, "direct")).Label(tr(a, "mode")).Changed() {
 			mode := []string{"rule", "global", "direct"}[p.selected]
 			go a.setMode("quick panel", mode)
 		}
-		ui.Column(c).Gap(8).Padding(8, 10).Radius(8).Background(t.Surface).Children(func() {
-			ui.Row(c).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, tr(a, "systemProxy")).Grow(1)
-				if ui.Switch(c, &p.sysOn).Label(tr(a, "systemProxy")).Changed() {
-					on := p.sysOn
-					go func() {
-						_, err := a.updateSettings(from(context.Background(), "quick panel"), func(s *config.Settings) { s.SystemProxy.Enabled = on })
-						a.notifyErr("settings/network", tr(a, "sysproxyFailed"), err)
-					}()
+
+		// Switches.
+		ui.Row(c).Gap(8).Children(func() {
+			if tile("sys", iconGlobe, tr(a, "systemProxy"), onOff(p.sysOn), p.sysOn) {
+				go a.toggleSystemProxy("quick panel")
+			}
+			tunSub := onOff(p.tunOn)
+			if !p.state.TunAvailable {
+				tunSub = tunLabel(a, p.state)
+			}
+			if tile("tun", iconShield, tr(a, "tun"), tunSub, p.tunOn) {
+				if !p.tunOn && !p.state.TunAvailable {
+					go a.installServiceForTun() // on once the service is in
+				} else {
+					go a.toggleTun("quick panel")
 				}
-			})
-			ui.Divider(c)
-			ui.Row(c).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, tunLabel(a, p.state)).Grow(1)
-				sw := ui.Switch(c, &p.tunOn).Label(tr(a, "tun"))
-				if sw.Changed() {
-					on := p.tunOn
-					if on && !p.state.TunAvailable {
-						p.tunOn = false // on once the service is in
-						go a.installServiceForTun()
-					} else {
-						go func() {
-							_, _ = a.updateSettings(from(context.Background(), "quick panel"), func(s *config.Settings) { s.Tun.Enabled = on })
-						}()
-					}
-				}
-			})
+			}
 		})
 
 		// The proxies of a group.
@@ -358,24 +505,32 @@ func (p *quickPanel) view(c *ui.Context) {
 		for _, g := range p.groups {
 			names = append(names, g.Name)
 		}
-		var cur *ProxyGroup
-		for i := range p.groups {
-			if p.groups[i].Name == p.group {
-				cur = &p.groups[i]
-			}
-		}
+		cur := p.current()
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			if len(names) > 0 {
-				ui.Select(c, &p.group, names).Grow(1).Label(tr(a, "group"))
+				if ui.Select(c, &p.group, names).Grow(1).Label(tr(a, "group")).Changed() {
+					p.query = ""
+					p.fit(p.window())
+				}
 			} else {
 				ui.Text(c, tr(a, "notRunning")).TextColor(t.TextMuted).Grow(1)
 			}
 			if cur != nil {
-				label := tr(a, "testDelay")
-				if p.testing {
-					label = "…"
+				testing := p.testing
+				b := ui.ButtonBase(c).Key("test").Size(32, 32).Radius(7).AlignItems(ui.Center).Justify(ui.Center).Disabled(testing).Label(tr(a, "testDelay"))
+				b.Background(t.Surface)
+				if b.Hovered() && !testing {
+					b.Background(t.SurfaceHover)
 				}
-				if ui.Button(c, label).Disabled(p.testing).Clicked() {
+				b.Children(func() {
+					if testing {
+						ui.Spinner(c)
+					} else {
+						ui.Icon(c, iconZap).FontSize(15).TextColor(t.Text)
+					}
+				})
+				b.Tooltip(tr(a, "testDelay"))
+				if b.Clicked() {
 					p.testing = true
 					group, testURL := cur.Name, cur.TestURL
 					win := p.window()
@@ -391,24 +546,33 @@ func (p *quickPanel) view(c *ui.Context) {
 				}
 			}
 		})
-		ui.Scroll(c).Grow(1).Radius(8).Background(t.Surface).Children(func() {
+		if cur != nil && len(cur.All) > panelSearchAt {
+			if ui.SearchField(c, &p.query).Changed() {
+				p.fit(p.window())
+			}
+		}
+		ui.Scroll(c).Grow(1).Radius(10).Background(t.Surface).Padding(4, 0).Children(func() {
 			if cur == nil {
 				return
 			}
 			selectable := cur.Type == "Selector"
-			for _, m := range cur.All {
+			for _, m := range p.members(cur) {
 				member := m
-				row := ui.ButtonBase(c).Key(m.Name).Row().Gap(8).Padding(7, 10).AlignItems(ui.Center).Disabled(!selectable)
+				row := ui.ButtonBase(c).Key(m.Name).Row().Gap(8).Padding(0, 10).Height(panelRowH).AlignItems(ui.Center).Disabled(!selectable)
 				if m.Name == cur.Now {
 					row.Background(t.Selection)
 				} else if row.Hovered() && selectable {
 					row.Background(t.SurfaceHover)
 				}
+				row.Tooltip(member.Type)
 				row.Children(func() {
-					ui.Column(c).Grow(1).Gap(1).Children(func() {
-						ui.Text(c, member.Name).SingleLine().FontSize(13)
-						ui.Text(c, member.Type).FontSize(11).TextColor(t.TextMuted)
-					})
+					box := ui.Box(c).Size(14, 14)
+					if member.Name == cur.Now {
+						ui.Icon(c, iconCheck).FontSize(14).TextColor(t.Accent)
+					} else {
+						box.Size(14, 14)
+					}
+					ui.Text(c, member.Name).SingleLine().FontSize(13).Grow(1)
 					delay := "—"
 					if member.Delay > 0 {
 						delay = fmt.Sprintf("%d ms", member.Delay)
@@ -425,8 +589,8 @@ func (p *quickPanel) view(c *ui.Context) {
 			}
 		})
 
-		// Footer: the tailnet and the profile.
-		ui.Column(c).Gap(4).Children(func() {
+		// Footer: the tailnet, the profile, and the way out.
+		ui.Column(c).Gap(6).Children(func() {
 			if p.ts.Source == "embedded" || p.ts.Source == "system" {
 				line := tr(a, "tailscale") + ": " + tr(a, "disconnected")
 				if p.ts.BackendState == "Running" {
@@ -439,13 +603,26 @@ func (p *quickPanel) view(c *ui.Context) {
 				}
 				ui.Text(c, line).FontSize(12).TextColor(t.TextMuted).SingleLine()
 			}
-			profile := p.state.ProfileName
-			if profile == "" {
-				profile = tr(a, "noProfile")
-			}
-			ui.Row(c).AlignItems(ui.Center).Children(func() {
-				ui.Text(c, tr(a, "profile")+": "+profile).FontSize(12).TextColor(t.TextMuted).SingleLine().Grow(1)
-				if ui.Button(c, tr(a, "quit")).Padding(3, 10).FontSize(12).Clicked() {
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+				var pnames []string
+				uids := map[string]string{}
+				for _, it := range p.profiles.Items {
+					pnames = append(pnames, it.Name)
+					uids[it.Name] = it.UID
+				}
+				if len(pnames) > 0 {
+					if ui.Select(c, &p.profile, pnames).Grow(1).Label(tr(a, "profile")).Changed() {
+						uid := uids[p.profile]
+						go func() {
+							if err := (Profiles{a}).Activate(context.Background(), uid); err != nil {
+								a.notifyErr("profiles", tr(a, "applyFailed"), err)
+							}
+						}()
+					}
+				} else {
+					ui.Text(c, tr(a, "noProfile")).FontSize(12).TextColor(t.TextMuted).Grow(1)
+				}
+				if iconButton("quit", iconPower, tr(a, "quit")) {
 					go a.quit()
 				}
 			})
