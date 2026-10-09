@@ -221,7 +221,7 @@ function ServiceSection() {
         {svc.installed ? (
           <>
             <Button size="sm" icon={<Wrench size={13} />} loading={busy === "repair"} onClick={() => act("repair", () => System.installService(false), t("service.installed"), t("service.installFailed"))}>
-              {svc.outdated ? t("service.update") : t("service.repair")}
+              {svc.outdated || svc.behind ? t("service.update") : t("service.repair")}
             </Button>
             <Button
               size="sm"

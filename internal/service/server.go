@@ -128,7 +128,7 @@ func (s *server) authorize(next http.Handler) http.Handler {
 func (s *server) status() Status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	st := Status{Version: Version, Name: s.cfg.Slug, PID: os.Getpid(), StartedAt: s.started, CoreError: s.coreErr, Home: s.paths.Home}
+	st := Status{Version: Version, Revision: Revision, Name: s.cfg.Slug, PID: os.Getpid(), StartedAt: s.started, CoreError: s.coreErr, Home: s.paths.Home}
 	if s.core != nil {
 		select {
 		case <-s.coreDone:

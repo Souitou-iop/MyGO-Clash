@@ -39,14 +39,17 @@ type ServiceState struct {
 	Supported bool   `json:"supported"`
 	Installed bool   `json:"installed"`
 	Version   string `json:"version,omitempty"`
-	// Outdated reports a service of another version than the app's, as
-	// after the app updated: it runs no core until it is updated too.
-	Outdated bool   `json:"outdated"`
-	Error    string `json:"error,omitempty"`
+	// Outdated reports a service of another revision than the app's (see
+	// service.Revision): it runs no core until it is updated.
+	Outdated bool `json:"outdated"`
+	// Behind reports a service of an older version of the app that still
+	// works: its core is the older one, until the service is updated.
+	Behind bool   `json:"behind"`
+	Error  string `json:"error,omitempty"`
 }
 
 // Usable reports whether the core can run in the service: it is installed,
-// answers, and is of the app's version.
+// answers, and is of the app's revision.
 func (s ServiceState) Usable() bool { return s.Installed && s.Error == "" && !s.Outdated }
 
 // Notice is a message for the user, shown as a toast.

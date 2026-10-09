@@ -35,9 +35,17 @@ const (
 	PathCoreStop  = "/__service/core/stop"
 )
 
+// Revision is the version of what the app and the service say to each
+// other. The service must be of the app's revision to run its core; the
+// app's own version may run ahead of it, which only leaves an older core
+// in the service until the user updates it. Raise it when that talk, or
+// what the service does for the app, changes.
+const Revision = 1
+
 // Status describes the service.
 type Status struct {
 	Version     string    `json:"version"`
+	Revision    int       `json:"revision"`
 	Name        string    `json:"name"`
 	PID         int       `json:"pid"`
 	StartedAt   time.Time `json:"startedAt"`

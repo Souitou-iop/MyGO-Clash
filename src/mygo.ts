@@ -629,10 +629,15 @@ export interface ServiceState {
   installed: boolean;
   version?: string;
   /**
-   * Outdated reports a service of another version than the app's, as
-   * after the app updated: it runs no core until it is updated too.
+   * Outdated reports a service of another revision than the app's (see
+   * service.Revision): it runs no core until it is updated.
    */
   outdated: boolean;
+  /**
+   * Behind reports a service of an older version of the app that still
+   * works: its core is the older one, until the service is updated.
+   */
+  behind: boolean;
   error?: string;
 }
 

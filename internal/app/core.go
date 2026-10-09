@@ -56,7 +56,8 @@ func (a *App) checkService(ctx context.Context) ServiceState {
 		switch {
 		case err == nil:
 			s.Installed, s.Version = true, st.Version
-			s.Outdated = st.Version != Version
+			s.Outdated = st.Revision != service.Revision
+			s.Behind = !s.Outdated && st.Version != Version
 		case !errors.Is(err, service.ErrNotInstalled):
 			s.Installed, s.Error = true, err.Error()
 		}
