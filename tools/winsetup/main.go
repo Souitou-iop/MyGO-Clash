@@ -6,8 +6,8 @@
 //
 // For each directory it compiles packaging/windows/installer.nsi with
 // makensis, from the executable and files that mygo build left there, and
-// writes "<name> Setup <version>.exe" over mygo's installer, under the same
-// name, so that whatever renames and uploads that file keeps working. The
+// writes "<name> Setup <version> <arch>.exe" over mygo's installer, under
+// the same name, so that whatever uploads that file keeps working. The
 // installer keeps mygo's layout (per-user, the same uninstall entry and
 // folder), so the app's own updates and installs of both kinds keep working.
 //
@@ -266,7 +266,10 @@ func build(root string, c *config, dir string) error {
 		return err
 	}
 
-	out := filepath.Join(dir, fsName(c.Name)+" Setup "+fsName(c.Version)+".exe")
+	// The name mygo gave its installer: "<name> Setup <version> <arch>.exe"
+	// since mygo 0.4.0, before that without the architecture. Writing over
+	// it keeps the directory at one installer per architecture.
+	out := filepath.Join(dir, fsName(c.Name)+" Setup "+fsName(c.Version)+" "+arch+".exe")
 	signCmd := os.Getenv("WINSETUP_SIGN_CMD")
 	defs := [][2]string{
 		{"PRODUCT_NAME", c.Name},
