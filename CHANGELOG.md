@@ -2,6 +2,18 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.7-beta
+
+界面底层框架升级到 MyGo 0.4.0，原生界面更快更顺滑；开发版本改用虚拟演示数据。/ The interface's framework is upgraded to MyGo 0.4.0, drawing the native UI faster and smoother; development builds now answer the address lookups with made-up demo data.
+
+### ✨ 新增功能 / New Features
+
+- 开发版（源码运行）的出口 IP 与 IP 质量改用内置的虚拟演示数据，不再向公网服务查询真实地址，演示时不会暴露开发者的网络信息；位置一律显示为"测试节点" / A development build (run from source) answers the exit IP and IP quality lookups with built-in made-up data instead of asking public services, so a demo gives away no real network details; every place reads 测试节点 (test node)
+
+### 🔧 改进 / Improvements
+
+- 界面框架 MyGo 升级到 0.4.0：托盘快捷面板与测速窗换到新的原生界面层，绘制更快；修复 Windows 托盘菜单与 Linux Wayland 下的窗口缩放问题；磁盘镜像体积更小 / The interface framework MyGo is upgraded to 0.4.0: the tray quick panel and the speed window move to the new native UI layer, which draws faster; Windows tray menus and Linux Wayland resizing are fixed; the disk images are smaller
+
 ## 0.2.6-beta
 
 Tailscale 的认证密钥可以通过同步分享，新设备同步后自动登录；同步类别现在对每台设备都真正生效。/ A Tailscale auth key can be shared through sync, and new devices sign in with it; the sync categories now hold on each device.
