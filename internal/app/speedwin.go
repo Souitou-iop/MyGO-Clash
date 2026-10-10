@@ -265,7 +265,7 @@ func (w *speedWindow) view(c *ui.Context) {
 // dragging moves the window with the pointer, from the screen's
 // coordinates: the window's own move under the pointer as it follows
 // would otherwise feed back into the drag.
-func (w *speedWindow) dragging(root *ui.Element, win *mygo.Window) {
+func (w *speedWindow) dragging(root ui.Element, win *mygo.Window) {
 	_, _, pressed := root.Dragged()
 	switch {
 	case pressed && w.drag == nil:

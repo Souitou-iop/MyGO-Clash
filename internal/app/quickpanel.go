@@ -386,7 +386,7 @@ func (p *quickPanel) view(c *ui.Context) {
 	// iconButton is a small button with an icon, for the header and the
 	// footer.
 	iconButton := func(key string, icon *ui.SVG, tip string) bool {
-		b := ui.ButtonBase(c).Key(key).Size(28, 28).Radius(7).AlignItems(ui.Center).Justify(ui.Center).Label(tip)
+		b := ui.ButtonBase(c.Key(key)).Size(28, 28).Radius(7).AlignItems(ui.Center).Justify(ui.Center).Label(tip)
 		if b.Hovered() {
 			b.Background(t.SurfaceHover)
 		}
@@ -396,7 +396,7 @@ func (p *quickPanel) view(c *ui.Context) {
 	}
 	// tile is a switch drawn as a tile, in the accent color while on.
 	tile := func(key string, icon *ui.SVG, label, sub string, on bool) bool {
-		b := ui.ButtonBase(c).Key(key).Row().Grow(1).Gap(9).Padding(9, 11).Radius(10).AlignItems(ui.Center)
+		b := ui.ButtonBase(c.Key(key)).Row().Grow(1).Gap(9).Padding(9, 11).Radius(10).AlignItems(ui.Center)
 		bg, fg, muted := t.Surface, t.Text, t.TextMuted
 		switch {
 		case on && b.Hovered():
@@ -471,7 +471,7 @@ func (p *quickPanel) view(c *ui.Context) {
 					if v > 0 {
 						h = max(2, 20*float32(v)/float32(peak))
 					}
-					ui.Box(c).Key(i).Size(2.5, h).Radius(1).Background(t.Success.Alpha(0.35 + 0.65*float32(i)/historyLen))
+					ui.Box(c.Key(i)).Size(2.5, h).Radius(1).Background(t.Success.Alpha(0.35 + 0.65*float32(i)/historyLen))
 				}
 			})
 		})
@@ -479,7 +479,7 @@ func (p *quickPanel) view(c *ui.Context) {
 		// Mode: three segments of one width, across the panel.
 		ui.Row(c).Gap(2).Padding(2).Radius(9).Background(t.Surface).Label(tr(a, "mode")).Children(func() {
 			for i, m := range []string{"rule", "global", "direct"} {
-				seg := ui.ButtonBase(c).Key(m).Grow(1).Basis(0).Height(28).Radius(7).AlignItems(ui.Center).Justify(ui.Center)
+				seg := ui.ButtonBase(c.Key(m)).Grow(1).Basis(0).Height(28).Radius(7).AlignItems(ui.Center).Justify(ui.Center)
 				switch {
 				case p.selected == i:
 					seg.Background(t.Background).Border(1, t.Border)
@@ -536,7 +536,7 @@ func (p *quickPanel) view(c *ui.Context) {
 			}
 			if cur != nil {
 				testing := p.testing
-				b := ui.ButtonBase(c).Key("test").Size(32, 32).Radius(7).AlignItems(ui.Center).Justify(ui.Center).Disabled(testing).Label(tr(a, "testDelay"))
+				b := ui.ButtonBase(c.Key("test")).Size(32, 32).Radius(7).AlignItems(ui.Center).Justify(ui.Center).Disabled(testing).Label(tr(a, "testDelay"))
 				b.Background(t.Surface)
 				if b.Hovered() && !testing {
 					b.Background(t.SurfaceHover)
@@ -577,7 +577,7 @@ func (p *quickPanel) view(c *ui.Context) {
 			selectable := cur.Type == "Selector"
 			for _, m := range p.members(cur) {
 				member := m
-				row := ui.ButtonBase(c).Key(m.Name).Row().Gap(8).Padding(0, 10).Height(panelRowH).AlignItems(ui.Center).Disabled(!selectable)
+				row := ui.ButtonBase(c.Key(m.Name)).Row().Gap(8).Padding(0, 10).Height(panelRowH).AlignItems(ui.Center).Disabled(!selectable)
 				if m.Name == cur.Now {
 					row.Background(t.Selection)
 				} else if row.Hovered() && selectable {

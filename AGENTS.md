@@ -11,7 +11,7 @@
 - 版本号在 mygo.json，发版时与 tag 保持一致；发布 = workflow_dispatch（输入 tag；notes_only=true 则只重渲染已有版本的说明，不构建）
 - 发布说明 = CHANGELOG.md 对应版本小节 + release-notes.sh（按发布页实际上传文件生成下载链接）+ release-template.md 的 FAQ；这段小节同时是应用内更新窗口的文案
 - GitHub 上传会改名（空格和 ~ 变点），下载链接必须按实际文件名生成，禁止硬编码
-- macOS 分架构 DMG（-arm64 / -x64）：mygo 的 DMG 文件名不含架构，workflow 里有重命名步骤，不要删；更新清单按架构自动生成，应用各自取用
+- mygo ≥0.4.0 起产物文件名自带架构（如 `MyGO-Clash 0.2.6 arm64.dmg`、`MyGO-Clash Setup 0.2.6 amd64.exe`），workflow 不再做重命名；macOS x64 的 DMG 名含 amd64（不再是 -x64）；更新清单按架构自动生成，应用各自取用
 - CHANGELOG 每条中英对照（中文在前、英文在后）
 
 ## 更新签名（重要）

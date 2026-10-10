@@ -55,12 +55,18 @@ if [ -n "$assets" ]; then
   printf '\n---\n\n## 📥 下载地址 / Downloads\n\n'
 
   printf '### Windows\n\n'
-  row '安装版 Installer' "$(link '64 位 x64' '*Setup*-amd64.exe')" "$(link 'ARM64' '*Setup*-arm64.exe')"
+  row '安装版 Installer' "$(link '64 位 x64' '*Setup*amd64.exe')" "$(link 'ARM64' '*Setup*arm64.exe')"
 
   printf '\n### macOS\n\n'
-  if [ -n "$(link 'DMG' '*-arm64.dmg')" ]; then
-    row 'Apple 芯片 Apple silicon' "$(link 'DMG' '*-arm64.dmg')"
-    row 'Intel 芯片 Intel' "$(link 'DMG' '*-x64.dmg')"
+  # mygo names the disk image "name version arm64.dmg" since 0.4.0, and
+  # "name version-x64.dmg" before that; GitHub turns spaces into dots.
+  arm="$(link 'DMG' '*arm64.dmg')"
+  intel="$(link 'DMG' '*-x64.dmg')"
+  if [ -z "$intel" ]; then intel="$(link 'DMG' '*.amd64.dmg')"; fi
+  if [ -z "$intel" ]; then intel="$(link 'DMG' '*.x64.dmg')"; fi
+  if [ -n "$arm" ]; then
+    row 'Apple 芯片 Apple silicon' "$arm"
+    row 'Intel 芯片 Intel' "$intel"
   else
     row 'Apple 芯片与 Intel 芯片通用 Universal' "$(link 'DMG' '*.dmg')"
   fi

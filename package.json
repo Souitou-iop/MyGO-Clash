@@ -26,7 +26,7 @@
     "@lezer/highlight": "latest",
     "@tanstack/react-virtual": "latest",
     "lucide-react": "latest",
-    "mygo-runtime": "^0.2.15",
+    "mygo-runtime": "^0.4.0",
     "react": "^19",
     "react-dom": "^19",
     "zustand": "^5"

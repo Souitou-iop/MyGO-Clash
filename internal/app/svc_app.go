@@ -345,8 +345,12 @@ func (s System) SetUWPLoopback(ctx context.Context, sids []string) error {
 type Tools struct{ a *App }
 
 // IPInfo returns the address the world sees, through the proxy, or
-// directly when direct is set.
+// directly when direct is set. A development build answers with made-up
+// data: a demo would send the developer's address to the public services.
 func (s Tools) IPInfo(ctx context.Context, direct bool) (tools.IPInfo, error) {
+	if mygo.IsDev() {
+		return tools.DemoIPInfo(tools.ViewGlobal)
+	}
 	proxy := s.a.proxyURL()
 	if direct {
 		proxy = ""
@@ -356,15 +360,23 @@ func (s Tools) IPInfo(ctx context.Context, direct bool) (tools.IPInfo, error) {
 
 // ExitIP returns the address that a kind of site sees through the proxy:
 // "domestic" for sites in mainland China, "global" for sites abroad, or
-// "cloudflare".
+// "cloudflare". A development build answers with made-up data, asking no
+// service: see IPInfo.
 func (s Tools) ExitIP(ctx context.Context, view string) (tools.IPInfo, error) {
+	if mygo.IsDev() {
+		return tools.DemoIPInfo(view)
+	}
 	return tools.ExitIP(ctx, s.a.proxyURL(), view)
 }
 
 // IPQuality tells whether the address is a home, data center or mobile
 // line, and how risky it looks. It fails quietly into an error the page
-// may ignore: the services are free and sometimes busy.
+// may ignore: the services are free and sometimes busy. A development
+// build answers with made-up data: see IPInfo.
 func (s Tools) IPQuality(ctx context.Context, ip string) (tools.IPQuality, error) {
+	if mygo.IsDev() {
+		return tools.DemoIPQuality(ip), nil
+	}
 	return tools.IPQualityOf(ctx, s.a.proxyURL(), ip)
 }
 

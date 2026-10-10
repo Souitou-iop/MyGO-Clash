@@ -95,27 +95,9 @@ jobs:
         # pages, closing the running app, removing the service on uninstall.
         if: matrix.name == 'Windows'
         run: go run ./tools/winsetup build/windows-amd64 build/windows-arm64
-      - name: Name the Windows installers after their architecture
-        # Both are "<name> Setup <version>.exe" otherwise.
-        if: matrix.name == 'Windows'
-        run: |
-          for dir in build/windows-*; do
-            arch="${dir##*-}"
-            for exe in "$dir"/*" Setup "*.exe; do
-              mv "$exe" "${exe%.exe}-$arch.exe"
-            done
-          done
-      - name: Name the macOS disk images after their architecture
-        # Both are "<name> <version>.dmg" otherwise.
-        if: matrix.name == 'macOS'
-        run: |
-          for dir in build/darwin-*; do
-            arch="${dir##*-}"
-            if [ "$arch" = amd64 ]; then arch=x64; fi
-            for dmg in "$dir"/*.dmg; do
-              mv "$dmg" "${dmg%.dmg}-$arch.dmg"
-            done
-          done
+      # mygo 0.4.0 names the disk images and the installers after their
+      # architecture itself ("MyGO-Clash 0.2.6 arm64.dmg", "MyGO-Clash Setup
+      # 0.2.6 amd64.exe"), so nothing renames them here anymore.
       - name: Make the RPM and Arch packages and the AppImages
         if: matrix.name == 'Linux'
         run: go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"

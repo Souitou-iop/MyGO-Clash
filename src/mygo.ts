@@ -1793,14 +1793,16 @@ export const Tools = {
   /**
    * ExitIP returns the address that a kind of site sees through the proxy:
    * "domestic" for sites in mainland China, "global" for sites abroad, or
-   * "cloudflare".
+   * "cloudflare". A development build answers with made-up data, asking no
+   * service: see IPInfo.
    */
   exitIP(view: string): Promise<IPInfo> {
     return call("Tools.ExitIP", view);
   },
   /**
    * IPInfo returns the address the world sees, through the proxy, or
-   * directly when direct is set.
+   * directly when direct is set. A development build answers with made-up
+   * data: a demo would send the developer's address to the public services.
    */
   ipInfo(direct: boolean): Promise<IPInfo> {
     return call("Tools.IPInfo", direct);
@@ -1808,7 +1810,8 @@ export const Tools = {
   /**
    * IPQuality tells whether the address is a home, data center or mobile
    * line, and how risky it looks. It fails quietly into an error the page
-   * may ignore: the services are free and sometimes busy.
+   * may ignore: the services are free and sometimes busy. A development
+   * build answers with made-up data: see IPInfo.
    */
   ipQuality(ip: string): Promise<IPQuality> {
     return call("Tools.IPQuality", ip);
