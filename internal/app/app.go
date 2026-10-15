@@ -96,6 +96,7 @@ func Main() {
 	a := &App{ready: make(chan struct{})}
 	a.ctx, a.stop = context.WithCancel(context.Background())
 	a.bind()
+	mygo.App.SetLanguages(systemLanguages...)
 	if !mygo.App.RequestSingleInstanceLock() {
 		return // the running instance takes over
 	}

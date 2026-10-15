@@ -10,6 +10,13 @@ import (
 // takes them; src/lib/i18n.ts has the same.
 var languages = []string{"en", "zh-CN", "zh-TW", "ja", "ko", "ru", "es", "pt-BR", "de", "fr", "tr", "id", "vi", "fa", "ar"}
 
+// systemLanguages are languages as MyGo matches the user's against, for
+// App.Locale, which matchLanguage turns back into languages: a script for
+// Chinese, so that zh-HK reads Traditional, and Portuguese of any region.
+// Since MyGo 0.5 Locale is the best of these for the user, English without
+// them, where it was the user's own language before.
+var systemLanguages = []string{"en", "zh-Hans", "zh-Hant", "ja", "ko", "ru", "es", "pt", "de", "fr", "tr", "id", "vi", "fa", "ar"}
+
 // messages are the strings of the Go side, in English: the tray, the quick
 // panel, notifications and errors. The page has its own. translations has
 // them in the other languages, from i18n_*.go.

@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"slices"
 	"testing"
+
+	"github.com/egoist/mygo/i18n"
 )
 
 var verbRe = regexp.MustCompile(`%[a-z]`)
@@ -70,6 +72,33 @@ func TestDelayKind(t *testing.T) {
 	for d, want := range map[int]delayKind{-1: delayNone, 0: delayBad, 1: delayGood, 199: delayGood, 200: delayOK, 599: delayOK, 600: delayBad} {
 		if got := delayKindOf(d); got != want {
 			t.Errorf("delayKindOf(%d) = %v, want %v", d, got, want)
+		}
+	}
+}
+
+// TestSystemLanguages checks that the system's languages reach the
+// interface's through MyGo's matching (App.Locale), each of them.
+func TestSystemLanguages(t *testing.T) {
+	var reached []string
+	for _, l := range systemLanguages {
+		reached = append(reached, matchLanguage(l))
+	}
+	if !slices.Equal(reached, languages) {
+		t.Errorf("systemLanguages reach %v, want %v", reached, languages)
+	}
+	for _, tc := range []struct {
+		preferred []string
+		want      string
+	}{
+		{[]string{"zh-Hans-CN"}, "zh-CN"},
+		{[]string{"zh-HK"}, "zh-TW"},
+		{[]string{"zh-Hant-TW"}, "zh-TW"},
+		{[]string{"pt-PT"}, "pt-BR"},
+		{[]string{"it-IT", "ja-JP"}, "ja"},
+		{[]string{"it-IT"}, "en"},
+	} {
+		if got := matchLanguage(i18n.Match(tc.preferred, systemLanguages)); got != tc.want {
+			t.Errorf("%v: %s, want %s", tc.preferred, got, tc.want)
 		}
 	}
 }
