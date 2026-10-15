@@ -10,6 +10,10 @@
 //   - Its socket accepts only the user who installed it (checked with the
 //     socket's peer credentials, or the named pipe's security descriptor
 //     on Windows) and root.
+//   - It updates itself without the administrator only to a newer
+//     version from an archive signed with the app's update key, which it
+//     checks itself (see stage); whoever hands it the archive is not
+//     trusted.
 //   - The core it runs has a home and a socket of its own, which only root
 //     can reach; the app talks to the core through the service, which
 //     forwards its requests after checking who sends them.
@@ -44,8 +48,10 @@ const Revision = 1
 
 // Status describes the service.
 type Status struct {
-	Version     string    `json:"version"`
-	Revision    int       `json:"revision"`
+	Version  string `json:"version"`
+	Revision int    `json:"revision"`
+	// Updates reports that the service updates itself (see Client.Update).
+	Updates     bool      `json:"updates"`
 	Name        string    `json:"name"`
 	PID         int       `json:"pid"`
 	StartedAt   time.Time `json:"startedAt"`
@@ -90,7 +96,11 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	if err != nil {
 		return err
 	}
-	resp, err := c.hc.Do(req)
+	return c.send(c.hc, req, out)
+}
+
+func (c *Client) send(hc *http.Client, req *http.Request, out any) error {
+	resp, err := hc.Do(req)
 	if err != nil {
 		return err
 	}

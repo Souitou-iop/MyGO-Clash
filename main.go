@@ -5,6 +5,8 @@
 package main
 
 import (
+	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -20,16 +22,32 @@ import (
 // version is set by the build: mygo build links the configuration's.
 var version = "0.1.0-beta"
 
+// config is mygo.json, whose public key the service checks its own
+// updates with.
+//
+//go:embed mygo.json
+var config []byte
+
 func main() {
 	if v := mygo.App.Version(); v != "" {
 		version = v // linked by mygo build from mygo.json
 	}
 	app.Version, corehost.AppVersion, service.Version = version, version, version
+	var cfg struct {
+		Updates struct {
+			PublicKey string `json:"publicKey"`
+		} `json:"updates"`
+	}
+	if json.Unmarshal(config, &cfg) == nil && !mygo.IsDev() {
+		service.UpdateKey = cfg.Updates.PublicKey
+	}
 	if len(os.Args) > 1 {
 		var err error
 		switch os.Args[1] {
 		case "core":
 			err = corehost.Run(os.Stdin)
+		case "version": // asked by the service of the update it takes
+			fmt.Println(version)
 		case "service":
 			err = service.Main(os.Args[2:])
 		case "uwp-loopback": // elevated by the app, with the file of SIDs to exempt

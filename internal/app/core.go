@@ -74,6 +74,7 @@ func (a *App) checkService(ctx context.Context) ServiceState {
 func (a *App) launcher(ctx context.Context) coremgr.Launcher {
 	st := a.settings.Get()
 	svc := a.checkService(ctx)
+	a.updateServiceQuietly(svc)
 	if st.CoreMode != "sidecar" && svc.Usable() {
 		return coremgr.ServiceLauncher{Client: service.NewClient(a.slug)}
 	}

@@ -72,7 +72,8 @@ type App struct {
 	speed   *speedWindow
 	updates *updateChecker
 
-	outdatedTold atomic.Bool // the user heard that the service needs updating
+	outdatedTold  atomic.Bool // the user heard that the service needs updating
+	serviceUpdate atomic.Bool // the service was updated quietly, or tried
 
 	applyMu sync.Mutex // one configuration at a time
 

@@ -41,6 +41,8 @@ type server struct {
 	paths   Paths
 	started time.Time
 
+	updating sync.Mutex // one update at a time
+
 	mu       sync.Mutex
 	core     *exec.Cmd
 	coreIn   io.WriteCloser
@@ -60,6 +62,7 @@ func Run(ctx context.Context, cfg Config) error {
 		}
 		_ = os.Chmod(dir, 0o700)
 	}
+	cleanUpdate(p)
 	s := &server{
 		cfg:     cfg,
 		paths:   p,
@@ -94,6 +97,8 @@ func Run(ctx context.Context, cfg Config) error {
 		s.stopCore()
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("POST "+PathUpdateStage, s.handleUpdateStage)
+	mux.HandleFunc("POST "+PathUpdateApply, s.handleUpdateApply)
 	mux.Handle("/", s.proxy)
 	srv := &http.Server{
 		Handler:     s.authorize(mux),
@@ -128,7 +133,7 @@ func (s *server) authorize(next http.Handler) http.Handler {
 func (s *server) status() Status {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	st := Status{Version: Version, Revision: Revision, Name: s.cfg.Slug, PID: os.Getpid(), StartedAt: s.started, CoreError: s.coreErr, Home: s.paths.Home}
+	st := Status{Version: Version, Revision: Revision, Updates: UpdateKey != "", Name: s.cfg.Slug, PID: os.Getpid(), StartedAt: s.started, CoreError: s.coreErr, Home: s.paths.Home}
 	if s.core != nil {
 		select {
 		case <-s.coreDone:
@@ -172,6 +177,50 @@ func (s *server) handleStart(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, s.status())
 }
+
+func (s *server) handleUpdateStage(w http.ResponseWriter, r *http.Request) {
+	if !s.updating.TryLock() {
+		writeError(w, http.StatusConflict, errors.New("an update is under way"))
+		return
+	}
+	defer s.updating.Unlock()
+	q := r.URL.Query()
+	if err := stage(r.Context(), s.paths, q.Get("version"), q.Get("signature"), r.Body); err != nil {
+		log.Printf("update: %v", err)
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	log.Printf("update: version %s staged", q.Get("version"))
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleUpdateApply puts the staged update in place and exits, for the
+// system to start the service again: launchd keeps it alive, systemd and
+// the service manager restart it when it exits with an error.
+func (s *server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
+	if !s.updating.TryLock() {
+		writeError(w, http.StatusConflict, errors.New("an update is under way"))
+		return
+	}
+	s.stopCore()
+	if err := apply(s.paths); err != nil {
+		s.updating.Unlock()
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	log.Printf("update: applied, restarting")
+	w.WriteHeader(http.StatusNoContent)
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+	go func() {
+		time.Sleep(300 * time.Millisecond)
+		os.Exit(exitRestart)
+	}()
+}
+
+// exitRestart is the status the service exits with to be started again.
+const exitRestart = 75
 
 func (s *server) startCore(req StartRequest) error {
 	exe, err := os.Executable()
