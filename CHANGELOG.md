@@ -2,6 +2,14 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.9-beta
+
+修复语言设为"跟随系统"时界面显示英文的问题。/ Fixed the interface showing English when its language follows the system.
+
+### 🐛 修复 / Fixes
+
+- 修复 0.2.8-beta 中语言设为"跟随系统"时，即使系统首选语言是中文，界面、托盘和通知仍显示英文；现在会按系统的首选语言顺序选择应用支持的语言，香港、台湾地区显示繁体中文，首选语言不受支持时改用下一个首选语言 / Fixed the interface, tray and notifications of 0.2.8-beta showing English while the language follows the system, even with Chinese as the system's first language; the app now picks the first of the system's preferred languages it has, showing Traditional Chinese in Hong Kong and Taiwan, and the next preferred language when the first is not one of its own
+
 ## 0.2.8-beta
 
 TUN 服务今后随应用自动更新，不再每次都要输入管理员密码；界面框架升级到 MyGo 0.5.1。/ The TUN service now updates along with the app, without asking for an administrator's password each time; the interface framework is upgraded to MyGo 0.5.1.
