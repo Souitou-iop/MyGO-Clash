@@ -4,7 +4,7 @@ go 1.27.1
 
 require (
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
-	github.com/egoist/mygo v0.4.0
+	github.com/egoist/mygo v0.5.1
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/metacubex/chi v0.1.1
 	github.com/metacubex/http v0.1.8
@@ -143,11 +143,11 @@ require (
 	go4.org/netipx v0.0.0-20260823151212-3075585bcbeb // indirect
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
 
