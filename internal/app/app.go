@@ -23,6 +23,10 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	// The Chinese MyGo itself speaks, for its own controls, menus and
+	// dialogs: the app ships Chinese, so it carries the packages.
+	_ "github.com/egoist/mygo/locales/zh-Hans"
+	_ "github.com/egoist/mygo/locales/zh-Hant"
 
 	"github.com/mygo-clash/mygo-clash/internal/config"
 	"github.com/mygo-clash/mygo-clash/internal/coreapi"
