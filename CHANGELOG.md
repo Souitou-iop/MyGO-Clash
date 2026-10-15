@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.8-beta
+
+TUN 服务今后随应用自动更新，不再每次都要输入管理员密码；界面框架升级到 MyGo 0.5.1。/ The TUN service now updates along with the app, without asking for an administrator's password each time; the interface framework is upgraded to MyGo 0.5.1.
+
+### ✨ 新增功能 / New Features
+
+- 应用更新后，TUN 服务会在后台自动更新到同一版本：应用下载本版本的发布包交给服务，服务用内置的更新公钥校验签名、确认是更新的版本后才替换自己并重启，TUN 只中断几秒；更新失败时服务保持原样，仍可在设置中手动更新 / After the app updates, the TUN service updates itself to the same version in the background: the app downloads this version's release archive for the service, which checks its signature against the update key built into it and takes it only when it is a newer version, then restarts on it, leaving TUN down for a few seconds; when that fails, the service stays as it was and can still be updated from the settings
+- 注意：本版本之前安装的服务还不具备自动更新能力，需要在"设置 → 代理与 TUN"中点"更新"最后手动更新一次 / Note: services installed before this version cannot update themselves yet, and need one last update by hand, with Update in Settings → Proxy & TUN
+
+### 🔧 改进 / Improvements
+
+- 界面框架 MyGo 升级到 0.5.1 / The interface framework MyGo is upgraded to 0.5.1
+
 ## 0.2.7-beta
 
 界面底层框架升级到 MyGo 0.4.0，原生界面更快更顺滑；开发版本改用虚拟演示数据。/ The interface's framework is upgraded to MyGo 0.4.0, drawing the native UI faster and smoother; development builds now answer the address lookups with made-up demo data.
