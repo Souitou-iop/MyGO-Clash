@@ -21,7 +21,7 @@
 </p>
 
 > [!NOTE]
-> MyGO-Clash is in its v0.2 beta stage; v0.2.10-beta is out. The interface and the main flows have been tested on macOS (Apple Silicon). TUN and the system service, switching the system proxy, signing in to Tailscale, WebDAV sync, and running on Windows and Linux have not been fully verified in real use yet. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
+> MyGO-Clash is in beta. The interface and the main flows have been tested on macOS (Apple Silicon). TUN and the system service, switching the system proxy, signing in to Tailscale, WebDAV sync, and running on Windows and Linux have not been fully verified in real use yet. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
 
 ## Features
 

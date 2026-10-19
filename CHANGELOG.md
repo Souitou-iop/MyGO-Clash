@@ -2,6 +2,15 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.11-beta
+
+界面底层框架 MyGo 升级到 0.5.5，跟随上游的修复与改进。/ The interface's framework MyGo is upgraded to 0.5.5, following the fixes and improvements upstream.
+
+### 🔧 改进 / Improvements
+
+- 界面框架 MyGo 由 0.5.1 升级到 0.5.5（含 mygo-runtime），跟随上游的修复与改进 / The interface framework MyGo is upgraded from 0.5.1 to 0.5.5 (mygo-runtime included), following the fixes and improvements upstream
+- README 更新为 beta 阶段的说明，不再写着早期的预览版本号 / The READMEs now describe the beta stage instead of pinning an early preview version
+
 ## 0.2.10-beta
 
 新装的与分享链接转换的订阅默认让国内流量直连、走国内 DNS，国内站点和下载不再绕道代理。/ New installations and share-link subscriptions now keep domestic traffic off the proxy and on domestic DNS, so domestic sites and downloads no longer detour through it.

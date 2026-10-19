@@ -21,7 +21,7 @@
 </p>
 
 > [!NOTE]
-> MyGO-Clash は現在 v0.2 のベータ段階で、v0.2.10-beta を公開しています。画面と主な操作は macOS（Apple シリコン）で確認済みですが、TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Windows と Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
+> MyGO-Clash は現在ベータ段階です。画面と主な操作は macOS（Apple シリコン）で確認済みですが、TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Windows と Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
 
 ## 機能
 
