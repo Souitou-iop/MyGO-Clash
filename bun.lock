@@ -18,7 +18,7 @@
         "@lezer/highlight": "latest",
         "@tanstack/react-virtual": "latest",
         "lucide-react": "latest",
-        "mygo-runtime": "^0.5.1",
+        "mygo-runtime": "^0.5.5",
         "react": "^19",
         "react-dom": "^19",
         "zustand": "^5",
@@ -187,7 +187,7 @@
 
     "lucide-react": ["lucide-react@1.52.0", "", { "peerDependencies": { "@types/react": "*", "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@types/react"] }, "sha512-TUgPtl5ZI9WgxOcbu4ckaC5B3l1qxPQrCMgb6OfUB9owx/OvSJfcf93SMgUWAxRw5/1XDfh9uI5F5iNGXCcGDQ=="],
 
-    "mygo-runtime": ["mygo-runtime@0.5.1", "", {}, "sha512-aM9yRAk/A7Xis58BHi1e2GtiWrpslAbqXvFeeGdNTRF2twGp4NCrlCShMnjC6wzyrADgiNhgoV2w367txvoQoQ=="],
+    "mygo-runtime": ["mygo-runtime@0.5.5", "", {}, "sha512-51cwqDKMW10f0YjuoTfpd3rp3lFhP9sofSEKysqkIhRk8gheAqDyfDOhG51SCKRdJGvJDYUNpjbTe1SRxKP7Mw=="],
 
     "nanoid": ["nanoid@3.3.20", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-uKdg2G3GNCKQn9byYOpxbGqrT2fGO5KRt5J/8b3pok8rT6qxGWF6hxMyJiEYtAf+FVyYuD9hRaDqX5uPFYJ4ZQ=="],
 
