@@ -2,6 +2,17 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.10-beta
+
+新装的与分享链接转换的订阅默认让国内流量直连、走国内 DNS，国内站点和下载不再绕道代理。/ New installations and share-link subscriptions now keep domestic traffic off the proxy and on domestic DNS, so domestic sites and downloads no longer detour through it.
+
+### 🔧 改进 / Improvements
+
+- 由分享链接转换而来的订阅和新建本地配置的模板带上国内直连规则（GEOSITE,cn 与 GEOIP,CN 在前，解析命中国内地址即直连），不再只有一条 MATCH 全部进代理；已有订阅不受影响，更新订阅也不会被改动 / Share-link subscriptions and the local profile template now carry domestic direct rules first (GEOSITE,cn and GEOIP,CN, resolving on purpose so a domestic address matches even when the domain is not on the list) instead of a single MATCH sending everything to the proxy; existing subscriptions are left alone, and updating them does not touch their rules
+- DNS 覆盖模板去掉与国内解析器竞争、常先答回一个偏远 CDN 节点的 8.8.8.8，并为国内域名（geosite:cn）指定国内加密 DNS / The DNS override template drops 8.8.8.8, which raced the domestic resolvers and often answered first with a far CDN node, and points domestic domains (geosite:cn) at domestic encrypted DNS
+- 新安装默认开启 TCP 并发 / New installations turn TCP concurrency on by default
+- MyGo 框架自带的控件、菜单和对话框（如原生文件选择框）也随界面语言显示中文 / The controls, menus and dialogs MyGo itself draws, such as the native file picker, now follow the interface in Chinese too
+
 ## 0.2.9-beta
 
 修复语言设为"跟随系统"时界面显示英文的问题。/ Fixed the interface showing English when its language follows the system.
