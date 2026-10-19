@@ -180,7 +180,14 @@ proxies: []
 
 proxy-groups: []
 
+# Domestic and LAN traffic stays off the proxy; everything else goes to
+# the group you name. GEOIP,CN resolves on purpose: a domestic domain
+# missing from geosite:cn still matches by address.
 rules:
+  - GEOSITE,private,DIRECT
+  - GEOSITE,cn,DIRECT
+  - GEOIP,private,DIRECT,no-resolve
+  - GEOIP,CN,DIRECT
   - MATCH,DIRECT
 `
 	templateMerge = `# Merge: these keys replace or merge into the profile.
