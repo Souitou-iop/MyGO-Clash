@@ -463,9 +463,10 @@ func Defaults() Settings {
 			HTTPPort:     7899,
 			RedirPort:    7895,
 			TProxyPort:   7896,
-			IPv6:         true,
-			LogLevel:     "info",
-			UnifiedDelay: true,
+			IPv6:          true,
+			LogLevel:      "info",
+			UnifiedDelay:  true,
+			TCPConcurrent: true,
 			Controller: Controller{
 				Address:             "127.0.0.1:9097",
 				AllowOrigins:        []string{"https://metacubex.github.io", "https://yacd.metacubex.one", "https://board.zash.run.place"},
@@ -513,7 +514,9 @@ func Defaults() Settings {
 	return s
 }
 
-// DefaultDNSConfig is the DNS override offered to new installations.
+// DefaultDNSConfig is the DNS override offered to new installations. All
+// upstreams are domestic: a foreign one would race them and often answer
+// first with a far CDN node, slowing direct connections down.
 const DefaultDNSConfig = `dns:
   enable: true
   listen: :53
@@ -533,14 +536,16 @@ const DefaultDNSConfig = `dns:
     - www.msftconnecttest.com
   default-nameserver:
     - system
-    - 223.6.6.6
-    - 8.8.8.8
+    - 223.5.5.5
+    - 119.29.29.29
   nameserver:
-    - 8.8.8.8
     - https://doh.pub/dns-query
     - https://dns.alidns.com/dns-query
   fallback: []
-  nameserver-policy: {}
+  nameserver-policy:
+    'geosite:cn':
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
   proxy-server-nameserver:
     - https://doh.pub/dns-query
     - https://dns.alidns.com/dns-query

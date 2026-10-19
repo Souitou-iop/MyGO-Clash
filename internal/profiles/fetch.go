@@ -153,8 +153,8 @@ func Normalize(data []byte) (content []byte, converted bool, err error) {
 }
 
 // FromProxies builds a profile around proxies: a selector, an automatic
-// group picking the fastest, and a rule sending everything to the
-// selector.
+// group picking the fastest, and rules that keep domestic and LAN traffic
+// off the proxy.
 func FromProxies(proxies []map[string]any) []byte {
 	cfg := yamlx.NewMap()
 	names := []any{}
@@ -172,7 +172,13 @@ func FromProxies(proxies []map[string]any) []byte {
 		yamlx.MapOf("name", "Auto", "type", "url-test", "proxies", names,
 			"url", "https://www.gstatic.com/generate_204", "interval", int64(300), "tolerance", int64(50)),
 	})
-	cfg.Set("rules", []any{"GEOIP,private,DIRECT,no-resolve", "MATCH,Proxy"})
+	cfg.Set("rules", []any{
+		"GEOSITE,private,DIRECT",
+		"GEOSITE,cn,DIRECT",
+		"GEOIP,private,DIRECT,no-resolve",
+		"GEOIP,CN,DIRECT",
+		"MATCH,Proxy",
+	})
 	out, _ := yamlx.Marshal(cfg)
 	return append([]byte("# Converted from a list of share links by MyGO-Clash\n"), out...)
 }
