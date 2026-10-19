@@ -17,11 +17,11 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4f8fc0" alt="対応プラットフォーム">
   <img src="https://img.shields.io/badge/core-mihomo%201.19.32-e2617f" alt="コア">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2a7ab0" alt="ライセンス">
-  <img src="https://img.shields.io/badge/status-preview-e8b84a" alt="ステータス">
+  <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="ステータス">
 </p>
 
 > [!NOTE]
-> MyGO-Clash は v0.1.0 の早期プレビュー版です。画面と主な操作は macOS（Apple シリコン）で確認済みですが、TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Windows と Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
+> MyGO-Clash は現在 v0.2 のベータ段階で、v0.2.10-beta を公開しています。画面と主な操作は macOS（Apple シリコン）で確認済みですが、TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Windows と Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
 
 ## 機能
 
@@ -78,7 +78,7 @@
 
 ## ダウンロード
 
-正式版はまだ公開していません。今はソースからビルドしてください（下記）。公開後は [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) ページからダウンロードできます：
+最新版（現在はベータ）は [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) ページからダウンロードできます。ソースからビルドすることもできます（下記）：
 
 | システム | パッケージ | アップデート |
 |---|---|---|

@@ -17,11 +17,11 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4f8fc0" alt="Platforms">
   <img src="https://img.shields.io/badge/core-mihomo%201.19.32-e2617f" alt="Core">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2a7ab0" alt="License">
-  <img src="https://img.shields.io/badge/status-preview-e8b84a" alt="Status">
+  <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="Status">
 </p>
 
 > [!NOTE]
-> MyGO-Clash is an early preview, v0.1.0. The interface and the main flows have been tested on macOS (Apple Silicon). TUN and the system service, switching the system proxy, signing in to Tailscale, WebDAV sync, and running on Windows and Linux have not been fully verified in real use yet. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
+> MyGO-Clash is in its v0.2 beta stage; v0.2.10-beta is out. The interface and the main flows have been tested on macOS (Apple Silicon). TUN and the system service, switching the system proxy, signing in to Tailscale, WebDAV sync, and running on Windows and Linux have not been fully verified in real use yet. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
 
 ## Features
 
@@ -78,7 +78,7 @@
 
 ## Download
 
-No release has been published yet; for now, build from source (below). Releases will appear on the [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) page:
+Download the latest release (currently a beta) from the [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) page, or build from source (below):
 
 | System | Package | Updates |
 |---|---|---|

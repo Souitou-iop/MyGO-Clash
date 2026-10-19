@@ -17,11 +17,11 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4f8fc0" alt="平台">
   <img src="https://img.shields.io/badge/core-mihomo%201.19.32-e2617f" alt="内核">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2a7ab0" alt="许可证">
-  <img src="https://img.shields.io/badge/status-preview-e8b84a" alt="状态">
+  <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="状态">
 </p>
 
 > [!NOTE]
-> MyGO-Clash 目前是 v0.1.0 早期预览版。界面和主要流程已在 macOS（Apple Silicon）上测试；TUN 与系统服务、系统代理切换、Tailscale 登录、WebDAV 同步，以及在 Windows 和 Linux 上的运行，还没有在真实环境中充分验证。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
+> MyGO-Clash 目前处于 v0.2 的 beta 阶段，已发布 v0.2.10-beta。界面和主要流程已在 macOS（Apple Silicon）上测试；TUN 与系统服务、系统代理切换、Tailscale 登录、WebDAV 同步，以及在 Windows 和 Linux 上的运行，还没有在真实环境中充分验证。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
 
 ## 功能
 
@@ -78,7 +78,7 @@
 
 ## 下载
 
-还没有发布正式版本，目前请从源码构建（见下文）。发布后可以在 [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) 页面下载：
+可以从 [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) 页面下载最新版本（目前是 beta），也可以从源码构建（见下文）：
 
 | 系统 | 安装包 | 自动更新 |
 |---|---|---|
