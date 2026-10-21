@@ -2,6 +2,17 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.12-beta
+
+界面底层框架 MyGo 升级到 0.6.2，原生绘制更快、内存占用更低。/ The interface's framework MyGo is upgraded to 0.6.2, whose native drawing is faster and lighter.
+
+### 🔧 改进 / Improvements
+
+- 界面框架 MyGo 由 0.5.5 升级到 0.6.2（含 mygo-runtime），跟随上游的修复与改进 / The interface framework MyGo is upgraded from 0.5.5 to 0.6.2 (mygo-runtime included), following the fixes and improvements upstream
+- 原生绘制只重画变化的部分，托盘快捷面板、流量窗口这类小窗打开和刷新更快，离开屏幕的窗口不再占用 GPU 绘制 / Native drawing redraws only what changed, so small windows such as the tray quick panel and the speed window open and refresh faster, and windows out of sight stop drawing
+- 布局只重算变化的部分，滚动和长列表更顺；Windows 11 上的菜单按系统样式绘制 / Layout redraws only what changed, keeping scrolling and long lists smoother; menus on Windows 11 are drawn in the system's own style
+- 更新窗口在每次启动后不久检查更新，并跟随应用的界面语言显示 / The update window checks for updates soon after each launch, and follows the app's interface language
+
 ## 0.2.11-beta
 
 界面底层框架 MyGo 升级到 0.5.5，跟随上游的修复与改进。/ The interface's framework MyGo is upgraded to 0.5.5, following the fixes and improvements upstream.
