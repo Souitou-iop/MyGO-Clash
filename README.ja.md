@@ -15,7 +15,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4f8fc0" alt="対応プラットフォーム">
-  <img src="https://img.shields.io/badge/core-mihomo%201.19.32-e2617f" alt="コア">
+  <img src="https://img.shields.io/badge/core-mihomo%201.19.33-e2617f" alt="コア">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2a7ab0" alt="ライセンス">
   <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="ステータス">
 </p>

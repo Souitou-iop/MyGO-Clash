@@ -2,6 +2,17 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.13-beta
+
+内核 mihomo 升级到 1.19.33，含一个 TLS 安全修复和若干稳定性改进。/ The mihomo core is upgraded to 1.19.33, with a TLS security fix and several stability fixes.
+
+### 🔧 改进 / Improvements
+
+- 内核 mihomo 由 1.19.32 升级到 1.19.33：跟随上游修复 / The mihomo core is upgraded from 1.19.32 to 1.19.33, following the fixes upstream
+- 修复 crypto/tls 的 CVE-2026-97031 / Fixes CVE-2026-97031 in crypto/tls
+- 修复重载配置时 fake-ip 分配状态没有一并克隆的问题，切换订阅后少数域名可能拿到重复的假 IP / Fixed the fake-ip allocation state not being cloned on reload, which could hand out duplicate fake IPs to a few domains after switching profiles
+- 修复 DoH 查询已超时却仍在堆积连接、dialer-proxy 环路检查耗时随规模平方式增长、以及亚毫秒延迟被当作测速失败的问题 / Fixed timed-out DoH queries piling up connections, the dialer-proxy cycle check taking quadratic time, and a sub-millisecond URL test being reported as a failure
+
 ## 0.2.12-beta
 
 界面底层框架 MyGo 升级到 0.6.2，原生绘制更快、内存占用更低。/ The interface's framework MyGo is upgraded to 0.6.2, whose native drawing is faster and lighter.
