@@ -2,6 +2,17 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.14-beta
+
+界面底层框架 MyGo 升级到 0.6.3，含一处网页内容规则的拦截修复。/ The interface's framework MyGo is upgraded to 0.6.3, with a fix to how pages load content rules.
+
+### 🔧 改进 / Improvements
+
+- 界面框架 MyGo 由 0.6.2 升级到 0.6.3（含 mygo-runtime），跟随上游的修复与改进 / The interface framework MyGo is upgraded from 0.6.2 to 0.6.3 (mygo-runtime included), following the fixes and improvements upstream
+- 修复网页按 WebKit 格式加载内容规则时未完全拦截的问题 / Fixed content rules loaded by pages in WebKit's format not being fully blocked
+- 修复隐藏标题栏并带材质时，Windows 上最大化窗口仍显示系统标题按钮的问题 / Fixed the system caption buttons still showing on a maximized window with a hidden title bar and a material on Windows
+- 长段落的排版结果会缓存到活动布局旁边，文本不再重复查找内联变换，绘制更省力 / A large paragraph's layout is cached beside live layouts, and text no longer looks for inline transforms repeatedly, making drawing cheaper
+
 ## 0.2.13-beta
 
 内核 mihomo 升级到 1.19.33，含一个 TLS 安全修复和若干稳定性改进。/ The mihomo core is upgraded to 1.19.33, with a TLS security fix and several stability fixes.
