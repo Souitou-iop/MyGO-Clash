@@ -98,7 +98,7 @@ Linux では GTK 3、WebKitGTK 4.1 と、トレイアイコン用の libayatana-
 
 必要なもの：
 
-- [Go](https://go.dev/dl/) 1.27.1 以降
+- [Go](https://go.dev/dl/) 1.27.3 以降
 - [Bun](https://bun.sh)
 - Linux：GTK 3 と WebKitGTK 4.1（Debian / Ubuntu なら `sudo apt install libwebkit2gtk-4.1-0`）
 - Windows 10：[WebView2 ランタイム](https://developer.microsoft.com/microsoft-edge/webview2/)（Windows 11 には同梱）

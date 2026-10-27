@@ -2,6 +2,21 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.15-beta
+
+界面框架 MyGo 升级到 0.7.1，原生界面更省绘制开销，并修正 macOS、Windows 与 Linux 上的窗口和托盘问题；构建工具链同时更新到 Go 1.27.3。/ The interface's framework MyGo is upgraded to 0.7.1, with lighter native drawing and fixes to windows and the tray on macOS, Windows and Linux; the build toolchain also moves to Go 1.27.3.
+
+### 🔧 改进 / Improvements
+
+- 界面框架 MyGo 由 0.6.3 升级到 0.7.1（含 mygo-runtime），跟随上游 0.6.4、0.7.0 与 0.7.1 的修复和改进 / The interface framework MyGo is upgraded from 0.6.3 to 0.7.1 (mygo-runtime included), following the fixes and improvements in upstream 0.6.4, 0.7.0 and 0.7.1
+- 原生界面只重画发生变化的区域，动画、滚动和静态内容缓存更省 GPU 与 CPU；缩放后的文字、图标和矢量图仍然清晰 / Native UI redraws only what changed, using less GPU and CPU for animation, scrolling and cached static content; zoomed text, icons and vectors stay sharp
+- 中文和日文按单字处理文字编辑边界，逐词删除、移动与双击选择不再吞掉整句；macOS 不再启动占用 CPU 的 AutoFill 辅助进程 / Chinese and Japanese text now treats each character as its own editing boundary, so word-by-word deleting, moving and double-click selection no longer swallow a whole clause; macOS no longer starts the CPU-using AutoFill helper
+- 修正 macOS 子窗口在多显示器、全屏和父窗口移动时的层级与位置，拖动区域中的窗口不再抖动 / Fixed macOS child windows on other displays and in full screen, where they keep their place and layer when the parent moves, and windows dragged by a drag region no longer shake
+- 修正 Windows 隐藏标题栏时标题按钮和强调色残留、隐藏或屏幕外窗口卡顿，以及网页弹窗丢失 `window.opener` 等问题 / Fixed Windows caption buttons and accent strips left on hidden title bars, stalls from hidden or off-screen windows, and web popups losing `window.opener`
+- 修正 Linux 托盘图标第一次点击被丢弃，以及窗口在自身绘制过程中关闭、Wayland 窗口缩放和 GL 上下文切换后的显示问题 / Fixed the first click on a Linux tray icon being dropped, a window closed during its own frame, Wayland resizing, and drawing after a GL context changed
+- 安装包改用固定的 `mygo-clash` slug 命名，并更新发布流程以识别新的 DMG 与 Windows 安装器文件名；Windows 同时提供 `install.ps1` 一行安装 / Release files now use the fixed `mygo-clash` slug, and the release workflow recognizes the new DMG and Windows installer names; Windows also gets a one-line `install.ps1` installer
+- Go 工具链由 1.27.1 升级到 1.27.3，包含 `crypto/x509` 的安全修复 GO-2026-6809 / The Go toolchain is upgraded from 1.27.1 to 1.27.3, including the `crypto/x509` security fix GO-2026-6809
+
 ## 0.2.14-beta
 
 界面底层框架 MyGo 升级到 0.6.3，含一处网页内容规则的拦截修复。/ The interface's framework MyGo is upgraded to 0.6.3, with a fix to how pages load content rules.

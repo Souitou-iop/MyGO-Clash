@@ -95,9 +95,9 @@ jobs:
         # pages, closing the running app, removing the service on uninstall.
         if: matrix.name == 'Windows'
         run: go run ./tools/winsetup build/windows-amd64 build/windows-arm64
-      # mygo 0.4.0 names the disk images and the installers after their
-      # architecture itself ("MyGO-Clash 0.2.6 arm64.dmg", "MyGO-Clash Setup
-      # 0.2.6 amd64.exe"), so nothing renames them here anymore.
+      # mygo 0.7 names these after the app's slug and architecture
+      # ("mygo-clash-0.2.15-beta-arm64.dmg",
+      # "mygo-clash-setup-0.2.15-beta-amd64.exe").
       - name: Make the RPM and Arch packages and the AppImages
         if: matrix.name == 'Linux'
         run: go run -C tools/linuxpkg . "$PWD/build/linux-amd64" "$PWD/build/linux-arm64"
@@ -106,12 +106,18 @@ jobs:
         # never point at a file that is not there yet.
         env:
           GH_TOKEN: ${{ github.token }}
+          MATRIX_NAME: ${{ matrix.name }}
         run: |
           shopt -s nullglob
-          files=(build/*/*.dmg build/*/*" Setup "*.exe build/*/*.deb build/*/*.tar.gz build/*/*.delta
+          files=(build/*/*.dmg build/*/*-setup-*.exe build/*/*.deb build/*/*.tar.gz build/*/*.delta
                  build/*/*.rpm build/*/*.pkg.tar.zst build/*/*.AppImage)
           scripts=(build/*/install.sh)
           if [ ${#scripts[@]} -gt 0 ]; then files+=("${scripts[0]}"); fi
+          if [ "$MATRIX_NAME" = "Windows" ]; then
+            powershell=(build/*/install.ps1)
+            if [ ${#powershell[@]} -gt 0 ]; then files+=("${powershell[0]}"); fi
+            if [ -f build/SHA256SUMS ]; then files+=(build/SHA256SUMS); fi
+          fi
           gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber "${files[@]}"
           manifests=(build/*/update-*.json)
           if [ ${#manifests[@]} -gt 0 ]; then

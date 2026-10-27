@@ -98,7 +98,7 @@ The packages are not code-signed yet: on macOS, open the app the first time with
 
 You need:
 
-- [Go](https://go.dev/dl/) 1.27.1 or later
+- [Go](https://go.dev/dl/) 1.27.3 or later
 - [Bun](https://bun.sh)
 - On Linux, GTK 3 and WebKitGTK 4.1, e.g. `sudo apt install libwebkit2gtk-4.1-0` on Debian and Ubuntu
 - On Windows 10, the [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (Windows 11 includes it)

@@ -55,15 +55,18 @@ if [ -n "$assets" ]; then
   printf '\n---\n\n## 📥 下载地址 / Downloads\n\n'
 
   printf '### Windows\n\n'
-  row '安装版 Installer' "$(link '64 位 x64' '*Setup*amd64.exe')" "$(link 'ARM64' '*Setup*arm64.exe')"
+  row '安装版 Installer' "$(link '64 位 x64' '*-setup-*amd64.exe')" "$(link 'ARM64' '*-setup-*arm64.exe')"
+  install_ps1="$(link 'install.ps1' 'install.ps1')"
+  sums="$(link 'SHA256SUMS' 'SHA256SUMS')"
+  if [ -n "$install_ps1" ] && [ -n "$sums" ]; then
+    printf -- '- 一行安装 One-line install (PowerShell):\n\n'
+    printf '  ```powershell\n  irm https://github.com/%s/releases/download/%s/install.ps1 | iex\n  ```\n' "$repo" "$tag"
+  fi
 
   printf '\n### macOS\n\n'
-  # mygo names the disk image "name version arm64.dmg" since 0.4.0, and
-  # "name version-x64.dmg" before that; GitHub turns spaces into dots.
+  # mygo 0.7 names the disk image "<slug>-<version>-<arch>.dmg".
   arm="$(link 'DMG' '*arm64.dmg')"
-  intel="$(link 'DMG' '*-x64.dmg')"
-  if [ -z "$intel" ]; then intel="$(link 'DMG' '*.amd64.dmg')"; fi
-  if [ -z "$intel" ]; then intel="$(link 'DMG' '*.x64.dmg')"; fi
+  intel="$(link 'DMG' '*-amd64.dmg')"
   if [ -n "$arm" ]; then
     row 'Apple 芯片 Apple silicon' "$arm"
     row 'Intel 芯片 Intel' "$intel"

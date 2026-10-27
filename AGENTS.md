@@ -4,14 +4,14 @@
 
 ## 构建与环境
 - 所有构建走 package.json 脚本：bun run dev / build / generate / typecheck（已带 -tags=with_gvisor），不要手动拼命令
-- go.mod 要求 go 1.27.1；go test ./... 与 tsc --noEmit 必须全过再交付
+- go.mod 要求 go 1.27.3；go test ./... 与 tsc --noEmit 必须全过再交付
 - dev 调试：MYGO_CLASH_KEYRING=file MYGO_CLASH_DEBUG=127.0.0.1:47391 bun run dev；调试端口 /capture 截图、/eval 执行 JS；代理页测试节点显示"超时"是正常的（假节点）
 
 ## 发布流程
 - 版本号在 mygo.json，发版时与 tag 保持一致；发布 = workflow_dispatch（输入 tag；notes_only=true 则只重渲染已有版本的说明，不构建）
 - 发布说明 = CHANGELOG.md 对应版本小节 + release-notes.sh（按发布页实际上传文件生成下载链接）+ release-template.md 的 FAQ；这段小节同时是应用内更新窗口的文案
 - GitHub 上传会改名（空格和 ~ 变点），下载链接必须按实际文件名生成，禁止硬编码
-- mygo ≥0.4.0 起产物文件名自带架构（如 `MyGO-Clash 0.2.6 arm64.dmg`、`MyGO-Clash Setup 0.2.6 amd64.exe`），workflow 不再做重命名；macOS x64 的 DMG 名含 amd64（不再是 -x64）；更新清单按架构自动生成，应用各自取用
+- mygo ≥0.7.0 起产物按 `slug` 和架构命名（如 `mygo-clash-0.2.15-beta-arm64.dmg`、`mygo-clash-setup-0.2.15-beta-amd64.exe`）；`mygo.json` 固定 `slug: mygo-clash`，workflow 不做重命名；更新清单按架构自动生成，应用各自取用
 - CHANGELOG 每条中英对照（中文在前、英文在后）
 
 ## 更新签名（重要）

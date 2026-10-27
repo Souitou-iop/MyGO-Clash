@@ -98,7 +98,7 @@ Linux 需要 GTK 3、WebKitGTK 4.1 和 libayatana-appindicator（托盘图标）
 
 需要：
 
-- [Go](https://go.dev/dl/) 1.27.1 或更高版本
+- [Go](https://go.dev/dl/) 1.27.3 或更高版本
 - [Bun](https://bun.sh)
 - Linux：GTK 3 和 WebKitGTK 4.1，例如 Debian / Ubuntu 上 `sudo apt install libwebkit2gtk-4.1-0`
 - Windows 10：[WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)（Windows 11 已自带）

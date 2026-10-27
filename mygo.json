@@ -1,7 +1,8 @@
 {
   "name": "MyGO-Clash",
+  "slug": "mygo-clash",
   "identifier": "io.mygo.clash",
-  "version": "0.2.14-beta",
+  "version": "0.2.15-beta",
   "copyright": "© 2026 MyGO-Clash contributors. GPL-3.0.",
   "devUrl": "http://localhost:5173",
   "devCommand": "bun run dev:web",

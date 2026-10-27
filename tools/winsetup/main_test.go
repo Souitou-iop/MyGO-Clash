@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"image"
 	"image/color"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -38,18 +41,63 @@ func TestNumericVersion(t *testing.T) {
 	}
 }
 
+func TestInstallerName(t *testing.T) {
+	c := config{Slug: "mygo-clash", Version: "0.2.15-beta"}
+	if got := installerName(&c, "arm64"); got != "mygo-clash-setup-0.2.15-beta-arm64.exe" {
+		t.Errorf("installerName = %q", got)
+	}
+}
+
 func TestExcluded(t *testing.T) {
 	for name, want := range map[string]bool{
-		"MyGO-Clash.exe":                  false,
-		"icon.png":                        false,
-		"MyGO-Clash Setup 0.2.0-beta.exe": true,
-		"update-windows-amd64.json":       true,
-		"mygo-clash-0.2.0-windows.tar.gz": true,
-		"a-to-b-windows-amd64.delta":      true,
+		"MyGO-Clash.exe":                        false,
+		"icon.png":                              false,
+		"MyGO-Clash Setup 0.2.0-beta.exe":       true,
+		"mygo-clash-setup-0.2.0-beta-amd64.exe": true,
+		"update-windows-amd64.json":             true,
+		"mygo-clash-0.2.0-windows.tar.gz":       true,
+		"a-to-b-windows-amd64.delta":            true,
+		"install.sh":                            true,
+		"install.ps1":                           true,
+		"SHA256SUMS":                            true,
 	} {
 		if got := excluded(name); got != want {
 			t.Errorf("excluded(%q) = %v", name, got)
 		}
+	}
+}
+
+func TestUpdateChecksum(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "windows-amd64")
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	installer := filepath.Join(dir, "mygo-clash-setup-0.2.15-beta-amd64.exe")
+	content := []byte("custom installer")
+	if err := os.WriteFile(installer, content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sums := filepath.Join(root, "SHA256SUMS")
+	old := strings.Repeat("0", 64) + "  mygo-clash-setup-0.2.15-beta-amd64.exe\n" +
+		strings.Repeat("1", 64) + "  another.exe\n"
+	if err := os.WriteFile(sums, []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := updateChecksum(root, installer); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(sums)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(content)
+	want := hex.EncodeToString(sum[:]) + "  " + filepath.Base(installer)
+	if !strings.Contains(string(b), want) {
+		t.Errorf("SHA256SUMS does not contain %q:\n%s", want, b)
+	}
+	if !strings.Contains(string(b), strings.Repeat("1", 64)+"  another.exe") {
+		t.Errorf("SHA256SUMS lost another file:\n%s", b)
 	}
 }
 

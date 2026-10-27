@@ -1,10 +1,10 @@
 module github.com/mygo-clash/mygo-clash
 
-go 1.27.1
+go 1.27.3
 
 require (
 	github.com/dop251/goja v0.0.0-20261004200024-481fdb442bb4
-	github.com/egoist/mygo v0.6.3
+	github.com/egoist/mygo v0.7.1
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/metacubex/chi v0.1.1
 	github.com/metacubex/http v0.1.8

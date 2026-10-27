@@ -6,7 +6,7 @@
 //
 // For each directory it compiles packaging/windows/installer.nsi with
 // makensis, from the executable and files that mygo build left there, and
-// writes "<name> Setup <version> <arch>.exe" over mygo's installer, under
+// writes "<slug>-setup-<version>-<arch>.exe" over mygo's installer, under
 // the same name, so that whatever uploads that file keeps working. The
 // installer keeps mygo's layout (per-user, the same uninstall entry and
 // folder), so the app's own updates and installs of both kinds keep working.
@@ -22,13 +22,16 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -44,6 +47,7 @@ var brand = color.NRGBA{0x0B, 0x88, 0xBB, 0xFF}
 
 type config struct {
 	Name       string   `json:"name"`
+	Slug       string   `json:"slug"`
 	Identifier string   `json:"identifier"`
 	Version    string   `json:"version"`
 	Copyright  string   `json:"copyright"`
@@ -87,6 +91,9 @@ func loadConfig(path string) (*config, error) {
 	if c.Icon == "" {
 		c.Icon = "resources/icon.png"
 	}
+	if c.Slug == "" {
+		c.Slug = slug(c.Name)
+	}
 	return &c, nil
 }
 
@@ -119,11 +126,12 @@ func fsName(s string) string {
 // installers, update manifests and archives.
 func excluded(name string) bool {
 	switch {
-	case strings.HasSuffix(name, ".exe") && strings.Contains(name, " Setup "):
+	case strings.HasSuffix(name, ".exe") && (strings.Contains(name, "-setup-") || strings.Contains(name, " Setup ")):
 		return true
 	case strings.HasPrefix(name, "update-") && strings.HasSuffix(name, ".json"):
 		return true
-	case strings.HasSuffix(name, ".tar.gz"), strings.HasSuffix(name, ".delta"), name == "install.sh":
+	case strings.HasSuffix(name, ".tar.gz"), strings.HasSuffix(name, ".delta"),
+		name == "install.sh", name == "install.ps1", name == "SHA256SUMS":
 		return true
 	}
 	return false
@@ -266,10 +274,9 @@ func build(root string, c *config, dir string) error {
 		return err
 	}
 
-	// The name mygo gave its installer: "<name> Setup <version> <arch>.exe"
-	// since mygo 0.4.0, before that without the architecture. Writing over
-	// it keeps the directory at one installer per architecture.
-	out := filepath.Join(dir, fsName(c.Name)+" Setup "+fsName(c.Version)+" "+arch+".exe")
+	// The name mygo gave its installer. Writing over it keeps the directory
+	// at one installer per architecture.
+	out := filepath.Join(dir, installerName(c, arch))
 	signCmd := os.Getenv("WINSETUP_SIGN_CMD")
 	defs := [][2]string{
 		{"PRODUCT_NAME", c.Name},
@@ -278,8 +285,8 @@ func build(root string, c *config, dir string) error {
 		{"VI_VERSION", vi},
 		{"ARCH", arch},
 		{"MAIN_EXE", exe},
-		{"SERVICE_SLUG", slug(c.Name)},
-		{"SERVICE_NAME", slug(c.Name) + "-service"},
+		{"SERVICE_SLUG", c.Slug},
+		{"SERVICE_NAME", c.Slug + "-service"},
 		{"COPYRIGHT", c.Copyright},
 		{"PUBLISHER", c.Name},
 		{"ESTIMATED_KB", strconv.FormatInt(size/1024, 10)},
@@ -318,7 +325,52 @@ func build(root string, c *config, dir string) error {
 			return err
 		}
 	}
-	return nil
+	return updateChecksum(filepath.Dir(dir), out)
+}
+
+// installerName is the name mygo 0.7 and later give the installer.
+func installerName(c *config, arch string) string {
+	return c.Slug + "-setup-" + fsName(c.Version) + "-" + arch + ".exe"
+}
+
+// updateChecksum replaces the line of the installer in mygo's SHA256SUMS,
+// which was written before this replacement changed the file.
+func updateChecksum(outDir, path string) error {
+	sums := filepath.Join(outDir, "SHA256SUMS")
+	data, err := os.ReadFile(sums)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	h := sha256.New()
+	_, copyErr := io.Copy(h, f)
+	closeErr := f.Close()
+	if copyErr != nil {
+		return copyErr
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	name := filepath.Base(path)
+	line := hex.EncodeToString(h.Sum(nil)) + "  " + name
+	lines := strings.Split(strings.TrimSuffix(string(data), "\n"), "\n")
+	replaced := false
+	for i, old := range lines {
+		if strings.HasSuffix(old, "  "+name) {
+			lines[i] = line
+			replaced = true
+		}
+	}
+	if !replaced {
+		return fmt.Errorf("%s has no checksum for %s", sums, name)
+	}
+	return os.WriteFile(sums, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }
 
 func writeFile(path, s string) error {
