@@ -170,7 +170,9 @@ func (c *TailscaleConfig) SameNode(o *TailscaleConfig) bool {
 	if c == nil || o == nil {
 		return c == o
 	}
-	return c.Enabled == o.Enabled && c.Hostname == o.Hostname && c.ControlURL == o.ControlURL &&
+	// The hostname is not part of the identity: a running node renames
+	// through its preferences.
+	return c.Enabled == o.Enabled && c.ControlURL == o.ControlURL &&
 		c.Ephemeral == o.Ephemeral && c.ControlVia == o.ControlVia
 }
 

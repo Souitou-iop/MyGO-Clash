@@ -127,10 +127,13 @@ func (n *Node) startLocked(authKey string) error {
 	srv := &tsnet.Server{
 		Dir:        dir,
 		Store:      n.store,
-		Hostname:   cfg.Hostname,
 		AuthKey:    authKey,
 		ControlURL: cfg.ControlURL,
 		Ephemeral:  cfg.Ephemeral,
+		// The hostname names a fresh registration only. Starting an
+		// existing node under another name left it stuck in Starting on
+		// Windows, so a running node is renamed through prefs instead.
+		Hostname: hostnameFor(cfg),
 		// The node's own connections, to the coordination server, relays
 		// and peers, leave through the physical interface (or a proxy), not
 		// back into the core's TUN.
@@ -231,6 +234,16 @@ func (n *Node) waitBackend(ctx context.Context, gen uint64) error {
 	}
 }
 
+// hostnameFor reports the name a fresh node registers under. A node with
+// saved state keeps its registered name at start; cfg.Hostname is applied
+// as a preference once it runs.
+func hostnameFor(cfg *coreapi.TailscaleConfig) string {
+	if len(cfg.State) == 0 {
+		return cfg.Hostname
+	}
+	return ""
+}
+
 // applyPrefs sends the preferences that changed between old and cfg (all
 // of them when old is nil).
 func applyPrefs(lc *local.Client, old, cfg *coreapi.TailscaleConfig) error {
@@ -240,6 +253,9 @@ func applyPrefs(lc *local.Client, old, cfg *coreapi.TailscaleConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	mp := &ipn.MaskedPrefs{}
+	if old == nil || old.Hostname != cfg.Hostname {
+		mp.Hostname, mp.HostnameSet = cfg.Hostname, true
+	}
 	if old == nil || old.AcceptRoutes != cfg.AcceptRoutes {
 		mp.RouteAll, mp.RouteAllSet = cfg.AcceptRoutes, true
 	}

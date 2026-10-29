@@ -2,6 +2,21 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.16-beta
+
+界面框架 MyGo 升级到 0.7.3，Windows 上的原生窗口缩放更干净，应用内更新会跟随系统代理；Tailscale 节点改名不再重启节点。/ The interface framework MyGo is upgraded to 0.7.3, native windows resize cleanly on Windows again and in-app updates follow the system's proxy; renaming a Tailscale node no longer restarts it.
+
+### 🔧 改进 / Improvements
+
+- 界面框架 MyGo 由 0.7.1 升级到 0.7.3（含 mygo-runtime），跟随上游 0.7.2 与 0.7.3 的修复和改进 / The interface framework MyGo is upgraded from 0.7.1 to 0.7.3 (mygo-runtime included), following the fixes and improvements in upstream 0.7.2 and 0.7.3
+- 修正 Windows 上原生窗口拖拽调整大小时内容被放大、右侧和底部被裁切的问题 / Fixed native UI windows on Windows showing magnified content cut off at the right and bottom while being resized
+- 应用内更新与插件的网络请求会跟随系统的代理设置（含 PAC 脚本） / In-app updates and the plugins' network requests now follow the system's proxy settings, PAC files included
+- 修正 macOS 上从原生界面打开的对话框和弹层不显示、菜单按钮从工具栏溢出菜单选择后菜单打不开，以及无焦点输入框时 Cmd+C/V/X/Z 失效等问题 / Fixed macOS dialogs and sheets opened from native UI not showing or waiting for an answer, a menu button chosen from a toolbar's overflow menu not opening its menu, and window-wide Cmd+C/V/X/Z shortcuts not running without a focused text input
+
+### 🐛 修复 / Fixes
+
+- 修复修改 Tailscale 主机名会重启节点的问题：改名现在直接作用于运行中的节点，已注册的节点也不会再带着新主机名重新启动 / Fixed changing a Tailscale node's hostname restarting the node: the rename now applies to the running node through its preferences, and a node that is already registered no longer restarts under its new name
+
 ## 0.2.15-beta
 
 界面框架 MyGo 升级到 0.7.1，原生界面更省绘制开销，并修正 macOS、Windows 与 Linux 上的窗口和托盘问题；构建工具链同时更新到 Go 1.27.3。/ The interface's framework MyGo is upgraded to 0.7.1, with lighter native drawing and fixes to windows and the tray on macOS, Windows and Linux; the build toolchain also moves to Go 1.27.3.
