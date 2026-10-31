@@ -299,14 +299,17 @@ func (s *Store) Clear() error {
 	return s.Flush()
 }
 
-// StatsQuery asks for a range of days. Range is "today", "7d" or "30d";
-// anything else uses From and To ("2006-01-02", both included). Top is
-// how many apps, sites and nodes to list.
+// StatsQuery asks for a range of days. Range is "today", "7d", "30d" or
+// "all" (everything kept); anything else uses From and To ("2006-01-02",
+// both included). Top is how many apps, sites and nodes to list. Filter
+// keeps only the apps, sites and nodes whose name contains it, without
+// regard to case.
 type StatsQuery struct {
-	Range string `json:"range"`
-	From  string `json:"from,omitempty"`
-	To    string `json:"to,omitempty"`
-	Top   int    `json:"top"`
+	Range  string `json:"range"`
+	From   string `json:"from,omitempty"`
+	To     string `json:"to,omitempty"`
+	Top    int    `json:"top"`
+	Filter string `json:"filter,omitempty"`
 }
 
 // StatsPoint is the traffic of a day, or of an hour of a day.
@@ -351,6 +354,12 @@ func (s *Store) Query(q StatsQuery) StatsReport {
 		from = to.AddDate(0, 0, -6)
 	case "30d":
 		from = to.AddDate(0, 0, -29)
+	case "all":
+		for k := range s.days {
+			if t, err := time.ParseInLocation(dateFormat, k, now.Location()); err == nil && t.Before(from) {
+				from = t
+			}
+		}
 	default:
 		if t, err := time.ParseInLocation(dateFormat, q.From, now.Location()); err == nil {
 			from = t
@@ -395,8 +404,24 @@ func (s *Store) Query(q StatsQuery) StatsReport {
 			r.Hours = append(r.Hours, p)
 		}
 	}
+	if f := strings.ToLower(strings.TrimSpace(q.Filter)); f != "" {
+		apps, sites, nodes = filtered(apps, f), filtered(sites, f), filtered(nodes, f)
+	}
 	r.Apps, r.Sites, r.Nodes = rank(apps, top), rank(sites, top), rank(nodes, top)
 	return r
+}
+
+// filtered keeps the entries whose key contains f, without regard to
+// case. The unnamed Other is dropped: what it collects cannot be
+// attributed to a name.
+func filtered(m map[string]Entry, f string) map[string]Entry {
+	out := make(map[string]Entry, len(m))
+	for k, v := range m {
+		if k != otherKey && strings.Contains(strings.ToLower(k), f) {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 func merge(dst, src map[string]Entry) {

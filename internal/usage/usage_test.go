@@ -63,6 +63,53 @@ func TestCounterRestart(t *testing.T) {
 	}
 }
 
+func TestQueryAll(t *testing.T) {
+	s := newStore(t)
+	s.days["2026-10-01"] = &Day{Entry: Entry{Up: 10, Down: 100}}
+	s.days["2026-10-05"] = &Day{Entry: Entry{Up: 20, Down: 200}}
+	r := s.Query(StatsQuery{Range: "all"})
+	if r.From != "2026-10-01" || r.To != "2026-10-08" {
+		t.Fatalf("range %s..%s", r.From, r.To)
+	}
+	if r.Up != 30 || r.Down != 300 {
+		t.Fatalf("totals up %d down %d", r.Up, r.Down)
+	}
+	if len(r.Days) != 8 {
+		t.Fatalf("days %d", len(r.Days))
+	}
+	// The range covers the kept days only.
+	s.days["2026-06-01"] = &Day{Entry: Entry{Up: 1, Down: 1}}
+	if r := s.Query(StatsQuery{Range: "all"}); r.From != "2026-07-11" {
+		t.Fatalf("all ignored the %d kept days: from %s", KeepDays, r.From)
+	}
+}
+
+func TestQueryFilter(t *testing.T) {
+	s := newStore(t)
+	s.days["2026-10-08"] = &Day{
+		Entry: Entry{Up: 100, Down: 1000},
+		Apps:  map[string]Entry{"curl": {Up: 10, Down: 100}, "Chrome": {Up: 20, Down: 200}, otherKey: {Up: 5, Down: 50}},
+		Sites: map[string]Entry{"example.com": {Up: 10, Down: 100}},
+		Nodes: map[string]Entry{"HK": {Up: 30, Down: 300}},
+	}
+	r := s.Query(StatsQuery{Range: "today", Filter: "  CURL  "})
+	if r.Up != 100 || r.Down != 1000 {
+		t.Fatalf("the filter changed the totals: up %d down %d", r.Up, r.Down)
+	}
+	if len(r.Apps) != 1 || r.Apps[0].Name != "curl" || r.Apps[0].Down != 100 {
+		t.Fatalf("apps %+v", r.Apps)
+	}
+	if len(r.Sites) != 0 || len(r.Nodes) != 0 {
+		t.Fatalf("sites %+v nodes %+v", r.Sites, r.Nodes)
+	}
+	// The unnamed Other is left out: it cannot be attributed.
+	for _, it := range r.Apps {
+		if it.Other {
+			t.Fatal("the filter kept Other")
+		}
+	}
+}
+
 func TestDomain(t *testing.T) {
 	for in, want := range map[string]string{
 		"www.example.com":    "example.com",

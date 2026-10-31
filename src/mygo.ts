@@ -788,15 +788,18 @@ export interface StatsPoint {
 }
 
 /**
- * StatsQuery asks for a range of days. Range is "today", "7d" or "30d";
- * anything else uses From and To ("2006-01-02", both included). Top is
- * how many apps, sites and nodes to list.
+ * StatsQuery asks for a range of days. Range is "today", "7d", "30d" or
+ * "all" (everything kept); anything else uses From and To ("2006-01-02",
+ * both included). Top is how many apps, sites and nodes to list. Filter
+ * keeps only the apps, sites and nodes whose name contains it, without
+ * regard to case.
  */
 export interface StatsQuery {
   range: string;
   from?: string;
   to?: string;
   top: number;
+  filter?: string;
 }
 
 /** StatsReport is the answer to a query. */

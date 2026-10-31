@@ -1,14 +1,14 @@
 import { Trash2 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { bytes } from "../lib/format";
 import { useAsync, useInterval } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, useApp } from "../lib/store";
 import { Stats as API, type StatsItem, type StatsPoint } from "../mygo";
-import { Button, Card, confirm, Empty, Segmented } from "../ui";
+import { Button, Card, confirm, Empty, SearchInput, Segmented } from "../ui";
 
-type Range = "today" | "7d" | "30d";
+type Range = "today" | "7d" | "30d" | "all";
 
 /** Bars is the traffic over time: the hours of a day, or the days of a range. */
 function Bars({ points, hourly }: { points: StatsPoint[]; hourly: boolean }) {
@@ -34,13 +34,13 @@ function Bars({ points, hourly }: { points: StatsPoint[]; hourly: boolean }) {
 }
 
 /** Ranking lists what carried the traffic, each row filled to its share of the busiest. */
-function Ranking({ title, items, note }: { title: string; items: StatsItem[]; note?: ReactNode }) {
+function Ranking({ title, items, note, empty }: { title: string; items: StatsItem[]; note?: ReactNode; empty?: string }) {
   const t = useT();
   const max = Math.max(1, ...items.map((i) => i.up + i.down));
   return (
     <Card title={title} bodyClass="stats-rank">
       {items.length === 0 ? (
-        <div className="faint stats-none">{t("stats.noData")}</div>
+        <div className="faint stats-none">{empty ?? t("stats.noData")}</div>
       ) : (
         items.map((it) => {
           const name = it.other ? t("stats.other") : it.name === "—" ? t("stats.unknownApp") : it.name;
@@ -63,9 +63,15 @@ function Ranking({ title, items, note }: { title: string; items: StatsItem[]; no
 export default function Stats() {
   const t = useT();
   const [range, setRange] = useState<Range>("today");
+  const [filter, setFilter] = useState("");
+  const [applied, setApplied] = useState("");
   const findProcess = useApp((s) => s.settings?.clash.findProcessMode);
-  const { data, reload } = useAsync(() => API.query({ range, top: 10 }), [range]);
+  const { data, reload } = useAsync(() => API.query({ range, top: 10, filter: applied || undefined }), [range, applied]);
   useInterval(() => void reload(), 10000);
+  useEffect(() => {
+    const id = setTimeout(() => setApplied(filter.trim()), 250);
+    return () => clearTimeout(id);
+  }, [filter]);
   const clear = async () => {
     if (!(await confirm({ title: t("stats.clearTitle"), message: t("stats.clearMsg"), confirm: t("stats.clear"), danger: true }))) return;
     await run(() => API.clear(), t("common.failed"));
@@ -81,6 +87,7 @@ export default function Stats() {
             { value: "today", label: t("stats.today") },
             { value: "7d", label: t("stats.days7") },
             { value: "30d", label: t("stats.days30") },
+            { value: "all", label: t("stats.all") },
           ]}
         />
         <Button size="sm" variant="danger" icon={<Trash2 size={14} />} onClick={clear}>
@@ -117,9 +124,11 @@ export default function Stats() {
             <Card title={range === "today" ? t("stats.byHour") : t("stats.byDay")}>
               <Bars points={range === "today" ? data.hours : data.days} hourly={range === "today"} />
             </Card>
+            <SearchInput value={filter} onChange={setFilter} placeholder={t("stats.filter")} width={280} />
             <div className="grid-cards">
               <Ranking
                 title={t("stats.apps")}
+                empty={applied ? t("stats.noMatches") : undefined}
                 items={data.apps}
                 note={
                   findProcess !== "always" && data.apps.every((a) => a.other || a.name === "—") ? (
@@ -132,8 +141,8 @@ export default function Stats() {
                   ) : undefined
                 }
               />
-              <Ranking title={t("stats.sites")} items={data.sites} />
-              <Ranking title={t("stats.nodes")} items={data.nodes} />
+              <Ranking title={t("stats.sites")} items={data.sites} empty={applied ? t("stats.noMatches") : undefined} />
+              <Ranking title={t("stats.nodes")} items={data.nodes} empty={applied ? t("stats.noMatches") : undefined} />
             </div>
           </div>
         )}
