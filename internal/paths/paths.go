@@ -44,6 +44,51 @@ func New(data, logs, cache string) (Dirs, error) {
 	return d, nil
 }
 
+// CleanRuns removes the empty "<product>-<pid>" directories that mygo dev
+// leaves beside the data directory, one per development run. Only empty
+// directories named after the product are removed, never the data of the
+// running app.
+func CleanRuns(data, name string) {
+	parent := filepath.Dir(data)
+	if parent == "." || parent == "/" {
+		return
+	}
+	names := []string{name}
+	if dev := strings.TrimSuffix(name, " Dev"); dev != name {
+		names = append(names, dev)
+	}
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		n := e.Name()
+		if !e.IsDir() {
+			continue
+		}
+		rest := ""
+		for _, base := range names {
+			if s, ok := strings.CutPrefix(n, base+"-"); ok {
+				rest = s
+				break
+			}
+		}
+		// A run directory is the product's name and a pid: anything else
+		// with the name, such as the data directory of a development app,
+		// stays.
+		if rest == "" || strings.IndexFunc(rest, func(r rune) bool { return r < '0' || r > '9' }) >= 0 {
+			continue
+		}
+		dir := filepath.Join(parent, e.Name())
+		if dir == data {
+			continue
+		}
+		if inner, err := os.ReadDir(dir); err == nil && len(inner) == 0 {
+			_ = os.Remove(dir)
+		}
+	}
+}
+
 // Slug turns the app's name into a name for files: "MyGO-Clash Dev" →
 // "mygo-clash-dev".
 func Slug(name string) string {

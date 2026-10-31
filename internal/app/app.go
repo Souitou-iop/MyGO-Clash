@@ -220,6 +220,7 @@ func (a *App) init() error {
 	if a.dirs, err = paths.New(data, logs, cache); err != nil {
 		return err
 	}
+	paths.CleanRuns(data, a.name)
 	// mygo's updater asks GitHub with the default client.
 	http.DefaultClient.Transport = newGitHubTransport(a)
 	appLog := &logx.RotatingFile{Path: filepath.Join(logs, "app.log"), MaxSize: 4 << 20, MaxFiles: 3}

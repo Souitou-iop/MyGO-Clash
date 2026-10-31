@@ -164,7 +164,14 @@ export function applyAppearance(s: Settings) {
     root.style.removeProperty("--accent");
     root.style.removeProperty("--accent-text");
   }
-  if (s.fontFamily) root.style.setProperty("--font", `${s.fontFamily}, ${getComputedStyle(root).getPropertyValue("--font")}`);
+  // The font goes before the base list, which is read once, before the
+  // inline property exists: reading the computed value again would grow
+  // the list by one copy at every application. An empty font removes the
+  // property, so that the default of the stylesheet holds again.
+  if (s.fontFamily) {
+    if (!baseFont) baseFont = getComputedStyle(root).getPropertyValue("--font").trim();
+    root.style.setProperty("--font", `${s.fontFamily}, ${baseFont}`);
+  } else root.style.removeProperty("--font");
   let style = document.getElementById("custom-css") as HTMLStyleElement | null;
   if (s.customCss) {
     if (!style) {
@@ -175,6 +182,9 @@ export function applyAppearance(s: Settings) {
     style.textContent = s.customCss;
   } else style?.remove();
 }
+
+/** baseFont is the stylesheet's font stack, read at the first application. */
+let baseFont = "";
 
 // ---- Traffic ----
 
