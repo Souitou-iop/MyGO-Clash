@@ -2,6 +2,14 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.19-beta
+
+修复选择了「连接 Tailscale 经由」后内置节点无法启动的问题：本地 UDP 端口绑定现在始终直连，经由代理只作用于控制服务器连接与 DERP 中继。/ Fixes the built-in node failing to start when "Reach Tailscale through" was set: local UDP binds now always go direct, and the proxy only carries the control connection and the DERP relays.
+
+### 🐛 修复 / Fixes
+
+- 修复选择「连接 Tailscale 经由」后内置 Tailscale 节点启动失败、提示 `Rebind IPv4 failed` 的问题：节点的本地 UDP 绑定此前也被路由进代理，而代理无法完成本地绑定；现在本地绑定始终直连，「经由代理」只承载协调服务器连接与 DERP 中继，符合设置的说明 / Fixed the built-in Tailscale node failing to start with `Rebind IPv4 failed` when "Reach Tailscale through" was set: the node's local UDP binds were routed through the proxy too, which cannot perform a local bind; local binds now always go direct, and the proxy carries only the control connection and the DERP relays, as the setting says
+
 ## 0.2.18-beta
 
 内置 Tailscale 节点的登录不再静默失败：登录卡片会检测控制服务器是否可达并说明原因与解决办法，密钥登录会明确报错，自动登录在控制服务器恢复可达后自动重试。/ The built-in Tailscale node no longer fails to sign in in silence: the sign-in card checks whether the control server is reachable and says why not and what to do, a key sign-in reports its outcome, and an automatic sign-in retries once the control server answers again.

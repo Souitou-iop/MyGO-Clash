@@ -150,9 +150,10 @@ func (n *Node) startLocked(authKey string) error {
 		// back into the core's TUN.
 		SystemDialer: n.dialOwn,
 		SystemPacketListener: func(ctx context.Context, network, address string) (net.PacketConn, error) {
-			if via := n.via.Load().(string); via != "" {
-				return proxydialer.NewByName(via, tunnel.Tunnel).ListenPacket(ctx, network, address, netip.AddrPort{})
-			}
+			// A local bind cannot go through a proxy: ControlVia covers the
+			// control connection and the DERP relays, while the node's own
+			// UDP socket, which this opens for magicsock and netcheck, stays
+			// on the physical interface.
 			return dialer.ListenPacket(ctx, network, address, netip.AddrPort{})
 		},
 		LookupHook: func(ctx context.Context, host string) ([]netip.Addr, error) {
