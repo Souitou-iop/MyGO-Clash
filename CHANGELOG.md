@@ -2,6 +2,15 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.21-beta
+
+订阅按地址去重：同一订阅添加两次、或两台设备各自添加过一次，同步后都会收敛为一份，不会再出现两个一样的订阅。/ Subscriptions deduplicate by their URL: the same subscription added twice, or once on each of two devices, converges into one through sync, so two identical subscriptions no longer appear.
+
+### 🐛 修复 / Fixes
+
+- 添加订阅时，如果已有相同地址的订阅，现在直接复用那一份，不再创建重复条目；`clash://` 链接导入同样如此 / Adding a subscription whose URL the app already has now reuses the existing one instead of creating a duplicate; the same holds for `clash://` imports
+- 同步会把同一地址的多份订阅收敛为一份：所有设备按同一规则选出保留项（保留最近更新的那份，更新时间相同则保留 UID 较小的），落选的副本及其自带的扩展随下一次同步在所有设备上删除 / Sync converges subscriptions sharing a URL into a single copy: every device picks the same survivor by one rule (the one updated most recently, the smaller UID on a tie), and the losing copies and their own extensions are deleted on all devices through the next sync
+
 ## 0.2.20-beta
 
 macOS 菜单栏的应用菜单在「关于」之后新增「检查更新…」，随时手动检查应用的新版本。/ The app menu of macOS gains "Check for Updates…" after About, to check for a new version of the app at any time.
