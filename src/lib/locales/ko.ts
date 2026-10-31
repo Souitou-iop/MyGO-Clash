@@ -479,6 +479,8 @@ const ko: Record<Key, string> = {
   "ts.loginFailed": "로그인하지 못했습니다",
   "ts.starting": "Tailscale을 시작하는 중…",
   "ts.startingHint": "노드가 조정 서버에 연결하고 있습니다.",
+  "ts.controlUnreachable": "Tailscale 제어 서버에 연결할 수 없습니다",
+  "ts.controlUnreachableHint": "로그인하려면 먼저 제어 서버에 연결해야 합니다. 아래「내장 노드 › Tailscale 연결 경로」에서 사용 가능한 프록시 그룹을 선택한 뒤 다시 로그인하세요.",
   "ts.thisDevice": "이 기기",
   "ts.deviceName": "기기 이름",
   "ts.deviceNameHint": "tailnet에 표시되는 이 기기의 이름",

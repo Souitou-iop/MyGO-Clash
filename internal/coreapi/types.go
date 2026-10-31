@@ -231,10 +231,22 @@ type TailscaleStatus struct {
 	ShareProxy     string          `json:"shareProxy,omitempty"`
 	Error          string          `json:"error,omitempty"`
 	UpdatedAt      time.Time       `json:"updatedAt"`
+	// ControlProbe, on a node that needs to sign in, is the outcome of the
+	// last check that the control server is reachable the way the node
+	// dials. A login goes nowhere without it.
+	ControlProbe *TailscaleControlProbe `json:"controlProbe,omitempty"`
 	// StateVersion counts the writes of the embedded node's state; the app
 	// fetches the state again when it moves.
 	StateVersion uint64           `json:"stateVersion,omitempty"`
 	Extra        *json.RawMessage `json:"extra,omitempty"`
+}
+
+// TailscaleControlProbe is the outcome of the last check of the control
+// server's reachability.
+type TailscaleControlProbe struct {
+	Reachable bool      `json:"reachable"`
+	Error     string    `json:"error,omitempty"`
+	CheckedAt time.Time `json:"checkedAt"`
 }
 
 // TailscaleState is the embedded node's saved state.

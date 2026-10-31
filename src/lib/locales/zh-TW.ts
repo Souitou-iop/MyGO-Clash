@@ -479,6 +479,8 @@ const zhTW: Record<Key, string> = {
   "ts.loginFailed": "登入失敗",
   "ts.starting": "Tailscale 啟動中…",
   "ts.startingHint": "節點正在連線到協調伺服器。",
+  "ts.controlUnreachable": "無法連線 Tailscale 控制伺服器",
+  "ts.controlUnreachableHint": "登入需要先連上控制伺服器。請在下方「內建節點 → 連線 Tailscale 經由」選擇一個可用的代理群組，再重新登入。",
   "ts.thisDevice": "本機",
   "ts.deviceName": "裝置名稱",
   "ts.deviceNameHint": "裝置在 Tailnet 中顯示的名稱",

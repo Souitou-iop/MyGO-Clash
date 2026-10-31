@@ -479,6 +479,8 @@ const zhCN: Record<Key, string> = {
   "ts.loginFailed": "登录失败",
   "ts.starting": "Tailscale 启动中…",
   "ts.startingHint": "节点正在连接协调服务器。",
+  "ts.controlUnreachable": "无法连接 Tailscale 控制服务器",
+  "ts.controlUnreachableHint": "登录需要先连上控制服务器。请在下方「内置节点 → 连接 Tailscale 经由」选择一个可用的代理组，再重新登录。",
   "ts.thisDevice": "本机",
   "ts.deviceName": "设备名称",
   "ts.deviceNameHint": "设备在 Tailnet 中显示的名称",

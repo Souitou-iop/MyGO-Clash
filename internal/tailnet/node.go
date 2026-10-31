@@ -2,12 +2,14 @@ package tailnet
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"maps"
 	"net"
 	"net/netip"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -56,11 +58,20 @@ type Node struct {
 	cancel  context.CancelFunc // stops the watcher of srv
 	status  coreapi.TailscaleStatus
 	authURL string
+	probe   controlProbe  // last reachability check of the control server
 	running chan struct{} // closed while the backend is Running
 	share   net.Listener
 
 	watchMu  sync.Mutex
 	watchers map[chan coreapi.TailscaleEvent]struct{}
+}
+
+// controlProbe is the outcome of the last check that the control server
+// is reachable the way the node dials.
+type controlProbe struct {
+	at        time.Time
+	reachable bool
+	err       string
 }
 
 // NewNode returns a node that keeps its files in dir. It runs nothing
@@ -137,12 +148,7 @@ func (n *Node) startLocked(authKey string) error {
 		// The node's own connections, to the coordination server, relays
 		// and peers, leave through the physical interface (or a proxy), not
 		// back into the core's TUN.
-		SystemDialer: func(ctx context.Context, network, address string) (net.Conn, error) {
-			if via := n.via.Load().(string); via != "" {
-				return proxydialer.NewByName(via, tunnel.Tunnel).DialContext(ctx, network, address)
-			}
-			return dialer.DialContext(ctx, network, address)
-		},
+		SystemDialer: n.dialOwn,
 		SystemPacketListener: func(ctx context.Context, network, address string) (net.PacketConn, error) {
 			if via := n.via.Load().(string); via != "" {
 				return proxydialer.NewByName(via, tunnel.Tunnel).ListenPacket(ctx, network, address, netip.AddrPort{})
@@ -165,6 +171,7 @@ func (n *Node) startLocked(authKey string) error {
 	}
 	n.srv, n.lc = srv, lc
 	n.authURL = ""
+	n.probe = controlProbe{}
 	n.gen++
 	gen := n.gen
 	ctx, cancel := context.WithCancel(context.Background())
@@ -317,6 +324,7 @@ func (n *Node) watch(ctx context.Context, gen uint64, lc *local.Client) {
 			_ = w.Close()
 		}
 	}()
+	go n.probeLoop(ctx, gen, poke)
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	var last time.Time
@@ -360,10 +368,116 @@ func (n *Node) refresh(ctx context.Context, gen uint64, lc *local.Client) {
 	if s.AuthURL == "" && (s.BackendState == "NeedsLogin" || s.BackendState == "NeedsMachineAuth") {
 		s.AuthURL = n.authURL
 	}
+	if s.BackendState == "NeedsLogin" && s.AuthURL == "" && !n.probe.at.IsZero() {
+		s.ControlProbe = &coreapi.TailscaleControlProbe{Reachable: n.probe.reachable, Error: n.probe.err, CheckedAt: n.probe.at}
+	}
 	if n.share != nil {
 		s.ShareProxy = n.share.Addr().String()
 	}
 	n.setStatusLocked(s)
+}
+
+// dialOwn dials the way the node's own connections do: through the proxy
+// named by ControlVia, or out of the physical interface, never back into
+// the core's TUN.
+func (n *Node) dialOwn(ctx context.Context, network, address string) (net.Conn, error) {
+	if via := n.via.Load().(string); via != "" {
+		return proxydialer.NewByName(via, tunnel.Tunnel).DialContext(ctx, network, address)
+	}
+	return dialer.DialContext(ctx, network, address)
+}
+
+// probeLoop checks, while the node needs to sign in, whether the control
+// server is reachable the way the node dials. A failure here is the usual
+// reason a login goes nowhere, so the app says so, and the warning stays
+// in the log whatever its level.
+func (n *Node) probeLoop(ctx context.Context, gen uint64, poke func()) {
+	t := time.NewTicker(5 * time.Second)
+	defer t.Stop()
+	var last time.Time
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+		n.mu.Lock()
+		due := n.gen == gen && n.status.BackendState == "NeedsLogin" && n.cfg != nil && time.Since(last) >= 30*time.Second
+		url := ""
+		if due {
+			url = n.cfg.ControlURL
+		}
+		n.mu.Unlock()
+		if !due {
+			continue
+		}
+		last = time.Now()
+		err := n.probeControl(ctx, url)
+		host, _ := controlTarget(url)
+		n.mu.Lock()
+		if n.gen == gen {
+			p := controlProbe{at: time.Now(), reachable: err == nil}
+			if err != nil {
+				p.err = err.Error()
+			}
+			n.probe = p
+		}
+		n.mu.Unlock()
+		if err != nil {
+			log.Warnln("[Tailscale] cannot reach the control server at %s: %v", host, err)
+		}
+		poke()
+	}
+}
+
+// probeControl connects to the control server and, over https, completes a
+// TLS handshake, which is what censored networks cut.
+func (n *Node) probeControl(ctx context.Context, controlURL string) error {
+	address, tlsNeeded := controlTarget(controlURL)
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	conn, err := n.dialOwn(ctx, "tcp", address)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if !tlsNeeded {
+		return nil
+	}
+	host, _, _ := net.SplitHostPort(address)
+	c := tls.Client(conn, &tls.Config{ServerName: host})
+	return c.HandshakeContext(ctx)
+}
+
+// controlTarget names where the control server listens: its address and
+// whether it speaks TLS. An empty controlURL is Tailscale's own.
+func controlTarget(controlURL string) (address string, tlsNeeded bool) {
+	const fallback = "controlplane.tailscale.com:443"
+	u := strings.TrimSpace(controlURL)
+	if u == "" {
+		return fallback, true
+	}
+	if !strings.Contains(u, "://") {
+		u = "https://" + u
+	}
+	parsed, err := url.Parse(u)
+	if err != nil || parsed.Host == "" {
+		return fallback, true
+	}
+	host := parsed.Hostname()
+	if host == "" {
+		return fallback, true
+	}
+	secure := parsed.Scheme != "http"
+	port := parsed.Port()
+	if port == "" {
+		if secure {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	return net.JoinHostPort(host, port), secure
 }
 
 func (n *Node) setStatusLocked(s coreapi.TailscaleStatus) {

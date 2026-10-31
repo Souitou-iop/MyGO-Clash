@@ -479,6 +479,8 @@ const ptBR: Record<Key, string> = {
   "ts.loginFailed": "Não foi possível entrar",
   "ts.starting": "Iniciando o Tailscale…",
   "ts.startingHint": "O nó está se conectando ao servidor de coordenação.",
+  "ts.controlUnreachable": "O servidor de controle do Tailscale está inacessível",
+  "ts.controlUnreachableHint": "Entrar conecta primeiro ao servidor de controle. Escolha um grupo de proxy que funcione em Nó embutido › Acessar o Tailscale por abaixo e entre novamente.",
   "ts.thisDevice": "Este dispositivo",
   "ts.deviceName": "Nome do dispositivo",
   "ts.deviceNameHint": "Como o dispositivo aparece na sua tailnet",

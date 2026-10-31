@@ -479,6 +479,8 @@ const de: Record<Key, string> = {
   "ts.loginFailed": "Anmeldung fehlgeschlagen",
   "ts.starting": "Tailscale startet …",
   "ts.startingHint": "Der Knoten verbindet sich mit dem Koordinationsserver.",
+  "ts.controlUnreachable": "Der Tailscale-Steuerserver ist nicht erreichbar",
+  "ts.controlUnreachableHint": "Die Anmeldung verbindet zuerst mit dem Steuerserver. Wähle unten unter Eingebauter Knoten › Tailscale erreichen über eine funktionierende Proxygruppe und melde dich erneut an.",
   "ts.thisDevice": "Dieses Gerät",
   "ts.deviceName": "Gerätename",
   "ts.deviceNameHint": "So erscheint das Gerät in deinem Tailnet",

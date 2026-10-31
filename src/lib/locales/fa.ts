@@ -479,6 +479,8 @@ const fa: Record<Key, string> = {
   "ts.loginFailed": "ورود ممکن نشد",
   "ts.starting": "در حال شروع Tailscale…",
   "ts.startingHint": "گره در حال اتصال به سرور هماهنگی است.",
+  "ts.controlUnreachable": "سرور کنترل Tailscale در دسترس نیست",
+  "ts.controlUnreachableHint": "ورود ابتدا به سرور کنترل متصل می‌شود. در «گرهٔ داخلی › اتصال به Tailscale از راه» در پایین یک گروه پروکسی کارآمد انتخاب کنید و دوباره وارد شوید.",
   "ts.thisDevice": "این دستگاه",
   "ts.deviceName": "نام دستگاه",
   "ts.deviceNameHint": "نامی که دستگاه با آن در tailnet دیده می‌شود",

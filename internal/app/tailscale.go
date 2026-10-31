@@ -36,6 +36,7 @@ type tailscaleManager struct {
 	cancel     context.CancelFunc
 	routingKey string // what the configuration depends on
 	trayKey    string // what the tray menu shows
+	probeOk    bool   // the last status said the control server was reachable
 }
 
 func newTailscaleManager(a *App) *tailscaleManager {
@@ -170,6 +171,8 @@ func (m *tailscaleManager) setStatus(s coreapi.TailscaleStatus) {
 	changed := key != m.routingKey
 	m.routingKey = key
 	saved := m.state.Version
+	recovered := s.ControlProbe != nil && s.ControlProbe.Reachable && !m.probeOk
+	m.probeOk = s.ControlProbe != nil && s.ControlProbe.Reachable
 	m.mu.Unlock()
 	_ = TailscaleEvent.Broadcast(s)
 	menu := trayKey(s)
@@ -177,6 +180,11 @@ func (m *tailscaleManager) setStatus(s coreapi.TailscaleStatus) {
 	menuChanged := menu != m.trayKey
 	m.trayKey = menu
 	m.mu.Unlock()
+	if recovered {
+		// The control server was out of reach and answers again: an
+		// auto-login that failed on that may try once more.
+		_ = m.a.secrets.Set(secretTSKeyTried, "")
+	}
 	if changed {
 		m.a.scheduleApply()
 	}
@@ -315,7 +323,27 @@ func (s Tailscale) Login(ctx context.Context, authKey string) (string, error) {
 		return "", err
 	}
 	if authKey != "" {
-		return "", nil
+		// The key starts the node anew; wait for the sign-in to take, so
+		// that a key that does not register says so instead of failing in
+		// silence while the node waits for a login.
+		deadline := time.Now().Add(15 * time.Second)
+		for time.Now().Before(deadline) {
+			st, err := c.TailscaleStatus(ctx)
+			if err == nil {
+				switch st.BackendState {
+				case "Running", "NeedsMachineAuth":
+					return "", nil
+				case "NeedsLogin":
+					return "", errors.New(tr(s.a, "tsKeyLoginTimeout"))
+				}
+			}
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(300 * time.Millisecond):
+			}
+		}
+		return "", errors.New(tr(s.a, "tsKeyLoginTimeout"))
 	}
 	deadline := time.Now().Add(15 * time.Second)
 	for time.Now().Before(deadline) {
@@ -344,9 +372,10 @@ func (s Tailscale) Logout(ctx context.Context, forget bool) error {
 		return err
 	}
 	// Signing out is the user's choice: the shared key must not sign this
-	// device in again.
+	// device in again, whatever the reachability of the control server.
 	if k, ok := s.a.sharedAuthKey(); ok {
 		_ = s.a.secrets.Set(secretTSKeyTried, k.Key)
+		_ = s.a.secrets.Set(secretTSKeySignedOut, k.Key)
 	}
 	if err := c.TailscaleLogout(ctx); err != nil {
 		return err
@@ -447,8 +476,13 @@ func itoa(n int) string {
 const secretTSAuthKey = "tailscale.authKey"
 
 // secretTSKeyTried is the shared auth key this device has signed in with,
-// or tried to, so that it does not again.
+// or tried to, so that it does not again until the way out changes.
 const secretTSKeyTried = "tailscale.authKeyTried"
+
+// secretTSKeySignedOut is the shared auth key the user signed out of this
+// device with: it must not sign this device in again, however reachable
+// the control server becomes.
+const secretTSKeySignedOut = "tailscale.authKeySignedOut"
 
 // sharedKey is an auth key that sync carries to the user's other devices,
 // each of which signs in with it as a device of its own.
@@ -467,6 +501,8 @@ func (a *App) sharedAuthKey() (sharedKey, bool) {
 
 // autoLogin signs the embedded node in with the shared auth key, once for
 // each key, when it needs to sign in: a new device that sync has reached.
+// A try whose way out was broken, such as an unreachable control server,
+// is retried once that changes.
 func (m *tailscaleManager) autoLogin(s coreapi.TailscaleStatus) {
 	if s.Source != "embedded" || s.BackendState != "NeedsLogin" {
 		return
@@ -478,7 +514,7 @@ func (m *tailscaleManager) autoLogin(s coreapi.TailscaleStatus) {
 	// Once for each key, whatever restarts come between: not again after a
 	// failure, nor after the user signed out.
 	m.mu.Lock()
-	tried := m.a.secrets.Get(secretTSKeyTried) == k.Key
+	tried := m.a.secrets.Get(secretTSKeyTried) == k.Key || m.a.secrets.Get(secretTSKeySignedOut) == k.Key
 	if !tried {
 		_ = m.a.secrets.Set(secretTSKeyTried, k.Key)
 	}

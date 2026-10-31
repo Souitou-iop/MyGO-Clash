@@ -479,6 +479,8 @@ const ar: Record<Key, string> = {
   "ts.loginFailed": "تعذّر تسجيل الدخول",
   "ts.starting": "جارٍ بدء Tailscale…",
   "ts.startingHint": "تتصل العقدة بخادم التنسيق.",
+  "ts.controlUnreachable": "لا يمكن الوصول إلى خادم تحكم Tailscale",
+  "ts.controlUnreachableHint": "يتصل تسجيل الدخول بخادم التحكم أولاً. اختر مجموعة وسيط تعمل في «العقدة المدمجة › الوصول إلى Tailscale عبر» أدناه، ثم سجّل الدخول من جديد.",
   "ts.thisDevice": "هذا الجهاز",
   "ts.deviceName": "اسم الجهاز",
   "ts.deviceNameHint": "كيف يظهر الجهاز في شبكة tailnet",

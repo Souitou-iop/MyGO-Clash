@@ -982,6 +982,16 @@ export interface Tailscale {
   coexist: boolean;
 }
 
+/**
+ * TailscaleControlProbe is the outcome of the last check of the control
+ * server's reachability.
+ */
+export interface TailscaleControlProbe {
+  reachable: boolean;
+  error?: string;
+  checkedAt: string;
+}
+
 /** TailscalePeer is a node of the tailnet. */
 export interface TailscalePeer {
   id: string;
@@ -1058,6 +1068,12 @@ export interface TailscaleStatus {
   shareProxy?: string;
   error?: string;
   updatedAt: string;
+  /**
+   * ControlProbe, on a node that needs to sign in, is the outcome of the
+   * last check that the control server is reachable the way the node
+   * dials. A login goes nowhere without it.
+   */
+  controlProbe?: TailscaleControlProbe;
   /**
    * StateVersion counts the writes of the embedded node's state; the app
    * fetches the state again when it moves.

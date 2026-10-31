@@ -479,6 +479,8 @@ const ru: Record<Key, string> = {
   "ts.loginFailed": "Не удалось войти",
   "ts.starting": "Запуск Tailscale…",
   "ts.startingHint": "Узел подключается к координационному серверу.",
+  "ts.controlUnreachable": "Сервер управления Tailscale недоступен",
+  "ts.controlUnreachableHint": "Для входа сначала нужно связаться с сервером управления. Выберите рабочую группу прокси в разделе «Встроенный узел › Подключаться к Tailscale через» ниже и войдите снова.",
   "ts.thisDevice": "Это устройство",
   "ts.deviceName": "Имя устройства",
   "ts.deviceNameHint": "Как устройство отображается в tailnet",

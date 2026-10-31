@@ -479,6 +479,8 @@ const es: Record<Key, string> = {
   "ts.loginFailed": "No se pudo iniciar sesión",
   "ts.starting": "Iniciando Tailscale…",
   "ts.startingHint": "El nodo se está conectando al servidor de coordinación.",
+  "ts.controlUnreachable": "No se puede acceder al servidor de control de Tailscale",
+  "ts.controlUnreachableHint": "Iniciar sesión conecta primero con el servidor de control. Elige un grupo de proxies que funcione en Nodo integrado › Conectar con Tailscale a través de, y vuelve a iniciar sesión.",
   "ts.thisDevice": "Este dispositivo",
   "ts.deviceName": "Nombre del dispositivo",
   "ts.deviceNameHint": "Cómo aparece el dispositivo en tu tailnet",

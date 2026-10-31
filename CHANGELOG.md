@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.18-beta
+
+内置 Tailscale 节点的登录不再静默失败：登录卡片会检测控制服务器是否可达并说明原因与解决办法，密钥登录会明确报错，自动登录在控制服务器恢复可达后自动重试。/ The built-in Tailscale node no longer fails to sign in in silence: the sign-in card checks whether the control server is reachable and says why not and what to do, a key sign-in reports its outcome, and an automatic sign-in retries once the control server answers again.
+
+### 🔧 改进 / Improvements
+
+- 内置 Tailscale 节点需要登录时，会按节点自身的网络路径（直连或经由代理）检测控制服务器是否可达；不可达时登录卡片直接显示原因与处理办法，并附上真实的连接错误，日志中也会记录警告级别的说明。此前登录会无声无息地失败，看起来像凭空卡住 / When the built-in Tailscale node needs to sign in, it now checks whether the control server is reachable along the node's own network path (directly or through a proxy); when it is not, the sign-in card shows the reason and the way out with the real connection error, and the log keeps a warning. Sign-ins used to fail in silence, seemingly out of nowhere
+- 通过同步分享的认证密钥自动登录：若此前的尝试因控制服务器不可达而失败，一旦它恢复可达会自动再试一次；在「本设备」中主动登出仍然永久阻止该密钥自动登录 / A shared auth key's automatic sign-in, once failed on an unreachable control server, is retried automatically when the server answers again; signing out from "This device" still keeps that key from signing this device in for good
+
+### 🐛 修复 / Fixes
+
+- 修复用认证密钥登录 Tailscale 失败时没有任何提示的问题：密钥登录现在会等待结果，密钥未注册成功时明确报错 / Fixed signing in to Tailscale with an auth key failing without any feedback: a key sign-in now waits for the outcome and reports clearly when the key does not register
+
 ## 0.2.17-beta
 
 网站连通性新增「添加 / 导入测试」：按 MyIP 的预设分组一键导入网站、添加自定义网站，站点列表随设置在设备间同步；同时修复设置页在宽窗口下贴左留白、窗口缩放刷 ResizeObserver 警告等界面问题。/ The connectivity test gains "Add / import sites": import curated preset groups from MyIP in one click, add custom sites, and sync the list between devices with your settings; it also fixes the settings page hugging the left of wide windows and window resizing spamming ResizeObserver warnings, among other interface fixes.

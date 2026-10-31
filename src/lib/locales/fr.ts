@@ -479,6 +479,8 @@ const fr: Record<Key, string> = {
   "ts.loginFailed": "Connexion impossible",
   "ts.starting": "Démarrage de Tailscale…",
   "ts.startingHint": "Le nœud se connecte au serveur de coordination.",
+  "ts.controlUnreachable": "Le serveur de contrôle Tailscale est injoignable",
+  "ts.controlUnreachableHint": "Se connecter joint d'abord le serveur de contrôle. Choisissez un groupe de proxies qui fonctionne dans Nœud intégré › Joindre Tailscale via ci-dessous, puis reconnectez-vous.",
   "ts.thisDevice": "Cet appareil",
   "ts.deviceName": "Nom de l’appareil",
   "ts.deviceNameHint": "Comment l’appareil apparaît dans votre tailnet",

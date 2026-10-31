@@ -479,6 +479,8 @@ const vi: Record<Key, string> = {
   "ts.loginFailed": "Không thể đăng nhập",
   "ts.starting": "Đang khởi động Tailscale…",
   "ts.startingHint": "Nút đang kết nối tới máy chủ điều phối.",
+  "ts.controlUnreachable": "Không thể truy cập máy chủ điều khiển Tailscale",
+  "ts.controlUnreachableHint": "Đăng nhập cần kết nối tới máy chủ điều khiển trước. Chọn một nhóm proxy hoạt động được trong Nút tích hợp › Kết nối Tailscale qua bên dưới, rồi đăng nhập lại.",
   "ts.thisDevice": "Thiết bị này",
   "ts.deviceName": "Tên thiết bị",
   "ts.deviceNameHint": "Tên thiết bị hiển thị trong tailnet",

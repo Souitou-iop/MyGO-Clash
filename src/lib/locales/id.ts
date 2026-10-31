@@ -479,6 +479,8 @@ const id: Record<Key, string> = {
   "ts.loginFailed": "Tidak dapat masuk",
   "ts.starting": "Memulai Tailscale…",
   "ts.startingHint": "Node sedang terhubung ke server koordinasi.",
+  "ts.controlUnreachable": "Server kontrol Tailscale tidak dapat dijangkau",
+  "ts.controlUnreachableHint": "Masuk menyambung ke server kontrol lebih dulu. Pilih grup proxy yang berfungsi di Node bawaan › Jangkau Tailscale lewat di bawah, lalu masuk lagi.",
   "ts.thisDevice": "Perangkat ini",
   "ts.deviceName": "Nama perangkat",
   "ts.deviceNameHint": "Nama perangkat yang tampil di tailnet Anda",

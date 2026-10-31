@@ -479,6 +479,8 @@ const ja: Record<Key, string> = {
   "ts.loginFailed": "ログインできませんでした",
   "ts.starting": "Tailscale を起動しています…",
   "ts.startingHint": "ノードが調整サーバーに接続しています。",
+  "ts.controlUnreachable": "Tailscale の制御サーバーに接続できません",
+  "ts.controlUnreachableHint": "サインインには先に制御サーバーへの接続が必要です。下の「内蔵ノード › Tailscale への接続経路」で利用できるプロキシグループを選び、もう一度サインインしてください。",
   "ts.thisDevice": "このデバイス",
   "ts.deviceName": "デバイス名",
   "ts.deviceNameHint": "tailnet でのこのデバイスの表示名",

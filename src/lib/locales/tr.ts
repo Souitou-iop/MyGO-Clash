@@ -479,6 +479,8 @@ const tr: Record<Key, string> = {
   "ts.loginFailed": "Giriş yapılamadı",
   "ts.starting": "Tailscale başlatılıyor…",
   "ts.startingHint": "Düğüm koordinasyon sunucusuna bağlanıyor.",
+  "ts.controlUnreachable": "Tailscale denetim sunucusuna ulaşılamıyor",
+  "ts.controlUnreachableHint": "Oturum açmak önce denetim sunucusuna bağlanır. Aşağıda Yerleşik düğüm › Tailscale'e şunun üzerinden ulaş bölümünden çalışan bir proxy grubu seçin ve yeniden oturum açın.",
   "ts.thisDevice": "Bu cihaz",
   "ts.deviceName": "Cihaz adı",
   "ts.deviceNameHint": "Cihazın tailnet'te görünen adı",

@@ -490,6 +490,8 @@ export const en = {
   "ts.loginFailed": "Could not sign in",
   "ts.starting": "Starting Tailscale…",
   "ts.startingHint": "The node is connecting to the coordination server.",
+  "ts.controlUnreachable": "The Tailscale control server is unreachable",
+  "ts.controlUnreachableHint": "Signing in connects to the control server first. Pick a working proxy group under Built-in node › Reach Tailscale through below, then sign in again.",
   "ts.thisDevice": "This device",
   "ts.deviceName": "Device name",
   "ts.deviceNameHint": "How the device appears in your tailnet",

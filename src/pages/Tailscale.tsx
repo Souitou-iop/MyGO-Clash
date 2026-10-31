@@ -56,6 +56,19 @@ function Login({ status }: { status: TailscaleStatus }) {
   const shown = url || status.authUrl || "";
   return (
     <Card title={t("ts.signIn")} icon={<LogIn size={15} />}>
+      {status.controlProbe && !status.controlProbe.reachable && (
+        <Banner tone="warning">
+          <div>{t("ts.controlUnreachable")}</div>
+          <div className="muted" style={{ fontSize: 12.5 }}>
+            {t("ts.controlUnreachableHint")}
+            {status.controlProbe.error && (
+              <span className="mono selectable faint" style={{ display: "block", marginTop: 4, fontSize: 11.5 }}>
+                {status.controlProbe.error}
+              </span>
+            )}
+          </div>
+        </Banner>
+      )}
       <div className="row" style={{ gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
         <div className="col grow" style={{ minWidth: 260, gap: 12 }}>
           <div className="muted" style={{ fontSize: 12.5 }}>
