@@ -62,7 +62,7 @@ export function TrafficGraph({ up, down, height, minimal }: { up: number[]; down
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
-    const ro = new ResizeObserver(() => setSize(c.clientWidth * 10000 + c.clientHeight));
+    const ro = new ResizeObserver(() => requestAnimationFrame(() => setSize(c.clientWidth * 10000 + c.clientHeight)));
     ro.observe(c);
     return () => ro.disconnect();
   }, []);

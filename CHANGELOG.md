@@ -2,6 +2,25 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.17-beta
+
+网站连通性新增「添加 / 导入测试」：按 MyIP 的预设分组一键导入网站、添加自定义网站，站点列表随设置在设备间同步；同时修复设置页在宽窗口下贴左留白、窗口缩放刷 ResizeObserver 警告等界面问题。/ The connectivity test gains "Add / import sites": import curated preset groups from MyIP in one click, add custom sites, and sync the list between devices with your settings; it also fixes the settings page hugging the left of wide windows and window resizing spamming ResizeObserver warnings, among other interface fixes.
+
+### ✨ 新增功能 / New Features
+
+- 网站连通性新增「添加 / 导入测试」：一键导入 MyIP 的 26 组预设网站（11 个国家的常用站点，以及 AI、流媒体、开发者等 15 类主题分组），支持添加自定义网站（可选国内 / 国外分组）、逐个删除与一键恢复默认；已导入的分组会标记对勾，站点列表随设置在设备间同步 / The connectivity page gains "Add / import sites": one-click import of MyIP's 26 curated preset groups (essential sites of 11 countries, plus 15 themed sets such as AI, streaming and developer), custom sites with a domestic / global group, per-site removal and a one-click restore to the defaults; imported groups show a check mark, and the site list syncs between devices with your settings
+- 预设分组与文案覆盖全部 15 种界面语言，分组名采用 MyIP 的官方翻译 / The preset groups and strings ship in all 15 interface languages, with group names from MyIP's own translations
+
+### 🔧 改进 / Improvements
+
+- 连通性页出口 IP 卡片在宽窗口下撑满整行，不再留出空轨道 / The connectivity page's exit-IP cards fill the whole row on wide windows instead of leaving an empty track
+
+### 🐛 修复 / Fixes
+
+- 修复设置页内容在宽窗口下贴左、右侧大片留白的问题：内容列现在居中 / Fixed the settings page's content hugging the left of wide windows with a large empty area on the right: the content column is now centered
+- 修复拖动窗口大小时 ResizeObserver 循环警告刷屏的问题 / Fixed dragging a window's size spamming ResizeObserver loop warnings
+- 修复侧边栏「首页」聚焦时焦点框顶部被裁切的问题 / Fixed the sidebar's first item clipping its focus ring at the top
+
 ## 0.2.16-beta
 
 界面框架 MyGo 升级到 0.7.3，Windows 上的原生窗口缩放更干净，应用内更新会跟随系统代理；Tailscale 节点改名不再重启节点。/ The interface framework MyGo is upgraded to 0.7.3, native windows resize cleanly on Windows again and in-app updates follow the system's proxy; renaming a Tailscale node no longer restarts it.

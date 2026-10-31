@@ -1,6 +1,7 @@
-import { CheckCircle2, CircleDashed, Eye, EyeOff, HelpCircle, Loader2, MinusCircle, Play, RefreshCw, XCircle } from "lucide-react";
+import { CheckCircle2, CircleDashed, CirclePlus, Eye, EyeOff, HelpCircle, Loader2, MinusCircle, Play, RefreshCw, XCircle } from "lucide-react";
 import { Channel } from "mygo-runtime";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { SitesDialog } from "../components/SitesDialog";
 import { IPQualityRows } from "../components/IPQuality";
 import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
@@ -182,6 +183,12 @@ function useSites() {
   useEffect(() => {
     if (!useApp.getState().preview) void list().catch(() => {});
   }, []);
+  const save = async (next: Site[]) => {
+    const kept = await Tools.saveConnectivitySites(next);
+    const shown = kept.length ? kept : await Tools.connectivitySites();
+    setSites(shown);
+    return shown;
+  };
   const test = async () => {
     setBusy(true);
     setRounds({});
@@ -196,7 +203,7 @@ function useSites() {
     }
     setBusy(false);
   };
-  return { sites, rounds, busy, test };
+  return { sites, rounds, busy, test, save };
 }
 
 function best(r: Rounds | undefined): number | undefined {
@@ -221,17 +228,20 @@ function verdict(sites: Site[], rounds: Record<string, Rounds>): { tone: "succes
   return { tone: "danger", key: "none" };
 }
 
-function SiteSection({ sites, rounds, busy, test, running }: ReturnType<typeof useSites> & { running: boolean }) {
+function SiteSection({ sites, rounds, busy, test, save, running }: ReturnType<typeof useSites> & { running: boolean }) {
   const t = useT();
   const v = verdict(sites, rounds);
+  const [manage, setManage] = useState(false);
   // One scale for every bar, so that the bars compare across sites.
   const slowest = Math.max(1, ...Object.values(rounds).flat());
   return (
     <section className="cty-section">
       <Heading title={t("connectivity.sites")} hint={t("connectivity.sitesHint", { rounds: ROUNDS })}>
         {v && <Badge tone={v.tone}>{t(`connectivity.verdict.${v.key}`)}</Badge>}
+        <Button size="sm" variant="ghost" icon={<CirclePlus size={14} />} onClick={() => setManage(true)} tip={t("connectivity.manage")} />
         <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} loading={busy} disabled={!running} onClick={test} tip={t("common.retest")} />
       </Heading>
+      {manage && <SitesDialog open onClose={() => setManage(false)} sites={sites} onSave={save} running={running} onTest={test} />}
       {(["global", "domestic"] as const).map((g) => {
         const of = sites.filter((s) => (s.group ?? "global") === g);
         if (!of.length) return null;

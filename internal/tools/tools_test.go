@@ -21,3 +21,26 @@ func TestConnectivitySites(t *testing.T) {
 		}
 	}
 }
+
+func TestNormalizeSites(t *testing.T) {
+	kept := NormalizeSites([]Site{
+		{"a", "A", " https://a.example.com ", "domestic"},
+		{"", "", "https://b.example.com", "weird"},
+		{"dup", "Host of A", "https://a.example.com/favicon.ico", "global"},
+		{"", "", "ftp://c.example.com", "global"},
+		{"a", "Again A", "https://c.example.com", "global"},
+	})
+	want := []Site{
+		{"a", "A", "https://a.example.com", "domestic"},
+		{"b.example.com", "b.example.com", "https://b.example.com", "global"},
+		{"a-2", "Again A", "https://c.example.com", "global"},
+	}
+	if len(kept) != len(want) {
+		t.Fatalf("kept %v", kept)
+	}
+	for i, s := range want {
+		if kept[i] != s {
+			t.Errorf("site %d is %+v, want %+v", i, kept[i], s)
+		}
+	}
+}

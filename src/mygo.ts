@@ -703,6 +703,11 @@ export interface Settings {
   sync: Sync;
   backup: Backup;
   updates: Updates;
+  /**
+   * ConnectivitySites is the site list of the connectivity page; empty
+   * means the built-in defaults.
+   */
+  connectivitySites?: Site[];
 }
 
 /** Site is a site whose delay is tested. */
@@ -712,6 +717,13 @@ export interface Site {
   url: string;
   /** global or domestic */
   group?: string;
+}
+
+/** SitePreset is a named group of sites the connectivity page may import. */
+export interface SitePreset {
+  id: string;
+  emoji: string;
+  sites: Site[];
 }
 
 /** SiteResult is the delay of a site, 0 when it failed. */
@@ -1786,7 +1798,10 @@ export const Tools = {
   checkUnlock(ids: string[], ch: Channel<Unlock>): Promise<void> {
     return call("Tools.CheckUnlock", ids, ch);
   },
-  /** ConnectivitySites returns the sites the connectivity page tests. */
+  /**
+   * ConnectivitySites returns the sites the connectivity page tests: the
+   * user's choice, or the defaults while they have none.
+   */
   connectivitySites(): Promise<Site[]> {
     return call("Tools.ConnectivitySites");
   },
@@ -1815,6 +1830,17 @@ export const Tools = {
    */
   ipQuality(ip: string): Promise<IPQuality> {
     return call("Tools.IPQuality", ip);
+  },
+  /**
+   * SaveConnectivitySites stores the sites the connectivity page tests, and
+   * answers with the list as it was kept.
+   */
+  saveConnectivitySites(sites: Site[]): Promise<Site[]> {
+    return call("Tools.SaveConnectivitySites", sites);
+  },
+  /** SitePresets are the groups the connectivity page may import at once. */
+  sitePresets(): Promise<SitePreset[]> {
+    return call("Tools.SitePresets");
   },
   /** Sites returns the sites the home page tests. */
   sites(): Promise<Site[]> {

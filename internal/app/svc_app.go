@@ -383,8 +383,25 @@ func (s Tools) IPQuality(ctx context.Context, ip string) (tools.IPQuality, error
 // Sites returns the sites the home page tests.
 func (s Tools) Sites() []tools.Site { return tools.DefaultSites }
 
-// ConnectivitySites returns the sites the connectivity page tests.
-func (s Tools) ConnectivitySites() []tools.Site { return tools.ConnectivitySites }
+// SitePresets are the groups the connectivity page may import at once.
+func (s Tools) SitePresets() []tools.SitePreset { return tools.SitePresets }
+
+// ConnectivitySites returns the sites the connectivity page tests: the
+// user's choice, or the defaults while they have none.
+func (s Tools) ConnectivitySites() []tools.Site {
+	if own := s.a.settings.Get().ConnectivitySites; len(own) > 0 {
+		return own
+	}
+	return tools.ConnectivitySites
+}
+
+// SaveConnectivitySites stores the sites the connectivity page tests, and
+// answers with the list as it was kept.
+func (s Tools) SaveConnectivitySites(ctx context.Context, sites []tools.Site) ([]tools.Site, error) {
+	kept := tools.NormalizeSites(sites)
+	_, err := s.a.updateSettings(ctx, func(cfg *config.Settings) { cfg.ConnectivitySites = kept })
+	return kept, err
+}
 
 // TestSites tests sites through the proxy, sending each result as it
 // arrives.

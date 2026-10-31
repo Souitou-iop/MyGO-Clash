@@ -114,7 +114,9 @@ export function useWidth<T extends HTMLElement>(): [(node: T | null) => void, nu
     el.current = node;
     if (!node) return;
     setWidth(node.clientWidth);
-    ro.current = new ResizeObserver(() => setWidth(node.clientWidth));
+    // Outside the resize frame: a width-driven layout would otherwise trip
+    // the ResizeObserver loop warning on every window resize.
+    ro.current = new ResizeObserver(() => requestAnimationFrame(() => setWidth(node.clientWidth)));
     ro.current.observe(node);
   }, []);
   return [ref, width, el];

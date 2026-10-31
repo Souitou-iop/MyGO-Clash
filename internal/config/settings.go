@@ -18,6 +18,7 @@ import (
 	"sync"
 
 	"github.com/mygo-clash/mygo-clash/internal/secure"
+	"github.com/mygo-clash/mygo-clash/internal/tools"
 )
 
 // Settings is everything the user sets in the app.
@@ -73,6 +74,9 @@ type Settings struct {
 	Sync        Sync        `json:"sync"`
 	Backup      Backup      `json:"backup"`
 	Updates     Updates     `json:"updates"`
+	// ConnectivitySites is the site list of the connectivity page; empty
+	// means the built-in defaults.
+	ConnectivitySites []tools.Site `json:"connectivitySites,omitempty"`
 }
 
 // Updates is how the app looks for new versions of itself. Whether it
@@ -457,12 +461,12 @@ func Defaults() Settings {
 			MTU:                 1500,
 		},
 		Clash: Clash{
-			Mode:         "rule",
-			MixedPort:    7897,
-			SocksPort:    7898,
-			HTTPPort:     7899,
-			RedirPort:    7895,
-			TProxyPort:   7896,
+			Mode:          "rule",
+			MixedPort:     7897,
+			SocksPort:     7898,
+			HTTPPort:      7899,
+			RedirPort:     7895,
+			TProxyPort:    7896,
 			IPv6:          true,
 			LogLevel:      "info",
 			UnifiedDelay:  true,

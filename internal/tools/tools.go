@@ -289,6 +289,49 @@ var ConnectivitySites = []Site{
 	{"taobao", "Taobao", "https://www.taobao.com/favicon.ico", "domestic"},
 }
 
+// MaxConnectivitySites caps the site list the page keeps: it tests every
+// site at once, five rounds in a row.
+const MaxConnectivitySites = 120
+
+// NormalizeSites prepares a site list to keep: valid http(s) addresses
+// only, one per host, unique ids, at most MaxConnectivitySites.
+func NormalizeSites(sites []Site) []Site {
+	keep := make([]Site, 0, min(len(sites), MaxConnectivitySites))
+	hosts, ids := map[string]bool{}, map[string]bool{}
+	for _, s := range sites {
+		u, err := url.Parse(strings.TrimSpace(s.URL))
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			continue
+		}
+		host := strings.ToLower(u.Host)
+		if hosts[host] {
+			continue
+		}
+		hosts[host] = true
+		group := s.Group
+		if group != "domestic" {
+			group = "global"
+		}
+		id := strings.TrimSpace(s.ID)
+		if id == "" {
+			id = host
+		}
+		for base, n := id, 2; ids[id]; n++ {
+			id = fmt.Sprintf("%s-%d", base, n)
+		}
+		ids[id] = true
+		name := strings.TrimSpace(s.Name)
+		if name == "" {
+			name = host
+		}
+		if len(keep) == MaxConnectivitySites {
+			break
+		}
+		keep = append(keep, Site{ID: id, Name: name, URL: u.String(), Group: group})
+	}
+	return keep
+}
+
 // SiteResult is the delay of a site, 0 when it failed.
 type SiteResult struct {
 	ID      string `json:"id"`

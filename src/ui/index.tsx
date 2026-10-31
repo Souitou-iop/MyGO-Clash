@@ -446,6 +446,7 @@ export function reflow(grid: HTMLElement | null) {
   let n = cols();
   let last = places();
   let height = grid.offsetHeight;
+  let alive = true;
   const move = (now: typeof last, arrived: boolean) => {
     if (reducedMotion()) return;
     // Rows come and go: what follows the grid moves with its height
@@ -493,8 +494,14 @@ export function reflow(grid: HTMLElement | null) {
   // Sizes: the grid's, which can change its columns, and each card's, which
   // moves those after it and only needs noting.
   const ro = new ResizeObserver(() => {
-    if (cols() !== n) move(places(), false);
-    settle();
+    // Outside the resize frame: reordering the grid inside it trips the
+    // ResizeObserver loop warning on every window resize.
+    requestAnimationFrame(() => {
+      if (alive) {
+        if (cols() !== n) move(places(), false);
+        settle();
+      }
+    });
   });
   // Cards that come, go or change places.
   const mo = new MutationObserver((records) => {
@@ -506,6 +513,7 @@ export function reflow(grid: HTMLElement | null) {
   for (const c of cards()) ro.observe(c);
   mo.observe(grid, { childList: true });
   return () => {
+    alive = false;
     ro.disconnect();
     mo.disconnect();
   };
