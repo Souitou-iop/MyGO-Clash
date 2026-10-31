@@ -2,6 +2,20 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.22-beta
+
+流量统计的时间范围新增「全部」，应用、网站与节点可以按名称筛选；同时修复自定义字体反复叠加、清空后不恢复默认的问题，启动时会清掉开发运行留下的空目录。/ The statistics page's time range gains "All", and its apps, sites and nodes can be filtered by name; it also fixes the custom font piling up and never going back to the default, and removes the empty directories a development run leaves behind.
+
+### ✨ 新增功能 / New Features
+
+- 流量统计的时间范围在 今天 / 7 天 / 30 天 之后新增「全部」：统计保留期（90 天）内所有有记录的流量，图表按天展示 / The statistics page's time range gains "All" after Today / 7 days / 30 days: every recorded day of the kept history (90 days), charted by day
+- 流量统计新增筛选：应用、网站与节点三个排行的上方有了搜索框，按名称（不分大小写）在范围内的全部记录里筛选后重新排行，不只是列表里已有的十项；总计与柱状图不受筛选影响，无名的「其他」项在筛选时不计入 / The statistics page gains a filter: a search field above the apps, sites and nodes rankings re-ranks every record of the range whose name matches, without regard to case, not just the ten already listed; the totals and the chart stay whole, and the unnamed Other is left out while filtering
+
+### 🐛 修复 / Fixes
+
+- 修复自定义字体的两个问题：此前每次应用外观都会把字体向字体列表再叠加一遍，设置变化越多列表越长；清空字体保存后旧的字体也要重启应用才消失。现在字体列表保持干净，清空后立即恢复默认字体 / Fixed two problems of the custom font: applying the appearance used to add the font to the list again and again, so the list grew with every setting change, and clearing it took a restart of the app to go away; the list now stays clean, and clearing restores the default font at once
+- 应用启动时会删除上一次开发运行留下的空的「应用名-进程号」目录；有内容的目录不受影响 / At start the app removes the empty "app name-pid" directories a development run left beside its data; directories with contents are left as they are
+
 ## 0.2.21-beta
 
 订阅按地址去重：同一订阅添加两次、或两台设备各自添加过一次，同步后都会收敛为一份，不会再出现两个一样的订阅。/ Subscriptions deduplicate by their URL: the same subscription added twice, or once on each of two devices, converges into one through sync, so two identical subscriptions no longer appear.
