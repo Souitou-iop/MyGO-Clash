@@ -454,6 +454,25 @@ func (s appSource) Apply(ctx context.Context, changes map[string][]byte) error {
 				errs = append(errs, err)
 				continue
 			}
+			// The same subscription added on two devices twice exists twice
+			// in the vault. Keep one, the same one everywhere, by the winner
+			// rule; a copy dropped here is deleted from the server by the
+			// next sync, which no longer finds it on this device.
+			if it.Meta.Type == profiles.TypeRemote {
+				if url := strings.TrimSpace(it.Meta.URL); url != "" {
+					dups := s.a.profiles.SameURL(url, uid)
+					winner := it.Meta
+					for _, d := range dups {
+						winner = profiles.SameURLWinner(winner, d)
+					}
+					if winner.UID != uid {
+						continue
+					}
+					for _, d := range dups {
+						errs = append(errs, s.a.profiles.Delete(d.UID))
+					}
+				}
+			}
 			if local, err := s.a.profiles.Get(uid); err == nil {
 				it.Meta.Selected = local.Selected // selections stay the device's
 			}

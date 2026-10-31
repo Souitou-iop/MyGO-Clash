@@ -176,6 +176,50 @@ func TestProfilesSealedAndGenerated(t *testing.T) {
 	}
 }
 
+func TestCreateReusesTheSameSubscription(t *testing.T) {
+	hits := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		fmt.Fprint(w, sub)
+	}))
+	defer srv.Close()
+	m := newManager(t)
+	ctx := context.Background()
+	first, err := m.Create(ctx, NewProfile{Type: TypeRemote, URL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := m.Create(ctx, NewProfile{Type: TypeRemote, URL: srv.URL, Name: "again"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.UID != first.UID || hits != 1 {
+		t.Fatalf("the same URL made another profile: %s then %s, %d fetches", first.UID, again.UID, hits)
+	}
+	other, err := m.Create(ctx, NewProfile{Type: TypeRemote, URL: srv.URL + "/other"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if other.UID == first.UID {
+		t.Fatal("another URL reused the first profile")
+	}
+	if dups := m.SameURL(srv.URL, ""); len(dups) != 1 || dups[0].UID != first.UID {
+		t.Fatalf("SameURL found %+v", dups)
+	}
+	if dups := m.SameURL(srv.URL, first.UID); len(dups) != 0 {
+		t.Fatalf("SameURL ignored except: %+v", dups)
+	}
+}
+
+func TestSameURLWinner(t *testing.T) {
+	if w := SameURLWinner(Profile{UID: "b", Updated: 1}, Profile{UID: "a", Updated: 2}); w.UID != "a" {
+		t.Fatalf("the older won: %s", w.UID)
+	}
+	if w := SameURLWinner(Profile{UID: "b", Updated: 1}, Profile{UID: "a", Updated: 1}); w.UID != "a" {
+		t.Fatalf("the tie did not pick the smaller UID: %s", w.UID)
+	}
+}
+
 func readAll(dir string) (map[string][]byte, error) {
 	out := map[string][]byte{}
 	entries, err := os.ReadDir(dir)

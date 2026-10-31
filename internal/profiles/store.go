@@ -140,6 +140,37 @@ func (m *Manager) Current() (Profile, bool) {
 	return m.index.Items[i], true
 }
 
+// SameURL returns the remote profiles whose subscription is url, without
+// except, as copies.
+func (m *Manager) SameURL(url, except string) []Profile {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []Profile
+	for _, p := range m.index.Items {
+		if p.UID != except && p.Type == TypeRemote && p.URL == url {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// SameURLWinner picks the profile that survives when two share a URL:
+// the one updated most recently, then the smaller UID, so that devices
+// syncing with each other all pick the same one.
+func SameURLWinner(a, b Profile) Profile {
+	switch {
+	case a.Updated != b.Updated:
+		if a.Updated > b.Updated {
+			return a
+		}
+		return b
+	case a.UID < b.UID:
+		return a
+	default:
+		return b
+	}
+}
+
 // Content returns what an item holds.
 func (m *Manager) Content(uid string) ([]byte, error) {
 	m.mu.Lock()
@@ -165,8 +196,22 @@ type NewProfile struct {
 	Option  Option `json:"option"`
 }
 
-// Create creates a profile: it downloads a remote one first.
+// Create creates a profile: it downloads a remote one first. A remote
+// profile whose URL the app already has is reused: the same subscription
+// added twice, here or on another device that syncs with this one, would
+// only make duplicates.
 func (m *Manager) Create(ctx context.Context, np NewProfile) (Profile, error) {
+	if np.Type == TypeRemote {
+		if url := strings.TrimSpace(np.URL); url != "" {
+			if dups := m.SameURL(url, ""); len(dups) > 0 {
+				winner := dups[0]
+				for _, d := range dups[1:] {
+					winner = SameURLWinner(winner, d)
+				}
+				return winner, nil
+			}
+		}
+	}
 	p := Profile{UID: newUID(np.Type), Type: np.Type, Name: strings.TrimSpace(np.Name), Desc: np.Desc, Option: np.Option}
 	var content []byte
 	switch np.Type {
