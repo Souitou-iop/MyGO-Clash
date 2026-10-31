@@ -2,6 +2,14 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.20-beta
+
+macOS 菜单栏的应用菜单在「关于」之后新增「检查更新…」，随时手动检查应用的新版本。/ The app menu of macOS gains "Check for Updates…" after About, to check for a new version of the app at any time.
+
+### ✨ 新增功能 / New Features
+
+- macOS 菜单栏的应用菜单在「关于」之后新增「检查更新…」：可以随时手动检查应用的新版本，与托盘菜单和设置页共用同一个更新窗口，其余菜单项保持不变 / The app menu of macOS gains "Check for Updates…" after About, to check for a new version of the app at any time; it shares the update window with the tray menu and the settings page, and the rest of the menu stays as it was
+
 ## 0.2.19-beta
 
 修复选择了「连接 Tailscale 经由」后内置节点无法启动的问题：本地 UDP 端口绑定现在始终直连，经由代理只作用于控制服务器连接与 DERP 中继。/ Fixes the built-in node failing to start when "Reach Tailscale through" was set: local UDP binds now always go direct, and the proxy only carries the control connection and the DERP relays.

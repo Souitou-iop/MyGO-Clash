@@ -136,6 +136,7 @@ func Main() {
 	mygo.App.OnQuit(a.cleanup)
 	useUpdater()
 	mygo.App.WhenReady(a.start)
+	useAppMenu()
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)
 	}
