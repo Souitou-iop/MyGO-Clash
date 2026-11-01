@@ -104,13 +104,6 @@ export function delayText(d: number | undefined, timeout: string): string {
   return ltr(`${d} ms`);
 }
 
-/** The emoji flag of a country code. */
-export function flag(code: string | undefined): string {
-  if (!code || code.length !== 2) return "🌐";
-  const up = code.toUpperCase();
-  return String.fromCodePoint(...[...up].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
-}
-
 export function percent(a: number, b: number): number {
   if (!b) return 0;
   return Math.max(0, Math.min(100, (a / b) * 100));

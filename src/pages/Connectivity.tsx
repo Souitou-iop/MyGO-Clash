@@ -5,7 +5,8 @@ import { SitesDialog } from "../components/SitesDialog";
 import { IPQualityRows } from "../components/IPQuality";
 import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
-import { delayClass, delayText, flag, relative } from "../lib/format";
+import { Flag } from "../components/Flag";
+import { delayClass, delayText, relative } from "../lib/format";
 import { usePrivate } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { toastError, useApp } from "../lib/store";
@@ -26,6 +27,7 @@ export default function Connectivity() {
   const t = useT();
   const running = useApp((s) => s.state?.core.status === "running");
   const preview = useApp((s) => s.preview);
+  const p = usePrivate();
   const ips = useExitIPs();
   const sites = useSites();
   const unlock = useUnlock();
@@ -52,9 +54,9 @@ export default function Connectivity() {
       </PageHeader>
       <div className="page-body">
         {!running && <CoreDown banner />}
-        <IPSection {...ips} running={running} />
+        <IPSection {...ips} running={running} p={p} />
         <SiteSection {...sites} running={running} />
-        <UnlockSection {...unlock} running={running} />
+        <UnlockSection {...unlock} running={running} p={p} />
       </div>
     </>
   );
@@ -99,9 +101,8 @@ function useExitIPs() {
   return { ips, loading, load };
 }
 
-function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs> & { running: boolean }) {
+function IPSection({ ips, loading, load, running, p }: ReturnType<typeof useExitIPs> & { running: boolean; p: ReturnType<typeof usePrivate> }) {
   const t = useT();
-  const p = usePrivate();
   const home = ips.domestic?.info?.ip;
   const abroad = ips.global?.info?.ip;
   return (
@@ -136,15 +137,10 @@ function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs
               ) : (
                 <div className="reveal reveal-stack">
                   <div className="cty-ip-place">
-                    <span className="cty-flag">{flag(info.countryCode)}</span>
-                    <span className="ellipsis" title={p.tip([info.country, place].filter(Boolean).join(" · "))}>
+                    <Flag code={info.countryCode} masked={!p.shown} />
+                    <span className="ellipsis" style={p.style} title={p.tip([info.country, place].filter(Boolean).join(" · "))}>
                       {info.country || "—"}
-                      {place && (
-                        <span className="muted" style={p.style}>
-                          {" · "}
-                          {place}
-                        </span>
-                      )}
+                      {place && <span className="muted"> · {place}</span>}
                     </span>
                   </div>
                   <dl className="kv">
@@ -390,7 +386,7 @@ function useUnlock() {
   return { items, results, checking, check, busy: checking.size > 0, exit };
 }
 
-function UnlockSection({ items, results, checking, check, busy, running, exit }: ReturnType<typeof useUnlock> & { running: boolean }) {
+function UnlockSection({ items, results, checking, check, busy, running, exit, p }: ReturnType<typeof useUnlock> & { running: boolean; p: ReturnType<typeof usePrivate> }) {
   const t = useT();
   const lang = useApp((s) => s.lang);
   return (
@@ -418,7 +414,8 @@ function UnlockSection({ items, results, checking, check, busy, running, exit }:
                 </Badge>
                 {r?.region && (
                   <span style={{ fontSize: 13 }}>
-                    {r.region.length === 2 ? flag(r.region) : ""} {r.region}
+                    {r.region.length === 2 && <Flag code={r.region} masked={!p.shown} className="flag-sm" />}{" "}
+                    <span style={p.style}>{r.region}</span>
                   </span>
                 )}
               </div>

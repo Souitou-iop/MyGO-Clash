@@ -973,9 +973,26 @@
   font-weight: 650;
 }
 
-.cty-flag {
-  font-size: 20px;
-  line-height: 1;
+/* Country flags are images from the bundled set, never the system's emoji. */
+.flag {
+  display: inline-block;
+  width: 21px;
+  height: 15px;
+  border-radius: 3px;
+  object-fit: cover;
+  flex: none;
+  outline: 1px solid color-mix(in oklab, var(--text) 14%, transparent);
+}
+
+.flag-sm {
+  width: 16px;
+  height: 11px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+.flag-mask {
+  background: var(--surface-3);
 }
 
 .cty-error {
