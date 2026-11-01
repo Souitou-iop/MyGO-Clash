@@ -23,6 +23,12 @@
 > [!NOTE]
 > MyGO-Clash is in beta. The interface and the main flows have been tested on macOS (Apple Silicon). TUN and the system service, switching the system proxy, signing in to Tailscale, WebDAV sync, and running on Windows and Linux have not been fully verified in real use yet. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
 
+<p align="center">
+  <img src="docs/showcase/hero-dark-en.gif" width="900" alt="MyGO-Clash quick panel: open it from the menu bar, turn on the system proxy, switch to HK 01 and test its latency">
+</p>
+
+<p align="center"><sub><a href="docs/showcase/hero-light-en.gif">Light theme</a></sub></p>
+
 ## Features
 
 ### Proxy

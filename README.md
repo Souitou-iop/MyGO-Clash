@@ -23,6 +23,12 @@
 > [!NOTE]
 > MyGO-Clash 目前处于 beta 阶段。界面和主要流程已在 macOS（Apple Silicon）上测试；TUN 与系统服务、系统代理切换、Tailscale 登录、WebDAV 同步，以及在 Windows 和 Linux 上的运行，还没有在真实环境中充分验证。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
 
+<p align="center">
+  <img src="docs/showcase/hero-dark.gif" width="900" alt="MyGO-Clash 快捷面板：从菜单栏打开，开启系统代理、切换到 HK 01 并完成测速">
+</p>
+
+<p align="center"><sub><a href="docs/showcase/hero-light.gif">浅色主题</a></sub></p>
+
 ## 功能
 
 ### 代理

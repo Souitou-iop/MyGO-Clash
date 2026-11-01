@@ -7,7 +7,7 @@ export default defineConfig({
     // The app loads this address during `mygo dev` (devUrl in mygo.json).
     port: 5173,
     strictPort: true,
-    watch: { ignored: ["**/.mygo/**", "**/build/**", "**/internal/**"] },
+    watch: { ignored: ["**/.mygo/**", "**/build/**", "**/internal/**", "**/tools/showcase/**"] },
   },
   build: {
     target: "es2022",

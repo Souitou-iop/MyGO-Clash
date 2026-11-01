@@ -1,6 +1,8 @@
 node_modules/
 /dist/
 /build/
+/tools/showcase/dist/
+/tools/showcase/out/
 /.mygo/
 mygo_windows_*.syso
 .DS_Store

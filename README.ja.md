@@ -23,6 +23,12 @@
 > [!NOTE]
 > MyGO-Clash は現在ベータ段階です。画面と主な操作は macOS（Apple シリコン）で確認済みですが、TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Windows と Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
 
+<p align="center">
+  <img src="docs/showcase/hero-dark-en.gif" width="900" alt="MyGO-Clash のクイックパネル：メニューバーから開き、システムプロキシを有効にして HK 01 に切り替え、レイテンシーを測定します">
+</p>
+
+<p align="center"><sub><a href="docs/showcase/hero-light-en.gif">ライトテーマ</a></sub></p>
+
 ## 機能
 
 ### プロキシ
