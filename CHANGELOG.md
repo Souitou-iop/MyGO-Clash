@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.23-beta
+
+出口 IP 的隐私遮罩现在覆盖国旗、国家与地区、运营商、ASN、数据中心与流媒体检测的节点地区，国旗改为内置图集、在 Windows 与 Linux 上正常显示；同时修复设置里「布局」与「字体与自定义 CSS」的「编辑」按钮点击无效。/ The privacy mask of the exit IP now covers the flag, the country and region, the carrier, the ASN, the data center and the region of the streaming results, and the flags come from a bundled set that renders on Windows and Linux alike; it also fixes the Edit buttons of the layout and the appearance rows doing nothing.
+
+### 🔧 改进 / Improvements
+
+- 国旗不再依赖系统的表情字体：Windows 没有国旗字形，只会显示「JP」这样的字母；Linux 也要看装没装带国旗的表情字体。现在旗帜是应用内置的 SVG 图集（271 面），三端显示完全一致 / The flags no longer rely on the system's emoji font: on Windows it has no flag glyphs and only shows letters such as "JP", and Linux renders them only when its emoji font carries them. The flags now come from a bundled set of 271 SVGs that renders the same on every platform
+
+### 🐛 修复 / Fixes
+
+- 出口 IP 的隐私遮罩此前只模糊 IP 一行，国家与城市、运营商、ASN、数据中心以及流媒体检测的节点地区仍是明文，分享截图照样暴露行踪；现在眼睛关闭时全部打码，遮罩下的国旗显示为中性色块（模糊仍能认出国旗的颜色），悬停提示与复制也一并禁用。首页的出口 IP 卡与连通性页行为一致 / The privacy mask of the exit IP used to blur the address alone, leaving the country and city, the carrier, the ASN, the data center and the region of the streaming results in the clear, so a shared screenshot still told where you were; with the eye closed they are all masked now, a masked flag is a neutral block, for a blurred one would still tell its colors, and tooltips and copying are kept out while masked. The home card and the connectivity page behave alike
+- 修复「布局」与「字体与自定义 CSS」两行的「编辑」按钮点击无效的问题：可点击行的控件区域会拦截点击向行的冒泡，而这两个按钮没有自己的处理，只有点按钮外的行区域才能打开对话框 / Fixed the Edit buttons of the layout and the appearance rows doing nothing: the control area of a clickable row keeps the click from reaching the row, and the two buttons had no handler of their own, so only the rest of the row opened the dialog
+
 ## 0.2.22-beta
 
 流量统计的时间范围新增「全部」，应用、网站与节点可以按名称筛选；同时修复自定义字体反复叠加、清空后不恢复默认的问题，启动时会清掉开发运行留下的空目录。/ The statistics page's time range gains "All", and its apps, sites and nodes can be filtered by name; it also fixes the custom font piling up and never going back to the default, and removes the empty directories a development run leaves behind.
