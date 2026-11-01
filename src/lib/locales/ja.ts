@@ -938,7 +938,7 @@ const ja: Record<Key, string> = {
   "adv.about": "このアプリについて",
   "adv.more": "ライセンスとアプリ",
   "about.motto": "「迷子でもいい、前へ進め。」――バンドの合言葉",
-  "about.homage": "名前、配色、コンパスとピックは『BanG Dream!』の MyGO!!!!! へのオマージュです。MyGO-Clash は非公式プロジェクトであり、ブシロードおよびバンド公式とは関係ありません。",
+  "about.homage": "名前、配色、コンパスは『BanG Dream!』の MyGO!!!!! へのオマージュです。MyGO-Clash は非公式プロジェクトであり、ブシロードおよびバンド公式とは関係ありません。",
   "adv.license": "ライセンス",
   "adv.licenseDesc": "GPL-3.0。mihomo と MyGo で作られています。",
   "adv.restartApp": "アプリ",

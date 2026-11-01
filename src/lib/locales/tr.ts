@@ -938,7 +938,7 @@ const tr: Record<Key, string> = {
   "adv.about": "Hakkında",
   "adv.more": "Lisans ve uygulama",
   "about.motto": "“Kaybolmak sorun değil, ilerlemeye devam et.” Grubun sloganı.",
-  "about.homage": "Ad, renkler, pusula ve pena BanG Dream!'in MyGO!!!!! grubuna saygıdır. MyGO-Clash resmî olmayan bir projedir; Bushiroad veya grupla bağlantısı yoktur.",
+  "about.homage": "Ad, renkler ve pusula BanG Dream!'in MyGO!!!!! grubuna saygıdır. MyGO-Clash resmî olmayan bir projedir; Bushiroad veya grupla bağlantısı yoktur.",
   "adv.license": "Lisans",
   "adv.licenseDesc": "GPL-3.0. mihomo ve MyGo ile yapıldı.",
   "adv.restartApp": "Uygulama",

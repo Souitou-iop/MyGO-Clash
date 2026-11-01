@@ -938,7 +938,7 @@ const fa: Record<Key, string> = {
   "adv.about": "درباره",
   "adv.more": "مجوز و برنامه",
   "about.motto": "«گم شدن اشکالی ندارد؛ به راهت ادامه بده.» شعار گروه.",
-  "about.homage": "نام، رنگ‌ها، قطب‌نما و مضراب ادای احترام به \u2066MyGO!!!!!\u2069 از \u2066BanG Dream!\u2069 هستند. MyGO-Clash پروژه‌ای غیررسمی است و با Bushiroad یا گروه ارتباطی ندارد.",
+  "about.homage": "نام، رنگ‌ها و قطب‌نما ادای احترام به \u2066MyGO!!!!!\u2069 از \u2066BanG Dream!\u2069 هستند. MyGO-Clash پروژه‌ای غیررسمی است و با Bushiroad یا گروه ارتباطی ندارد.",
   "adv.license": "مجوز",
   "adv.licenseDesc": "GPL-3.0. ساخته‌شده با mihomo و MyGo.",
   "adv.restartApp": "برنامه",

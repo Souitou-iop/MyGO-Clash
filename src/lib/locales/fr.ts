@@ -938,7 +938,7 @@ const fr: Record<Key, string> = {
   "adv.about": "À propos",
   "adv.more": "Licence et app",
   "about.motto": "« Ce n’est pas grave de se perdre, continue d’avancer. » La devise du groupe.",
-  "about.homage": "Le nom, les couleurs, la boussole et le médiator rendent hommage à MyGO!!!!! de BanG Dream!. MyGO-Clash est un projet non officiel, sans lien avec Bushiroad ni avec le groupe.",
+  "about.homage": "Le nom, les couleurs et la boussole rendent hommage à MyGO!!!!! de BanG Dream!. MyGO-Clash est un projet non officiel, sans lien avec Bushiroad ni avec le groupe.",
   "adv.license": "Licence",
   "adv.licenseDesc": "GPL-3.0. Conçu avec mihomo et MyGo.",
   "adv.restartApp": "App",

@@ -21,7 +21,7 @@
 </p>
 
 > [!NOTE]
-> MyGO-Clash は現在ベータ段階です。画面と主な操作は macOS（Apple シリコン）で確認済みですが、TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Windows と Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
+> MyGO-Clash は現在ベータ段階です。画面と主な操作は macOS（Apple シリコン）と Windows で使用しています。TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
 
 <p align="center">
   <img src="docs/showcase/hero-dark-en.gif" width="900" alt="MyGO-Clash のクイックパネル：メニューバーから開き、システムプロキシを有効にして HK 01 に切り替え、レイテンシーを測定します">
@@ -159,10 +159,12 @@ tools/linuxpkg       rpm・Arch パッケージ・AppImage を作成（独立し
 - [mihomo](https://github.com/MetaCubeX/mihomo)：プロキシコア
 - [MyGo](https://github.com/egoist/mygo)：クロスプラットフォームのデスクトップアプリフレームワーク
 - [Tailscale](https://tailscale.com)：ネットワーク機能
+- [MyIP](https://github.com/jason5ng32/MyIP)：接続性ページのレイアウトとサイトプリセット
+- [ipapi.is](https://ipapi.is) と [proxycheck.io](https://proxycheck.io)：IP 品質データ
 
 ## 注意事項
 
-- MyGO-Clash は非公式のファンプロジェクトです。名前、配色、コンパスとピックのモチーフは『BanG Dream!』のバンド MyGO!!!!! へのオマージュであり、ブシロードおよびバンド公式とは一切関係ありません。
+- MyGO-Clash は非公式のファンプロジェクトです。名前、配色、コンパスのモチーフは『BanG Dream!』のバンド MyGO!!!!! へのオマージュであり、ブシロードおよびバンド公式とは一切関係ありません。
 - 本ソフトウェアはネットワーク技術の学習・研究を目的としています。お住まいの地域の法令を守ってご利用ください。
 
 ## ライセンス

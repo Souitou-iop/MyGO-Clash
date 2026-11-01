@@ -938,7 +938,7 @@ const zhTW: Record<Key, string> = {
   "adv.about": "關於",
   "adv.more": "授權與應用程式",
   "about.motto": "「迷路也沒關係，向前走。」——樂團的口號",
-  "about.homage": "名稱、配色、羅盤與彈片致敬《BanG Dream!》中的 MyGO!!!!!。MyGO-Clash 為非官方專案，與 Bushiroad 及樂團官方無關。",
+  "about.homage": "名稱、配色與羅盤致敬《BanG Dream!》中的 MyGO!!!!!。MyGO-Clash 為非官方專案，與 Bushiroad 及樂團官方無關。",
   "adv.license": "授權條款",
   "adv.licenseDesc": "GPL-3.0。以 mihomo 與 MyGo 打造。",
   "adv.restartApp": "應用程式",

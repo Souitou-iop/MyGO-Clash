@@ -21,7 +21,7 @@
 </p>
 
 > [!NOTE]
-> MyGO-Clash 目前处于 beta 阶段。界面和主要流程已在 macOS（Apple Silicon）上测试；TUN 与系统服务、系统代理切换、Tailscale 登录、WebDAV 同步，以及在 Windows 和 Linux 上的运行，还没有在真实环境中充分验证。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
+> MyGO-Clash 目前处于 beta 阶段。界面和主要流程已在 macOS（Apple Silicon）和 Windows 上使用；TUN 与系统服务、系统代理切换、Tailscale 登录、WebDAV 同步，以及 Linux 上的运行，还没有在真实环境中充分验证。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
 
 <p align="center">
   <img src="docs/showcase/hero-dark.gif" width="900" alt="MyGO-Clash 快捷面板：从菜单栏打开，开启系统代理、切换到 HK 01 并完成测速">
@@ -159,10 +159,12 @@ tools/linuxpkg       生成 rpm、Arch 包和 AppImage（独立的 Go 模块）
 - [mihomo](https://github.com/MetaCubeX/mihomo)：代理内核
 - [MyGo](https://github.com/egoist/mygo)：跨平台桌面应用框架
 - [Tailscale](https://tailscale.com)：组网能力
+- [MyIP](https://github.com/jason5ng32/MyIP)：连通性页的布局与站点预设
+- [ipapi.is](https://ipapi.is) 与 [proxycheck.io](https://proxycheck.io)：IP 质量数据
 
 ## 声明
 
-- MyGO-Clash 是非官方的同人致敬项目。名称、配色以及罗盘与拨片图案致敬《BanG Dream!》中的乐队 MyGO!!!!!，与 Bushiroad 及乐队官方没有任何关系。
+- MyGO-Clash 是非官方的同人致敬项目。名称、配色以及罗盘图案致敬《BanG Dream!》中的乐队 MyGO!!!!!，与 Bushiroad 及乐队官方没有任何关系。
 - 本软件仅供学习和研究网络技术使用，请遵守所在地区的法律法规。
 
 ## 许可证

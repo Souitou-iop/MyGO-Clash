@@ -938,7 +938,7 @@ const ko: Record<Key, string> = {
   "adv.about": "정보",
   "adv.more": "라이선스 및 앱",
   "about.motto": "“길을 잃어도 괜찮아, 앞으로 나아가.” 밴드의 구호.",
-  "about.homage": "이름, 색상, 나침반과 피크는 《BanG Dream!》의 MyGO!!!!!에 바치는 오마주입니다. MyGO-Clash는 비공식 프로젝트이며 Bushiroad 및 밴드와 관련이 없습니다.",
+  "about.homage": "이름, 색상과 나침반은 《BanG Dream!》의 MyGO!!!!!에 바치는 오마주입니다. MyGO-Clash는 비공식 프로젝트이며 Bushiroad 및 밴드와 관련이 없습니다.",
   "adv.license": "라이선스",
   "adv.licenseDesc": "GPL-3.0. mihomo와 MyGo로 만들었습니다.",
   "adv.restartApp": "앱",

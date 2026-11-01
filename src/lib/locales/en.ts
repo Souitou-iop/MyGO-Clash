@@ -954,7 +954,7 @@ export const en = {
   "adv.about": "About",
   "adv.more": "License & app",
   "about.motto": "“It's fine to be lost — keep going.” The band's motto.",
-  "about.homage": "The name, the colors, the compass and the pick pay homage to MyGO!!!!! of BanG Dream!. MyGO-Clash is an unofficial project, not affiliated with Bushiroad or the band.",
+  "about.homage": "The name, the colors and the compass pay homage to MyGO!!!!! of BanG Dream!. MyGO-Clash is an unofficial project, not affiliated with Bushiroad or the band.",
   "adv.license": "License",
   "adv.licenseDesc": "GPL-3.0. Built on mihomo and MyGo.",
   "adv.restartApp": "App",

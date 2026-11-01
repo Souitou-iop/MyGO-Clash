@@ -938,7 +938,7 @@ const zhCN: Record<Key, string> = {
   "adv.about": "关于",
   "adv.more": "许可与应用",
   "about.motto": "“迷路也没关系，向前进。”——乐队的口号",
-  "about.homage": "名称、配色、罗盘与拨片致敬《BanG Dream!》中的 MyGO!!!!!。MyGO-Clash 为非官方项目，与 Bushiroad 及乐队官方无关。",
+  "about.homage": "名称、配色以及罗盘图案致敬《BanG Dream!》中的 MyGO!!!!!。MyGO-Clash 为非官方项目，与 Bushiroad 及乐队官方无关。",
   "adv.license": "许可证",
   "adv.licenseDesc": "GPL-3.0。基于 mihomo 与 MyGo 构建。",
   "adv.restartApp": "应用",

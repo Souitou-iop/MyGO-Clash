@@ -938,7 +938,7 @@ const ar: Record<Key, string> = {
   "adv.about": "حول",
   "adv.more": "الترخيص والتطبيق",
   "about.motto": "«لا بأس أن تضلّ الطريق، واصل التقدّم». شعار الفرقة.",
-  "about.homage": "الاسم والألوان والبوصلة والريشة تحية لفرقة \u2066MyGO!!!!!\u2069 من \u2066BanG Dream!\u2069. MyGO-Clash مشروع غير رسمي، ولا صلة له بـ Bushiroad أو بالفرقة.",
+  "about.homage": "الاسم والألوان والبوصلة تحية لفرقة \u2066MyGO!!!!!\u2069 من \u2066BanG Dream!\u2069. MyGO-Clash مشروع غير رسمي، ولا صلة له بـ Bushiroad أو بالفرقة.",
   "adv.license": "الترخيص",
   "adv.licenseDesc": "GPL-3.0. مبني على mihomo وMyGo.",
   "adv.restartApp": "التطبيق",

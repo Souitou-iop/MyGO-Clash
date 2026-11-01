@@ -938,7 +938,7 @@ const es: Record<Key, string> = {
   "adv.about": "Acerca de",
   "adv.more": "Licencia y app",
   "about.motto": "«No pasa nada si te pierdes: sigue adelante». El lema de la banda.",
-  "about.homage": "El nombre, los colores, la brújula y la púa rinden homenaje a MyGO!!!!! de BanG Dream!. MyGO-Clash es un proyecto no oficial, sin relación con Bushiroad ni con la banda.",
+  "about.homage": "El nombre, los colores y la brújula rinden homenaje a MyGO!!!!! de BanG Dream!. MyGO-Clash es un proyecto no oficial, sin relación con Bushiroad ni con la banda.",
   "adv.license": "Licencia",
   "adv.licenseDesc": "GPL-3.0. Hecho con mihomo y MyGo.",
   "adv.restartApp": "App",

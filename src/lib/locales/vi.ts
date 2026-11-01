@@ -938,7 +938,7 @@ const vi: Record<Key, string> = {
   "adv.about": "Giới thiệu",
   "adv.more": "Giấy phép & ứng dụng",
   "about.motto": "“Lạc đường cũng không sao — cứ bước tiếp.” Khẩu hiệu của ban nhạc.",
-  "about.homage": "Tên gọi, màu sắc, la bàn và miếng gảy là lời tri ân MyGO!!!!! của BanG Dream!. MyGO-Clash là dự án không chính thức, không liên quan đến Bushiroad hay ban nhạc.",
+  "about.homage": "Tên gọi, màu sắc và la bàn là lời tri ân MyGO!!!!! của BanG Dream!. MyGO-Clash là dự án không chính thức, không liên quan đến Bushiroad hay ban nhạc.",
   "adv.license": "Giấy phép",
   "adv.licenseDesc": "GPL-3.0. Xây dựng trên mihomo và MyGo.",
   "adv.restartApp": "Ứng dụng",

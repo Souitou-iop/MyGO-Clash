@@ -938,7 +938,7 @@ const id: Record<Key, string> = {
   "adv.about": "Tentang",
   "adv.more": "Lisensi & aplikasi",
   "about.motto": "“Tak apa tersesat — teruslah melangkah.” Moto band ini.",
-  "about.homage": "Nama, warna, kompas, dan pick merupakan penghormatan untuk MyGO!!!!! dari BanG Dream!. MyGO-Clash adalah proyek tidak resmi, tidak berafiliasi dengan Bushiroad maupun band tersebut.",
+  "about.homage": "Nama, warna, dan kompas merupakan penghormatan untuk MyGO!!!!! dari BanG Dream!. MyGO-Clash adalah proyek tidak resmi, tidak berafiliasi dengan Bushiroad maupun band tersebut.",
   "adv.license": "Lisensi",
   "adv.licenseDesc": "GPL-3.0. Dibuat dengan mihomo dan MyGo.",
   "adv.restartApp": "Aplikasi",

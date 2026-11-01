@@ -938,7 +938,7 @@ const ptBR: Record<Key, string> = {
   "adv.about": "Sobre",
   "adv.more": "Licença e app",
   "about.motto": "“Tudo bem se perder — siga em frente.” O lema da banda.",
-  "about.homage": "O nome, as cores, a bússola e a palheta homenageiam MyGO!!!!! de BanG Dream!. O MyGO-Clash é um projeto não oficial, sem vínculo com a Bushiroad nem com a banda.",
+  "about.homage": "O nome, as cores e a bússola homenageiam MyGO!!!!! de BanG Dream!. O MyGO-Clash é um projeto não oficial, sem vínculo com a Bushiroad nem com a banda.",
   "adv.license": "Licença",
   "adv.licenseDesc": "GPL-3.0. Feito com mihomo e MyGo.",
   "adv.restartApp": "App",

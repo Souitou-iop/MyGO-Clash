@@ -938,7 +938,7 @@ const ru: Record<Key, string> = {
   "adv.about": "О программе",
   "adv.more": "Лицензия и приложение",
   "about.motto": "«Заблудиться не страшно — иди вперёд». Девиз группы.",
-  "about.homage": "Название, цвета, компас и медиатор — дань уважения MyGO!!!!! из BanG Dream!. MyGO-Clash — неофициальный проект, не связанный с Bushiroad и группой.",
+  "about.homage": "Название, цвета и компас — дань уважения MyGO!!!!! из BanG Dream!. MyGO-Clash — неофициальный проект, не связанный с Bushiroad и группой.",
   "adv.license": "Лицензия",
   "adv.licenseDesc": "GPL-3.0. Создано на mihomo и MyGo.",
   "adv.restartApp": "Приложение",

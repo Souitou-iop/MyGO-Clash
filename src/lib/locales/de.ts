@@ -938,7 +938,7 @@ const de: Record<Key, string> = {
   "adv.about": "Über",
   "adv.more": "Lizenz & App",
   "about.motto": "„Es ist okay, sich zu verlaufen – geh weiter.“ Das Motto der Band.",
-  "about.homage": "Name, Farben, Kompass und Plektrum sind eine Hommage an MyGO!!!!! aus BanG Dream!. MyGO-Clash ist ein inoffizielles Projekt und steht in keiner Verbindung zu Bushiroad oder der Band.",
+  "about.homage": "Name, Farben und Kompass sind eine Hommage an MyGO!!!!! aus BanG Dream!. MyGO-Clash ist ein inoffizielles Projekt und steht in keiner Verbindung zu Bushiroad oder der Band.",
   "adv.license": "Lizenz",
   "adv.licenseDesc": "GPL-3.0. Gebaut mit mihomo und MyGo.",
   "adv.restartApp": "App",
