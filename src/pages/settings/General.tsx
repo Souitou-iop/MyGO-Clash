@@ -251,10 +251,14 @@ export default function General() {
           <Select value={s.startPage} onChange={(v) => patch({ startPage: v })} options={PAGES.map((p) => ({ value: p, label: t(`nav.${p}`) }))} width={150} />
         </Row>
         <Row label={t("settings.layout")} desc={t("settings.layoutDesc")} icon={<LayoutPanelLeft size={16} />} onClick={() => setDialog("layout")}>
-          <Button size="sm">{t("common.edit")}</Button>
+          <Button size="sm" onClick={() => setDialog("layout")}>
+            {t("common.edit")}
+          </Button>
         </Row>
         <Row label={t("settings.appearance")} desc={t("settings.appearanceDesc")} icon={<Paintbrush size={16} />} onClick={() => setDialog("appearance")}>
-          <Button size="sm">{t("common.edit")}</Button>
+          <Button size="sm" onClick={() => setDialog("appearance")}>
+            {t("common.edit")}
+          </Button>
         </Row>
       </Section>
 
