@@ -6,6 +6,7 @@ import { IPQualityRows } from "../components/IPQuality";
 import { Logo } from "../components/Logo";
 import { PageHeader } from "../components/Page";
 import { delayClass, delayText, flag, relative } from "../lib/format";
+import { usePrivate } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { toastError, useApp } from "../lib/store";
 import { type IPInfo, Proxies, type ProxiesView, type Site, type SiteResult, Tools, type Unlock } from "../mygo";
@@ -100,14 +101,14 @@ function useExitIPs() {
 
 function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs> & { running: boolean }) {
   const t = useT();
-  const [shown, setShown] = useState(false);
+  const p = usePrivate();
   const home = ips.domestic?.info?.ip;
   const abroad = ips.global?.info?.ip;
   return (
     <section className="cty-section">
       <Heading title={t("connectivity.ip")} hint={t("connectivity.ipHint")}>
         {home && abroad && <Badge tone={home !== abroad ? "success" : undefined}>{t(home !== abroad ? "connectivity.split" : "connectivity.notSplit")}</Badge>}
-        <Button size="sm" variant="ghost" icon={shown ? <EyeOff size={14} /> : <Eye size={14} />} onClick={() => setShown(!shown)} tip={shown ? t("common.hide") : t("common.show")} />
+        <Button size="sm" variant="ghost" icon={p.shown ? <EyeOff size={14} /> : <Eye size={14} />} onClick={p.toggle} tip={p.shown ? t("common.hide") : t("common.show")} />
         <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} loading={loading} disabled={!running} onClick={load} tip={t("common.refresh")} />
       </Heading>
       <div className="cty-grid cty-ips" ref={reflow}>
@@ -136,25 +137,32 @@ function IPSection({ ips, loading, load, running }: ReturnType<typeof useExitIPs
                 <div className="reveal reveal-stack">
                   <div className="cty-ip-place">
                     <span className="cty-flag">{flag(info.countryCode)}</span>
-                    <span className="ellipsis" title={[info.country, place].filter(Boolean).join(" · ")}>
+                    <span className="ellipsis" title={p.tip([info.country, place].filter(Boolean).join(" · "))}>
                       {info.country || "—"}
-                      {place && <span className="muted"> · {place}</span>}
+                      {place && (
+                        <span className="muted" style={p.style}>
+                          {" · "}
+                          {place}
+                        </span>
+                      )}
                     </span>
                   </div>
                   <dl className="kv">
                     <dt>IP</dt>
-                    <dd className="mono selectable" style={{ filter: shown ? "none" : "blur(5px)", transition: "filter .2s" }}>
+                    <dd className={p.shown ? "mono selectable" : "mono"} style={p.style}>
                       {info.ip}
                     </dd>
                     <dt>{t("home.isp")}</dt>
-                    <dd title={info.isp}>{info.isp || "—"}</dd>
+                    <dd style={p.style} title={p.tip(info.isp)}>
+                      {info.isp || "—"}
+                    </dd>
                     <dt>ASN</dt>
-                    <dd>{info.asn ? `AS${info.asn}` : "—"}</dd>
-                    <IPQualityRows ip={info.ip} />
+                    <dd style={p.style}>{info.asn ? `AS${info.asn}` : "—"}</dd>
+                    <IPQualityRows ip={info.ip} masked={!p.shown} />
                     {info.colo && (
                       <>
                         <dt>{t("connectivity.colo")}</dt>
-                        <dd>{info.colo}</dd>
+                        <dd style={p.style}>{info.colo}</dd>
                       </>
                     )}
                   </dl>

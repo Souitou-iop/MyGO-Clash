@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { blurHidden, blurShown } from "../lib/hooks";
 import { type Key, useT } from "../lib/i18n";
 import { type IPQuality, Tools } from "../mygo";
 import { Badge } from "../ui";
@@ -47,7 +48,7 @@ export const riskTone = (risk: number) => (risk < 25 ? "success" : risk < 60 ? "
  * line an address is and how risky it looks. They appear after the lookup
  * and stay away when it fails.
  */
-export function IPQualityRows({ ip }: { ip: string | undefined }) {
+export function IPQualityRows({ ip, masked }: { ip: string | undefined; masked?: boolean }) {
   const t = useT();
   const q = useIPQuality(ip);
   if (!q) return null;
@@ -60,7 +61,7 @@ export function IPQualityRows({ ip }: { ip: string | undefined }) {
   return (
     <>
       <dt>{t("ipq.quality")}</dt>
-      <dd className="ipq" title={tip}>
+      <dd className="ipq" style={masked ? blurHidden : blurShown} title={masked ? undefined : tip}>
         {label && <Badge tone={scored ? riskTone(q.risk) : undefined}>{label}</Badge>}
         {flags.map((f) => (
           <Badge key={String(f)} tone="warning">

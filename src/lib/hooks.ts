@@ -1,6 +1,25 @@
 import { Channel } from "mygo-runtime";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "./store";
+
+/** The blur that keeps a private value out of a screenshot. */
+export const blurHidden: CSSProperties = { filter: "blur(5px)", transition: "filter .2s" };
+export const blurShown: CSSProperties = { filter: "none", transition: "filter .2s" };
+
+/**
+ * usePrivate holds the eye of an IP card: its values stay masked until
+ * shown. style blurs what the eye keeps out; tip keeps a tooltip from
+ * telling, in plain text, what the blur hides.
+ */
+export function usePrivate() {
+  const [shown, setShown] = useState(false);
+  return {
+    shown,
+    toggle: () => setShown((s) => !s),
+    style: shown ? blurShown : blurHidden,
+    tip: (text: string | undefined) => (shown ? text : undefined),
+  };
+}
 
 /** useAsync loads data, again when deps change, and offers a reload. */
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {

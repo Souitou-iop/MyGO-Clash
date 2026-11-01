@@ -31,7 +31,7 @@ import { PageHeader } from "../components/Page";
 import { TrafficGraph } from "../components/TrafficGraph";
 import { bytes, dateOnly, duration, flag, groupType, percent, rate, relative } from "../lib/format";
 import { density, pack } from "../lib/homeLayout";
-import { useAsync, useNow, useWidth } from "../lib/hooks";
+import { useAsync, useNow, usePrivate, useWidth } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { enableTunWithService } from "../lib/service";
 import { type Page, patchSettings, run, toastError, useApp, useTraffic } from "../lib/store";
@@ -526,7 +526,7 @@ function IPCard() {
   const [info, setInfo] = useState<IPInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [shown, setShown] = useState(false);
+  const p = usePrivate();
   const runtime = useApp((s) => s.runtime);
   const load = async () => {
     setLoading(true);
@@ -548,7 +548,7 @@ function IPCard() {
       icon={<MapPin size={15} />}
       actions={
         <>
-          <Button size="sm" variant="ghost" icon={shown ? <EyeOff size={14} /> : <Eye size={14} />} onClick={() => setShown(!shown)} tip={shown ? t("common.hide") : t("common.show")} />
+          <Button size="sm" variant="ghost" icon={p.shown ? <EyeOff size={14} /> : <Eye size={14} />} onClick={p.toggle} tip={p.shown ? t("common.hide") : t("common.show")} />
           <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} loading={loading} onClick={load} tip={t("common.refresh")} />
         </>
       }
@@ -562,17 +562,28 @@ function IPCard() {
         </>
       ) : (
         <div className="reveal reveal-stack">
-          <Lead title={`${flag(info.countryCode)}  ${info.country || "—"}`} sub={place || info.timezone || "—"} />
+          <Lead
+            title={`${flag(info.countryCode)}  ${info.country || "—"}`}
+            sub={
+              p.shown ? (
+                place || info.timezone || "—"
+              ) : (
+                <span style={p.style}>{place || info.timezone || "—"}</span>
+              )
+            }
+          />
           <dl className="kv">
             <dt>IP</dt>
-            <dd className="mono selectable" style={{ filter: shown ? "none" : "blur(5px)", transition: "filter .2s" }}>
+            <dd className={p.shown ? "mono selectable" : "mono"} style={p.style}>
               {info.ip}
             </dd>
             <dt>{t("home.isp")}</dt>
-            <dd title={info.isp}>{info.isp || "—"}</dd>
+            <dd style={p.style} title={p.tip(info.isp)}>
+              {info.isp || "—"}
+            </dd>
             <dt>ASN</dt>
-            <dd>{info.asn ? `AS${info.asn}` : "—"}</dd>
-            <IPQualityRows ip={info.ip} />
+            <dd style={p.style}>{info.asn ? `AS${info.asn}` : "—"}</dd>
+            <IPQualityRows ip={info.ip} masked={!p.shown} />
           </dl>
         </div>
       )}
