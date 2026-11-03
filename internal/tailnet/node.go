@@ -156,11 +156,9 @@ func (n *Node) startLocked(authKey string) error {
 			// on the physical interface.
 			return dialer.ListenPacket(ctx, network, address, netip.AddrPort{})
 		},
-		LookupHook: func(ctx context.Context, host string) ([]netip.Addr, error) {
-			return resolver.LookupIPWithResolver(ctx, host, resolver.ProxyServerHostResolver)
-		},
-		UserLogf: func(format string, args ...any) { log.Infoln("[Tailscale] %s", fmt.Sprintf(format, args...)) },
-		Logf:     func(format string, args ...any) { log.Debugln("[Tailscale] %s", fmt.Sprintf(format, args...)) },
+		LookupHook: lookupRealIP,
+		UserLogf:   func(format string, args ...any) { log.Infoln("[Tailscale] %s", fmt.Sprintf(format, args...)) },
+		Logf:       func(format string, args ...any) { log.Debugln("[Tailscale] %s", fmt.Sprintf(format, args...)) },
 	}
 	if err := srv.Start(); err != nil {
 		return fmt.Errorf("start tailscale: %w", err)
@@ -382,10 +380,63 @@ func (n *Node) refresh(ctx context.Context, gen uint64, lc *local.Client) {
 // named by ControlVia, or out of the physical interface, never back into
 // the core's TUN.
 func (n *Node) dialOwn(ctx context.Context, network, address string) (net.Conn, error) {
-	if via := n.via.Load().(string); via != "" {
+	via := n.via.Load().(string)
+	// A fake address of the core's DNS means something only inside its
+	// tunnel: give the proxy the name back, so that it dials the real host.
+	if name, port, ok := realName(address); ok {
+		address = net.JoinHostPort(name, port)
+	}
+	if via != "" {
 		return proxydialer.NewByName(via, tunnel.Tunnel).DialContext(ctx, network, address)
 	}
 	return dialer.DialContext(ctx, network, address)
+}
+
+// realName turns an address that holds a fake address of the core's DNS
+// back into the name it stood for.
+func realName(address string) (name, port string, ok bool) {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return "", "", false
+	}
+	ip, err := netip.ParseAddr(host)
+	if err != nil || !resolver.IsFakeIP(ip) {
+		return "", "", false
+	}
+	name, ok = resolver.FindHostByIP(ip)
+	return name, port, ok && name != ""
+}
+
+// lookupRealIP resolves a name for the node's own connections. Under a
+// profile whose DNS runs in fake-ip mode, the core's resolver answers with
+// fake addresses that mean something only inside its tunnel; the node dials
+// outside it, so such an answer reaches no host and left the login timing
+// out. Fake answers are dropped, and the system's resolver, which never
+// invents addresses, answers when nothing real is left.
+func lookupRealIP(ctx context.Context, host string) ([]netip.Addr, error) {
+	ips, err := resolver.LookupIPWithResolver(ctx, host, resolver.ProxyServerHostResolver)
+	kept := realIPs(ips)
+	if sys, serr := resolver.LookupIPWithResolver(ctx, host, resolver.SystemResolver); serr == nil {
+		kept = append(kept, realIPs(sys)...)
+	}
+	if len(kept) > 0 {
+		return kept, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return nil, fmt.Errorf("no usable address for %s: the DNS answered with fake addresses only", host)
+}
+
+// realIPs drops the fake addresses of the core's DNS.
+func realIPs(ips []netip.Addr) []netip.Addr {
+	out := make([]netip.Addr, 0, len(ips))
+	for _, ip := range ips {
+		if !resolver.IsFakeIP(ip) {
+			out = append(out, ip)
+		}
+	}
+	return out
 }
 
 // probeLoop checks, while the node needs to sign in, whether the control

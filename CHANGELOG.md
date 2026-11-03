@@ -2,6 +2,18 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.24-beta
+
+修复订阅的 DNS 使用 fake-ip 时，内置 Tailscale 节点的登录一直超时、连不上控制服务器的问题。/ Fixes the built-in Tailscale node's login timing out and never reaching the control server when the profile's DNS runs in fake-ip mode.
+
+### 🐛 修复 / Fixes
+
+- 修复内置 Tailscale 节点在订阅的 DNS 为 fake-ip 模式时登录一直超时（`fetch control key: context deadline exceeded`）的问题：节点此前的域名解析拿到的是只在内核隧道内有效的映射地址，拿这样的地址直接拨号自然到不了控制服务器；现在节点只取真实的公网地址，没有真实地址时交给系统解析，仍然没有就直接用域名经代理连接 / Fixed the built-in Tailscale node's login timing out (`fetch control key: context deadline exceeded`) when the profile's DNS runs in fake-ip mode: the node's lookups returned mapped addresses that mean something only inside the core's tunnel, and dialing one could never reach the control server; the node now takes only real addresses, falls back to the system's resolver, and otherwise dials the name through the proxy
+
+### 🔧 改进 / Improvements
+
+- 节点自己的域名解析不再可能拿到 fake-ip 映射地址，DERP 中继与登录一样受益；拨号时若仍遇到映射地址，会还原成域名交给代理 / The node's own lookups can no longer receive fake-ip mapped addresses, benefiting the DERP relays as much as the login; a mapped address met while dialing is turned back into its name for the proxy
+
 ## 0.2.23-beta
 
 出口 IP 的隐私遮罩现在覆盖国旗、国家与地区、运营商、ASN、数据中心与流媒体检测的节点地区，国旗改为内置图集、在 Windows 与 Linux 上正常显示；同时修复设置里「布局」与「字体与自定义 CSS」的「编辑」按钮点击无效。/ The privacy mask of the exit IP now covers the flag, the country and region, the carrier, the ASN, the data center and the region of the streaming results, and the flags come from a bundled set that renders on Windows and Linux alike; it also fixes the Edit buttons of the layout and the appearance rows doing nothing.
