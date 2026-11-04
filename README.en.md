@@ -29,6 +29,12 @@
 
 <p align="center"><sub><a href="docs/showcase/hero-light-en.gif">Light theme</a></sub></p>
 
+<p align="center">
+  <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.gif" width="900" alt="MyGO-Clash 30-second promo: turning on the system proxy and switching nodes in the quick panel, the main window's features one by one, and the compass with 「迷子でもいい、前へ進め。」"></a>
+</p>
+
+<p align="center"><sub><a href="docs/showcase/promo.mp4">30-second promo film (MP4, with sound)</a></sub></p>
+
 ## Features
 
 ### Proxy
