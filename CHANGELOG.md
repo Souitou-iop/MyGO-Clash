@@ -2,6 +2,15 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.25-beta
+
+两台设备同时刷新同一订阅后，内容相同的两份不再被当成冲突；只有订阅内容真的不同时才需要你选择。/ Refreshing the same subscription on two devices at once no longer turns into a conflict when both fetched the same content; only contents that really differ ask you to choose.
+
+### 🐛 修复 / Fixes
+
+- 修复两台设备按同一周期刷新同一订阅时，每次同步都提示「在多台设备上都有修改」的问题：抓取时间与流量计数每次下载都会变化，而订阅项此前不参与合并，于是一台各刷新一次就被判成双方都改了，冲突每天重新出现。现在内容相同的两份订阅合并这些元数据，只有内容不同时才请你选择 / Fixed every sync asking that an item changed on multiple devices after two devices refreshed the same subscription: the fetch time and traffic counters change with every download, and profile items did not merge, so one refresh on each device looked like both sides changing, and the conflict came back every day. Versions with the same content now merge that metadata, and only contents that differ ask you to choose
+- 合并订阅时若两份内容不同，按冲突处理，不再以空数据执行合并：那会删掉本地订阅 / A subscription merge whose two contents differ is now a conflict, not a merge made with no data, which deleted the local subscription
+
 ## 0.2.24-beta
 
 修复订阅的 DNS 使用 fake-ip 时，内置 Tailscale 节点的登录一直超时、连不上控制服务器的问题。/ Fixes the built-in Tailscale node's login timing out and never reaching the control server when the profile's DNS runs in fake-ip mode.
