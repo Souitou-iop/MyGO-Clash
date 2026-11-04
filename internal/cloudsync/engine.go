@@ -336,13 +336,20 @@ func (e *Engine) Sync(ctx context.Context) (Report, error) {
 			}
 		}
 		for _, s := range steps {
-			if e.mergeable(s.path) {
-				switch {
-				case s.data != nil:
-					e.State.BaseData[s.path] = s.data
-				case s.local != nil && (s.act == actNone || s.act == actConverge):
-					e.State.BaseData[s.path] = s.local.Data
-				}
+			if !e.mergeable(s.path) {
+				continue
+			}
+			switch {
+			case s.act == actConflict:
+				// A conflict keeps its base until it is resolved.
+			case s.act == actPull && s.data == nil:
+				delete(e.State.BaseData, s.path) // the server deleted it
+			case s.data != nil:
+				e.State.BaseData[s.path] = s.data // merged, pulled or pushed data
+			case s.local != nil:
+				e.State.BaseData[s.path] = s.local.Data // converged, or local won
+			default:
+				delete(e.State.BaseData, s.path)
 			}
 		}
 		for p := range e.State.BaseData {
@@ -450,7 +457,10 @@ func (e *Engine) plan(ctx context.Context, local map[string]Item, hashes map[str
 				hashes[p] = e.Keys.Hash(merged)
 			}
 		}
-		if s.act != actNone {
+		// A path that merges is kept even when it is converged, so that its
+		// base data is recorded for the next merge: a path that was in sync
+		// before it became mergeable has none otherwise.
+		if s.act != actNone || e.mergeable(p) {
 			steps = append(steps, s)
 		}
 	}

@@ -345,6 +345,39 @@ func TestProfileRefreshMetadataMerges(t *testing.T) {
 	}
 }
 
+// A device upgraded from a version that did not merge this path has no
+// base data for it. A sync with nothing to do must still record the base,
+// or the first refresh on both devices after the upgrade conflicts again.
+func TestConvergedPathsKeepMergeBase(t *testing.T) {
+	s := newServer(t, true)
+	a := newDevice(t, s, "a", "passphrase-3", "ask")
+	b := newDevice(t, s, "b", "passphrase-3", "ask")
+	for _, d := range []*device{a, b} {
+		d.eng.Mergeable = func(p string) bool { return p == "profile/x" }
+		d.src.merge = mergeRefreshes
+	}
+	a.src.set("profile/x", `{"meta":{"updated":100,"traffic":1},"content":"cfg"}`)
+	a.sync(t)
+	b.sync(t)
+	// An upgrade: the paths now merge, but no base of theirs is kept yet.
+	delete(a.eng.State.BaseData, "profile/x")
+	delete(b.eng.State.BaseData, "profile/x")
+	a.sync(t)
+	b.sync(t)
+	for _, d := range []*device{a, b} {
+		if _, ok := d.eng.State.BaseData["profile/x"]; !ok {
+			t.Fatalf("%s has no merge base after a converged sync", d.eng.DeviceName)
+		}
+	}
+	// Both refresh at once: it merges, with no conflict to resolve.
+	a.src.set("profile/x", `{"meta":{"updated":200,"traffic":2},"content":"cfg"}`)
+	a.sync(t)
+	b.src.set("profile/x", `{"meta":{"updated":210,"traffic":3},"content":"cfg"}`)
+	if r := b.sync(t); len(r.Merged) != 1 || len(r.Conflicts) != 0 {
+		t.Fatalf("merge after upgrade: %+v", r)
+	}
+}
+
 // A path that says it merges, but whose versions the source cannot merge
 // (profile contents that differ), waits as a conflict: it is not applied as
 // a merge without data, which would delete the local version.
