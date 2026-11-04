@@ -30,7 +30,7 @@
 <p align="center"><sub><a href="docs/showcase/hero-light.gif">浅色主题</a></sub></p>
 
 <p align="center">
-  <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.gif" width="900" alt="MyGO-Clash 30 秒宣传片：快捷面板里开启系统代理并切换节点，主窗口里的各项功能逐一展开，最后是罗盘与「迷子でもいい、前へ進め。」"></a>
+  <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.webp" width="900" alt="MyGO-Clash 30 秒宣传片：快捷面板里开启系统代理并切换节点，主窗口里的各项功能逐一展开，最后是罗盘与「迷子でもいい、前へ進め。」"></a>
 </p>
 
 <p align="center"><sub><a href="docs/showcase/promo.mp4">30 秒宣传片（MP4，有声）</a></sub></p>

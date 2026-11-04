@@ -30,7 +30,7 @@
 <p align="center"><sub><a href="docs/showcase/hero-light-en.gif">ライトテーマ</a></sub></p>
 
 <p align="center">
-  <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.gif" width="900" alt="MyGO-Clash の 30 秒プロモーション映像：クイックパネルでシステムプロキシを有効にしてノードを切り替え、メインウィンドウの各機能を順に紹介し、最後に羅針盤と「迷子でもいい、前へ進め。」"></a>
+  <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.webp" width="900" alt="MyGO-Clash の 30 秒プロモーション映像：クイックパネルでシステムプロキシを有効にしてノードを切り替え、メインウィンドウの各機能を順に紹介し、最後に羅針盤と「迷子でもいい、前へ進め。」"></a>
 </p>
 
 <p align="center"><sub><a href="docs/showcase/promo.mp4">30 秒のプロモーション映像（MP4・音声あり）</a></sub></p>
