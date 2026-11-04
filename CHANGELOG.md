@@ -2,6 +2,14 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.26-beta
+
+升级到 0.2.25 后，手动处理过的那条旧冲突不会再在下一次两台设备同时刷新时重新出现。/ After upgrading to 0.2.25, an old conflict you resolved by hand no longer comes back the next time both devices refresh together.
+
+### 🐛 修复 / Fixes
+
+- 修复 0.2.25 的合并基线只在一侧有改动时才记录的问题：从旧版本升级后，已同步、没有改动的订阅不会留下合并基线，下一次两台设备同时刷新时仍会误报一次冲突。现在每次同步都为可合并的路径记录基线，冲突与删除则按情况保留或清除 / Fixed the merge base of 0.2.25 being recorded only when one side changed: after upgrading, a subscription already in sync had no base left, so the first simultaneous refresh on two devices still asked about a conflict once. Every sync now records the base of a mergeable path, while conflicts and deletions keep or clear it as appropriate
+
 ## 0.2.25-beta
 
 两台设备同时刷新同一订阅后，内容相同的两份不再被当成冲突；只有订阅内容真的不同时才需要你选择。/ Refreshing the same subscription on two devices at once no longer turns into a conflict when both fetched the same content; only contents that really differ ask you to choose.
