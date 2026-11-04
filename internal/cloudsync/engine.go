@@ -442,7 +442,9 @@ func (e *Engine) plan(ctx context.Context, local map[string]Item, hashes map[str
 			}
 			merged, ok := e.Source.Merge(p, e.State.BaseData[p], lp.Data, data, preferRemote)
 			if !ok {
-				s.act = e.resolve(p, lp, r, &conflicts)
+				// The versions do not merge after all (profile contents that
+				// differ): a conflict, rather than merging again in a loop.
+				s.act = e.conflict(p, lp, r, &conflicts)
 			} else {
 				s.data = merged
 				hashes[p] = e.Keys.Hash(merged)
@@ -500,6 +502,11 @@ func (e *Engine) resolve(p string, lp *Item, r Entry, conflicts *[]Conflict) act
 		}
 		return actPush
 	}
+	return e.conflict(p, lp, r, conflicts)
+}
+
+// conflict records a path waiting for the user to choose a side.
+func (e *Engine) conflict(p string, lp *Item, r Entry, conflicts *[]Conflict) action {
 	*conflicts = append(*conflicts, Conflict{
 		Path: p, LocalModified: lp.Modified, RemoteModified: r.Modified, RemoteDevice: r.Device,
 		LocalDeleted: lp == nil, RemoteDeleted: r.Deleted, Detected: e.now(),

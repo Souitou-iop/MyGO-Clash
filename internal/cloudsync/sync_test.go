@@ -111,6 +111,8 @@ func (s *server) allData(t *testing.T) map[string][]byte {
 type memSource struct {
 	mu    stdsync.Mutex
 	files map[string]Item
+	// merge, when set, decides how the source merges paths.
+	merge func(p string, base, local, remote []byte, preferRemote bool) ([]byte, bool)
 }
 
 func (m *memSource) Snapshot(context.Context) (map[string]Item, error) {
@@ -133,6 +135,9 @@ func (m *memSource) Apply(_ context.Context, ch map[string][]byte) error {
 }
 
 func (m *memSource) Merge(p string, base, local, remote []byte, preferRemote bool) ([]byte, bool) {
+	if m.merge != nil {
+		return m.merge(p, base, local, remote, preferRemote)
+	}
 	if p != "settings" {
 		return nil, false
 	}
@@ -289,6 +294,87 @@ func testSync(t *testing.T, etags bool) {
 
 func TestSyncWithETags(t *testing.T)    { testSync(t, true) }
 func TestSyncWithoutETags(t *testing.T) { testSync(t, false) }
+
+// refreshFile is a profile as sync stores it: metadata a fetch wrote, and
+// the content both devices got.
+type refreshFile struct {
+	Meta struct {
+		Updated int64 `json:"updated"`
+		Traffic int64 `json:"traffic"`
+	} `json:"meta"`
+	Content string `json:"content"`
+}
+
+func mergeRefreshes(_ string, base, local, remote []byte, preferRemote bool) ([]byte, bool) {
+	var l, r refreshFile
+	if json.Unmarshal(local, &l) != nil || json.Unmarshal(remote, &r) != nil || l.Content != r.Content {
+		return nil, false
+	}
+	return MergeJSON(base, local, remote, preferRemote)
+}
+
+// Two devices that refreshed the same subscription at about the same time
+// hold the same content and differ only in what the fetch reported: that
+// merges, it is not a conflict.
+func TestProfileRefreshMetadataMerges(t *testing.T) {
+	s := newServer(t, true)
+	a := newDevice(t, s, "a", "passphrase-2", "ask")
+	b := newDevice(t, s, "b", "passphrase-2", "ask")
+	for _, d := range []*device{a, b} {
+		d.eng.Mergeable = func(p string) bool { return p == "settings" || p == "profile/x" }
+		d.src.merge = mergeRefreshes
+	}
+	a.src.set("profile/x", `{"meta":{"updated":100,"traffic":1},"content":"cfg"}`)
+	a.sync(t)
+	b.sync(t) // pulls it, and keeps its base data
+	a.src.set("profile/x", `{"meta":{"updated":200,"traffic":2},"content":"cfg"}`)
+	a.sync(t)
+	b.src.set("profile/x", `{"meta":{"updated":210,"traffic":3},"content":"cfg"}`)
+	if r := b.sync(t); len(r.Merged) != 1 || len(r.Conflicts) != 0 {
+		t.Fatalf("merge: %+v", r)
+	}
+	a.sync(t)
+	for _, d := range []*device{a, b} {
+		var got refreshFile
+		if err := json.Unmarshal([]byte(d.src.get("profile/x")), &got); err != nil {
+			t.Fatal(err)
+		}
+		if got.Meta.Updated != 210 || got.Meta.Traffic != 3 || got.Content != "cfg" {
+			t.Fatalf("%s: %s", d.eng.DeviceName, d.src.get("profile/x"))
+		}
+	}
+}
+
+// A path that says it merges, but whose versions the source cannot merge
+// (profile contents that differ), waits as a conflict: it is not applied as
+// a merge without data, which would delete the local version.
+func TestUnmergeableVersionsConflict(t *testing.T) {
+	s := newServer(t, true)
+	a := newDevice(t, s, "a", "passphrase-1", "ask")
+	b := newDevice(t, s, "b", "passphrase-1", "ask")
+	b.eng.Mergeable = func(p string) bool { return p == "settings" || p == "profile/x" }
+	a.src.set("profile/x", "base")
+	a.sync(t)
+	b.sync(t) // pulls it, and keeps its base data
+	a.src.set("profile/x", "a version")
+	b.src.set("profile/x", "b version")
+	a.sync(t)
+	r := b.sync(t)
+	if len(r.Conflicts) != 1 || b.src.get("profile/x") != "b version" {
+		t.Fatalf("conflict: %+v, profile %q", r, b.src.get("profile/x"))
+	}
+	// The user's choice then goes through as usual.
+	if err := b.eng.State.Resolve("profile/x", KeepLocal); err != nil {
+		t.Fatal(err)
+	}
+	if r := b.sync(t); len(r.Pushed) != 1 {
+		t.Fatalf("resolve: %+v", r)
+	}
+	a.sync(t)
+	if a.src.get("profile/x") != "b version" {
+		t.Fatalf("after resolve: %q", a.src.get("profile/x"))
+	}
+}
 
 func TestStaleManifestWriteLoses(t *testing.T) {
 	s := newServer(t, true)

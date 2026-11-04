@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -255,8 +256,10 @@ func (s *syncer) engine() (*cloudsync.Engine, error) {
 	return &cloudsync.Engine{
 		Client: c, Dir: st.Sync.Dir, Keys: keys, Source: appSource{a: s.a},
 		Policy: st.Sync.ConflictPolicy, DeviceName: s.deviceName(),
-		Mergeable: func(p string) bool { return p == "settings" || p == "dns" || p == "tailscale" },
-		Wanted:    appSource{a: s.a}.wanted,
+		Mergeable: func(p string) bool {
+			return p == "settings" || p == "dns" || p == "tailscale" || strings.HasPrefix(p, itemPrefix)
+		},
+		Wanted: appSource{a: s.a}.wanted,
 	}, nil
 }
 
@@ -509,6 +512,20 @@ func mergeSyncable(dst, src map[string]any) {
 }
 
 func (s appSource) Merge(path string, base, local, remote []byte, preferRemote bool) ([]byte, bool) {
+	if strings.HasPrefix(path, itemPrefix) {
+		var l, r itemFile
+		if json.Unmarshal(local, &l) != nil || json.Unmarshal(remote, &r) != nil {
+			return nil, false
+		}
+		// Two devices refreshed the same subscription: both versions hold
+		// the same content, and differ only in what the fetch reports (when
+		// it ran, the traffic counted). There is nothing to choose between,
+		// so merge the metadata; contents that differ are a real conflict.
+		if !bytes.Equal(l.Content, r.Content) {
+			return nil, false
+		}
+		return cloudsync.MergeJSON(base, local, remote, preferRemote)
+	}
 	switch path {
 	case pathSettings, pathDNS, pathTailscale:
 		return cloudsync.MergeJSON(base, local, remote, preferRemote)
