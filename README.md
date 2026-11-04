@@ -20,20 +20,14 @@
   <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="状态">
 </p>
 
-> [!NOTE]
-> MyGO-Clash 目前处于 beta 阶段。界面和主要流程已在 macOS（Apple Silicon）和 Windows 上使用；TUN 与系统服务、系统代理切换、Tailscale 登录、WebDAV 同步，以及 Linux 上的运行，还没有在真实环境中充分验证。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
-
-<p align="center">
-  <img src="docs/showcase/hero-dark.gif" width="900" alt="MyGO-Clash 快捷面板：从菜单栏打开，开启系统代理、切换到 HK 01 并完成测速">
-</p>
-
-<p align="center"><sub><a href="docs/showcase/hero-light.gif">浅色主题</a></sub></p>
-
 <p align="center">
   <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.webp" width="900" alt="MyGO-Clash 30 秒宣传片：快捷面板里开启系统代理并切换节点，主窗口里的各项功能逐一展开，最后是罗盘与「迷子でもいい、前へ進め。」"></a>
 </p>
 
-<p align="center"><sub><a href="docs/showcase/promo.mp4">30 秒宣传片（MP4，有声）</a></sub></p>
+<p align="center"><sub><a href="docs/showcase/promo.mp4">观看 30 秒宣传片（MP4，有声）</a> · <a href="docs/showcase/hero-dark.gif">快捷面板速览（GIF）</a> · <a href="docs/showcase/hero-light.gif">浅色主题（GIF）</a></sub></p>
+
+> [!NOTE]
+> MyGO-Clash 目前处于 beta 阶段。界面和主要功能已在 macOS（Apple Silicon）和 Windows 上实际使用；Linux 尚未在真实环境中测试。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
 
 ## 功能
 

@@ -20,20 +20,14 @@
   <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="ステータス">
 </p>
 
-> [!NOTE]
-> MyGO-Clash は現在ベータ段階です。画面と主な操作は macOS（Apple シリコン）と Windows で使用しています。TUN とシステムサービス、システムプロキシの切り替え、Tailscale へのログイン、WebDAV 同期、Linux での動作は、実環境でまだ十分に検証できていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
-
-<p align="center">
-  <img src="docs/showcase/hero-dark-en.gif" width="900" alt="MyGO-Clash のクイックパネル：メニューバーから開き、システムプロキシを有効にして HK 01 に切り替え、レイテンシーを測定します">
-</p>
-
-<p align="center"><sub><a href="docs/showcase/hero-light-en.gif">ライトテーマ</a></sub></p>
-
 <p align="center">
   <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.webp" width="900" alt="MyGO-Clash の 30 秒プロモーション映像：クイックパネルでシステムプロキシを有効にしてノードを切り替え、メインウィンドウの各機能を順に紹介し、最後に羅針盤と「迷子でもいい、前へ進め。」"></a>
 </p>
 
-<p align="center"><sub><a href="docs/showcase/promo.mp4">30 秒のプロモーション映像（MP4・音声あり）</a></sub></p>
+<p align="center"><sub><a href="docs/showcase/promo.mp4">30 秒のプロモーション映像（MP4・音声あり）</a> · <a href="docs/showcase/hero-dark-en.gif">クイックパネルの概要（GIF）</a> · <a href="docs/showcase/hero-light-en.gif">ライトテーマ（GIF）</a></sub></p>
+
+> [!NOTE]
+> MyGO-Clash は現在ベータ段階です。画面と主な機能は macOS（Apple シリコン）と Windows で実際に使用しています。Linux での動作は、実環境ではまだテストしていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
 
 ## 機能
 

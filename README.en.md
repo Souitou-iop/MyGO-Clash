@@ -20,20 +20,14 @@
   <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="Status">
 </p>
 
-> [!NOTE]
-> MyGO-Clash is in beta. The interface and the main flows are in use on macOS (Apple Silicon) and Windows. TUN and the system service, switching the system proxy, signing in to Tailscale, WebDAV sync, and running on Linux have not been fully verified in real use yet. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
-
-<p align="center">
-  <img src="docs/showcase/hero-dark-en.gif" width="900" alt="MyGO-Clash quick panel: open it from the menu bar, turn on the system proxy, switch to HK 01 and test its latency">
-</p>
-
-<p align="center"><sub><a href="docs/showcase/hero-light-en.gif">Light theme</a></sub></p>
-
 <p align="center">
   <a href="docs/showcase/promo.mp4"><img src="docs/showcase/promo.webp" width="900" alt="MyGO-Clash 30-second promo: turning on the system proxy and switching nodes in the quick panel, the main window's features one by one, and the compass with 「迷子でもいい、前へ進め。」"></a>
 </p>
 
-<p align="center"><sub><a href="docs/showcase/promo.mp4">30-second promo film (MP4, with sound)</a></sub></p>
+<p align="center"><sub><a href="docs/showcase/promo.mp4">Watch the 30-second promo (MP4, with sound)</a> · <a href="docs/showcase/hero-dark-en.gif">Quick panel preview (GIF)</a> · <a href="docs/showcase/hero-light-en.gif">Light theme (GIF)</a></sub></p>
+
+> [!NOTE]
+> MyGO-Clash is in beta. Its interface and main features have been used on macOS (Apple silicon) and Windows. Linux has not yet been tested in a real environment. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
 
 ## Features
 
