@@ -2,6 +2,31 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.27-beta
+
+同步可以管理设备了：重命名、清理重装留下的旧记录、移除设备并同时更换同步密码；流量统计支持自定义时间段、导出导入、跨设备查看与按任意维度下钻。另有订阅额度提醒、更新失败自动回滚、Sub-Store 导入与测速。/ Sync now manages its devices: rename them, clean out the entries a reinstall left behind, and remove a device while changing the sync passphrase; the statistics gain custom ranges, export and import, every device's view and drilling down by any dimension. Also new: subscription quota warnings, automatic rollback of a failed update, Sub-Store import and a speed test.
+
+### ✨ 新增功能 / New Features
+
+- 同步设备列表显示每台设备的系统、架构、版本与最近同步时间，可以重命名（名字同步到所有设备）、移除；同一台电脑重装前留下的旧记录会被标出，一键清理，超过 30 天未同步的设备显示为灰色 / The sync device list shows each device's system, architecture, version and last sync, and devices can be renamed (the name syncs to every device) and removed; the old entry a reinstall left for the same computer is marked and cleaned in one click, and a device idle for over 30 days is greyed out
+- 移除设备时可以同时更换同步密码：服务器上的数据与备份用新密钥重新加密，留下的设备自动沿用新密钥，被移除的设备即使留有旧密码也无法再读取；旧版本的设备需要输入新密码 / Removing a device can change the sync passphrase too: the server's data and backups are encrypted again under a new key, the devices that stay follow it by themselves, and the removed device can no longer read anything, even with the old passphrase; devices on older versions ask for the new passphrase
+- 重装应用后，本机按硬件标识认领原来的设备身份，不再多出一台同名设备 / After the app is installed again, it takes back its old place by the computer's identifier instead of adding another device of the same name
+- 新增同步记录：所有设备谁在何时发送了什么、加入、改名、移除与更换密钥，以及本机每次同步的结果与错误 / New sync activity: which device sent what and when, joins, renames, removals and key changes, and the results and errors of this device's syncs
+- 同一 tailnet 中的设备在修改后互相通知、立即同步（通过 Tailscale 即时同步，默认开启） / Devices on the same tailnet tell each other of their changes and sync at once (instant sync over Tailscale, on by default)
+- 流量统计可加入同步，统计页可切换查看本机、所有设备或某一台设备 / Traffic statistics can sync, and the statistics page shows this device, every device, or one of them
+- 流量统计新增自定义起止日期、与上一周期对比、导出为 CSV 或可再导入的 JSON、导入（重复导入不会重复计数）、保留时长（30 天到永久）以及不计入统计的局域网、域名、网段与进程 / The statistics gain custom date ranges, a comparison with the period before, export as CSV or as JSON to import again, import (importing twice counts nothing twice), a retention from 30 days to forever, and leaving out the local network, domains, ranges and processes
+- 流量统计新增连接数、规则、策略组与目的地国家四个维度；点击任意一项即按它筛选全部卡片，条件可叠加，并可跳到已关闭的连接查看 / The statistics gain connection counts and three more dimensions, rules, policy groups and destination countries; clicking any item narrows every card to it, filters stack, and the closed connections are one click away
+- 连接页的「已关闭」改为持久的历史，页面关闭期间结束的连接也会记录（最多 3000 条），可清除 / The closed tab of the connections page is a lasting history now, including connections that ended while the page was closed (up to 3000), and can be cleared
+- 订阅剩余流量低于设定比例、即将或已经到期时提醒，同一计费周期只提醒一次 / Warnings when a subscription's traffic runs below a set share or it is about to expire or has expired, once per billing period
+- 订阅更新时保留上一版本：可在订阅菜单中回滚；更新后内核拒绝了配置时自动回滚并提示 / Updating a subscription keeps its previous version: roll back from the profile's menu, and when the core refuses the updated configuration the previous version comes back by itself
+- 可从 Sub-Store 后端列出订阅与组合订阅，一键添加 / Subscriptions and collections of a Sub-Store backend can be listed and added in one click
+- 连通性页新增测速：经当前节点测延迟、抖动与上下行速度 / The connectivity page gains a speed test: latency, jitter and download and upload speeds through the current node
+
+### 🐛 修复 / Fixes
+
+- 修复关闭某个同步类别后再开启时，会把其他设备在该类别中的数据当作本机删除而清掉的问题：同步基线此前也记录了本机不同步的路径 / Fixed turning a sync category back on deleting the other devices' data in it, as if this device had deleted it: the sync base used to record paths this device does not sync
+- 同步冲突中显示对方设备的名称，不再是设备 ID / Sync conflicts name the other device instead of showing its ID
+
 ## 0.2.26-beta
 
 升级到 0.2.25 后，手动处理过的那条旧冲突不会再在下一次两台设备同时刷新时重新出现。/ After upgrading to 0.2.25, an old conflict you resolved by hand no longer comes back the next time both devices refresh together.
