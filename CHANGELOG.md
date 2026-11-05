@@ -2,6 +2,23 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.28-beta
+
+流量统计可以任意勾选要看的设备，其他设备的流量也能按应用、网站等下钻；排行可以展开全部，同步记录与备份可以按设备筛选。/ The statistics show any set of devices you pick, and other devices' traffic narrows by app, site and the rest too; rankings expand to everything, and the sync activity and the backups filter by device.
+
+### ✨ 新增功能 / New Features
+
+- 流量统计的设备选择改为多选：本机、任意几台或全部设备，每台设备旁显示其统计的更新时间 / The statistics' device choice is a multiple choice now: this device, any of the others, or all, each with when its statistics last came in
+- 各设备同步最近 31 天的流量明细，跨设备查看时也能按应用、网站、节点、规则、策略组与目的地筛选 / Devices share the detail of their latest 31 days, so the view of several devices narrows by app, site, node, rule, policy group and destination as well
+- 导出 CSV 跟随所选设备，并新增「设备」一列 / CSV exports follow the devices picked, with a device column
+- 每张排行卡片可「显示全部」，不再只有前十 / Every ranking can show all, not just the top ten
+- 同步记录与备份列表可按设备筛选 / The sync activity and the backup list filter by device
+
+### 🐛 修复 / Fixes
+
+- 已关闭连接的搜索改为在全部历史（最多 3000 条）中查找，不再只搜最新的 500 条 / Searching the closed connections looks through the whole history (up to 3000), not only the newest 500
+- 修复断开同步或加入另一个保险库后，旧保险库中其他设备的统计仍留在本机、设备列表出现重复设备的问题 / Fixed the other devices' statistics of an old vault staying after disconnecting or joining another vault, which listed a device twice
+
 ## 0.2.27-beta
 
 同步可以管理设备了：重命名、清理重装留下的旧记录、移除设备并同时更换同步密码；流量统计支持自定义时间段、导出导入、跨设备查看与按任意维度下钻。另有订阅额度提醒、更新失败自动回滚、Sub-Store 导入与测速。/ Sync now manages its devices: rename them, clean out the entries a reinstall left behind, and remove a device while changing the sync passphrase; the statistics gain custom ranges, export and import, every device's view and drilling down by any dimension. Also new: subscription quota warnings, automatic rollback of a failed update, Sub-Store import and a speed test.
