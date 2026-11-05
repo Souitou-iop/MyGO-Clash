@@ -1132,6 +1132,10 @@ const es: Record<Key, string> = {
   "substore.sub": "Suscripción",
   "substore.collection": "Colección",
   "substore.added": "Añadida",
+  "stats.nDevices": "{n} dispositivos",
+  "stats.showAll": "Mostrar todo",
+  "stats.showLess": "Mostrar menos",
+  "sync.everyDevice": "Todos los dispositivos",
 };
 
 export default es;

@@ -25,30 +25,43 @@ import (
 // Stats is the traffic statistics page.
 type Stats struct{ a *App }
 
-// Query totals the traffic of a range of days, and ranks what carried it.
-// The device of the query is this one (""), every device of the sync vault
-// ("all"), or one of them by its ID.
+// Query totals the traffic of a range of days, and ranks what carried it,
+// for the devices of the query: this one when it names none, else those of
+// the sync vault it names by ID.
 func (s Stats) Query(ctx context.Context, q usage.StatsQuery) (usage.StatsReport, error) {
 	if err := s.a.waitReady(ctx); err != nil {
 		return usage.StatsReport{}, err
 	}
-	me := s.a.syncer.state.DeviceID
-	switch q.Device {
-	case "", me:
-		return s.a.usage.Query(q), nil
-	case "all":
-		var srcs []usage.Source
-		for _, r := range s.a.remoteUsage() {
-			srcs = append(srcs, r.days)
-		}
-		return s.a.usage.QueryWith(q, true, srcs...), nil
+	local, others := s.a.statsSources(q.Devices)
+	srcs := make([]usage.Source, 0, len(others))
+	for _, r := range others {
+		srcs = append(srcs, r.days)
 	}
-	for _, r := range s.a.remoteUsage() {
-		if r.id == q.Device {
-			return s.a.usage.QueryWith(q, false, r.days), nil
+	return s.a.usage.QueryWith(q, local, srcs...), nil
+}
+
+// statsSources splits the devices of a query into this one and the others'
+// statistics that came through sync.
+func (a *App) statsSources(ids []string) (bool, []remoteStats) {
+	me := a.syncer.state.DeviceID
+	if len(ids) == 0 {
+		return true, nil
+	}
+	local := false
+	want := map[string]bool{}
+	for _, id := range ids {
+		if id == me || id == "" {
+			local = true
+		}
+		want[id] = true
+	}
+	var out []remoteStats
+	for _, r := range a.remoteUsage() {
+		if want[r.id] {
+			out = append(out, r)
 		}
 	}
-	return s.a.usage.QueryWith(q, false), nil
+	return local, out
 }
 
 // StatsDevice is a device whose statistics can be shown.
@@ -64,9 +77,7 @@ type StatsDevice struct {
 // statistics came through sync.
 func (s Stats) Devices(ctx context.Context) ([]StatsDevice, error) {
 	out := []StatsDevice{{ID: s.a.syncer.state.DeviceID, Name: s.a.syncer.deviceName(), OS: currentOS(), This: true}}
-	s.a.syncer.mu.Lock()
-	names := s.a.syncer.names
-	s.a.syncer.mu.Unlock()
+	names := s.a.syncer.deviceNames()
 	for _, r := range s.a.remoteUsage() {
 		name := r.Name
 		if n := names[r.id]; n != "" {
@@ -88,13 +99,28 @@ func (s Stats) Clear(ctx context.Context) error {
 }
 
 // Export saves the statistics of a range to a file: "csv" for a
-// spreadsheet, "json" to import elsewhere. From and To are dates, "" for
-// no bound. It returns the path, "" when the user cancelled.
-func (s Stats) Export(ctx context.Context, format, from, to string) (string, error) {
+// spreadsheet, of the devices given (as Query takes them), or "json" of
+// this device, to import elsewhere. From and To are dates, "" for no
+// bound. It returns the path, "" when the user cancelled.
+func (s Stats) Export(ctx context.Context, format, from, to string, devices []string) (string, error) {
 	var data []byte
 	ext := "json"
 	if format == "csv" {
-		data, ext = s.a.usage.ExportCSV(from, to), "csv"
+		local, others := s.a.statsSources(devices)
+		me := ""
+		if local {
+			me = s.a.syncer.deviceName()
+		}
+		names := s.a.syncer.deviceNames()
+		bySource := map[string]usage.Source{}
+		for _, r := range others {
+			name := r.Name
+			if n := names[r.id]; n != "" {
+				name = n
+			}
+			bySource[name] = r.days
+		}
+		data, ext = s.a.usage.ExportCSV(from, to, me, bySource), "csv"
 	} else {
 		data = s.a.usage.Export(from, to, s.a.syncer.deviceName())
 	}
@@ -391,6 +417,14 @@ func (a *App) readRemoteUsage() map[string][]byte {
 		}
 	}
 	return out
+}
+
+// clearRemoteUsage forgets the other devices' statistics, when this one
+// leaves their vault.
+func (a *App) clearRemoteUsage() {
+	if err := os.RemoveAll(a.remoteUsageDir()); err != nil {
+		log.Printf("forget the statistics of the other devices: %v", err)
+	}
 }
 
 // writeRemoteUsage keeps another device's statistics from sync; nil

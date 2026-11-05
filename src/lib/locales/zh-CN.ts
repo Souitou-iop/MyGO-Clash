@@ -1132,6 +1132,10 @@ const zhCN: Record<Key, string> = {
   "substore.sub": "订阅",
   "substore.collection": "组合订阅",
   "substore.added": "已添加",
+  "stats.nDevices": "{n} 台设备",
+  "stats.showAll": "显示全部",
+  "stats.showLess": "收起",
+  "sync.everyDevice": "全部设备",
 };
 
 export default zhCN;

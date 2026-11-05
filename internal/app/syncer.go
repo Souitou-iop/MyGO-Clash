@@ -254,6 +254,13 @@ func (s *syncer) client(st config.Sync, password string) (*webdav.Client, error)
 	return webdav.New(st.URL, st.Username, password, webdav.Options{AllowInsecure: st.AllowInsecure, PinnedKey: st.PinnedKey})
 }
 
+// deviceNames are the names of the vault's devices at the last sync, by ID.
+func (s *syncer) deviceNames() map[string]string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.names
+}
+
 // identity returns the device's key pair, made on first use; nil when the
 // secret store cannot keep one.
 func (s *syncer) identity() *cloudsync.Identity {
@@ -466,6 +473,7 @@ func (s *syncer) removed(by string) {
 	s.status.RemovedBy = by
 	s.save()
 	s.mu.Unlock()
+	s.a.clearRemoteUsage()
 	msg := tr(s.a, "syncRemoved")
 	if by != "?" {
 		msg = fmt.Sprintf(tr(s.a, "syncRemovedBy"), by)
@@ -946,6 +954,8 @@ func (s *syncer) join(ctx context.Context, eng *cloudsync.Engine) {
 		s.state.Joined = time.Now()
 	} else {
 		*s.state = cloudsync.State{DeviceID: me, Joined: time.Now(), History: s.state.History}
+		// Another vault: the statistics of the old one's devices go.
+		s.a.clearRemoteUsage()
 	}
 	s.status.RemovedBy, s.status.NeedPassphrase = "", false
 	s.save()
@@ -998,6 +1008,7 @@ func (s Sync) Disable(ctx context.Context, forget bool) error {
 		*s.a.syncer.state = cloudsync.State{DeviceID: id}
 		s.a.syncer.save()
 		s.a.syncer.mu.Unlock()
+		s.a.clearRemoteUsage()
 	}
 	s.a.syncer.broadcast()
 	return nil

@@ -1149,6 +1149,10 @@ export const en = {
   "substore.sub": "Subscription",
   "substore.collection": "Collection",
   "substore.added": "Added",
+  "stats.nDevices": "{n} devices",
+  "stats.showAll": "Show all",
+  "stats.showLess": "Show fewer",
+  "sync.everyDevice": "Every device",
 } as const;
 
 export type Key = keyof typeof en;

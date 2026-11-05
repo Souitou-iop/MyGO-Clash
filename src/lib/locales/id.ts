@@ -1132,6 +1132,10 @@ const id: Record<Key, string> = {
   "substore.sub": "Langganan",
   "substore.collection": "Koleksi",
   "substore.added": "Ditambahkan",
+  "stats.nDevices": "{n} perangkat",
+  "stats.showAll": "Tampilkan semua",
+  "stats.showLess": "Tampilkan lebih sedikit",
+  "sync.everyDevice": "Semua perangkat",
 };
 
 export default id;

@@ -262,6 +262,9 @@ function Backups() {
   const patch = usePatch();
   const { data, loading, reload, error } = useAsync(() => API.backups(), [configured]);
   const [busy, setBusy] = useState("");
+  const [from, setFrom] = useState("");
+  const owners = useMemo(() => [...new Set((data ?? []).map((b) => b.device).filter(Boolean))].sort(), [data]);
+  const shown = (data ?? []).filter((b) => !from || b.device === from);
   const act = async (key: string, fn: () => Promise<unknown>, ok: string) => {
     setBusy(key);
     await run(fn, t("common.failed"), ok);
@@ -280,6 +283,9 @@ function Backups() {
         title={t("backup.title")}
         extra={
           <div className="row" style={{ textTransform: "none", letterSpacing: 0 }}>
+            {owners.length > 1 && (
+              <Select value={from} onChange={setFrom} options={[{ value: "", label: t("sync.everyDevice") }, ...owners.map((o) => ({ value: o, label: o }))]} width={150} />
+            )}
             <Button size="sm" icon={<HardDrive size={13} />} loading={busy === "local"} onClick={() => act("local", () => API.createBackup(false), t("backup.created"))}>
               {t("backup.local")}
             </Button>
@@ -311,7 +317,7 @@ function Backups() {
         ) : (data?.length ?? 0) === 0 ? (
           <Empty title={t("backup.empty")} icon={<Archive size={22} />} />
         ) : (
-          data!.map((b) => (
+          shown.map((b) => (
             <div key={`${b.remote}-${b.name}`} className="setting">
               {b.remote ? <Cloud size={16} className="muted" /> : <HardDrive size={16} className="muted" />}
               <div className="setting-text">

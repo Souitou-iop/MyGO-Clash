@@ -1132,6 +1132,10 @@ const ptBR: Record<Key, string> = {
   "substore.sub": "Assinatura",
   "substore.collection": "Coleção",
   "substore.added": "Adicionada",
+  "stats.nDevices": "{n} dispositivos",
+  "stats.showAll": "Mostrar tudo",
+  "stats.showLess": "Mostrar menos",
+  "sync.everyDevice": "Todos os dispositivos",
 };
 
 export default ptBR;

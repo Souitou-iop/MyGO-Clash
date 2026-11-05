@@ -954,10 +954,10 @@ export interface StatsQuery {
   where?: Record<string, string>;
   sortBy?: string;
   /**
-   * Device is whose statistics: "" this device's, "all" every device's,
-   * or a device's ID. The app answers for other devices.
+   * Devices are whose statistics, by ID: none for this device's alone.
+   * The app answers for other devices.
    */
-  device?: string;
+  devices?: string[];
 }
 
 /** StatsReport is the answer to a query. */
@@ -1775,11 +1775,12 @@ export const Stats = {
   },
   /**
    * Export saves the statistics of a range to a file: "csv" for a
-   * spreadsheet, "json" to import elsewhere. From and To are dates, "" for
-   * no bound. It returns the path, "" when the user cancelled.
+   * spreadsheet, of the devices given (as Query takes them), or "json" of
+   * this device, to import elsewhere. From and To are dates, "" for no
+   * bound. It returns the path, "" when the user cancelled.
    */
-  export(format: string, from: string, to: string): Promise<string> {
-    return call("Stats.Export", format, from, to);
+  export(format: string, from: string, to: string, devices: string[]): Promise<string> {
+    return call("Stats.Export", format, from, to, devices);
   },
   /**
    * Import adds the statistics of a file Export wrote, and returns how many
@@ -1789,9 +1790,9 @@ export const Stats = {
     return call("Stats.Import");
   },
   /**
-   * Query totals the traffic of a range of days, and ranks what carried it.
-   * The device of the query is this one (""), every device of the sync vault
-   * ("all"), or one of them by its ID.
+   * Query totals the traffic of a range of days, and ranks what carried it,
+   * for the devices of the query: this one when it names none, else those of
+   * the sync vault it names by ID.
    */
   query(q: StatsQuery): Promise<StatsReport> {
     return call("Stats.Query", q);

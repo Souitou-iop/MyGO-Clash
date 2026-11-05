@@ -1132,6 +1132,10 @@ const fr: Record<Key, string> = {
   "substore.sub": "Abonnement",
   "substore.collection": "Collection",
   "substore.added": "Ajouté",
+  "stats.nDevices": "{n} appareils",
+  "stats.showAll": "Tout afficher",
+  "stats.showLess": "Afficher moins",
+  "sync.everyDevice": "Tous les appareils",
 };
 
 export default fr;

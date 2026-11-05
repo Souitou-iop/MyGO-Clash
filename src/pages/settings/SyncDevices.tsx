@@ -5,7 +5,7 @@ import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
 import { run, useApp } from "../../lib/store";
 import { Sync as API, type DeviceInfo, type Event as SyncEvent, type SyncActivity } from "../../mygo";
-import { Badge, Banner, Button, Collapse, Dialog, Field, Input, Menu, prompt, Section, Segmented, Switch } from "../../ui";
+import { Badge, Banner, Button, Collapse, Dialog, Field, Input, Menu, prompt, Section, Segmented, Select, Switch } from "../../ui";
 
 const DAY = 24 * 3600 * 1000;
 
@@ -221,6 +221,7 @@ export function SyncActivityList({ configured, lastSync }: { configured: boolean
   const label = usePathLabel();
   const listOf = useListOf();
   const [scope, setScope] = useState<"all" | "here">("all");
+  const [who, setWho] = useState("");
   const [more, setMore] = useState(false);
   const { data: acts } = useAsync(() => (configured ? API.activity() : Promise.resolve([] as SyncActivity[])), [configured, lastSync]);
   const { data: hist } = useAsync(() => API.history(), [lastSync]);
@@ -257,23 +258,38 @@ export function SyncActivityList({ configured, lastSync }: { configured: boolean
   const rows = useMemo(() => {
     const list =
       scope === "all"
-        ? (acts ?? []).filter((a) => a.kind !== "sync" || a.changes.some(meaningful))
+        ? (acts ?? []).filter((a) => (!who || a.deviceId === who) && (a.kind !== "sync" || a.changes.some(meaningful)))
         : (hist ?? []).filter((e) => e.error || e.conflicts || [...(e.pushed ?? []), ...(e.pulled ?? []), ...(e.merged ?? [])].some((p) => !p.startsWith("usage/")));
     return more ? list : list.slice(0, 8);
-  }, [scope, acts, hist, more]);
-  const total = scope === "all" ? (acts?.length ?? 0) : (hist?.length ?? 0);
+  }, [scope, acts, hist, more, who]);
+  const total = scope === "all" ? (acts ?? []).filter((a) => (!who || a.deviceId === who) && (a.kind !== "sync" || a.changes.some(meaningful))).length : (hist?.length ?? 0);
+  const people = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of acts ?? []) if (!m.has(a.deviceId)) m.set(a.deviceId, a.this ? t("sync.thisDevice") : a.device);
+    return [...m.entries()];
+  }, [acts, t]);
   return (
     <Section
       title={t("sync.activity")}
       extra={
-        <Segmented
-          value={scope}
-          onChange={(v) => (setScope(v), setMore(false))}
-          options={[
-            { value: "all", label: t("sync.activityAll") },
-            { value: "here", label: t("sync.activityHere") },
-          ]}
-        />
+        <div className="row" style={{ gap: 8, textTransform: "none", letterSpacing: 0 }}>
+          {scope === "all" && people.length > 1 && (
+            <Select
+              value={who}
+              onChange={(v) => (setWho(v), setMore(false))}
+              options={[{ value: "", label: t("sync.everyDevice") }, ...people.map(([id, name]) => ({ value: id, label: name }))]}
+              width={150}
+            />
+          )}
+          <Segmented
+            value={scope}
+            onChange={(v) => (setScope(v), setMore(false))}
+            options={[
+              { value: "all", label: t("sync.activityAll") },
+              { value: "here", label: t("sync.activityHere") },
+            ]}
+          />
+        </div>
       }
     >
       <div className="sync-acts">

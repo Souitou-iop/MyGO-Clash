@@ -1132,6 +1132,10 @@ const ja: Record<Key, string> = {
   "substore.sub": "サブスクリプション",
   "substore.collection": "コレクション",
   "substore.added": "追加済み",
+  "stats.nDevices": "{n} 台のデバイス",
+  "stats.showAll": "すべて表示",
+  "stats.showLess": "折りたたむ",
+  "sync.everyDevice": "すべてのデバイス",
 };
 
 export default ja;

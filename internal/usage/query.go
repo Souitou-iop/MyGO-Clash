@@ -23,9 +23,9 @@ type StatsQuery struct {
 	Filter string            `json:"filter,omitempty"`
 	Where  map[string]string `json:"where,omitempty"`
 	SortBy string            `json:"sortBy,omitempty"`
-	// Device is whose statistics: "" this device's, "all" every device's,
-	// or a device's ID. The app answers for other devices.
-	Device string `json:"device,omitempty"`
+	// Devices are whose statistics, by ID: none for this device's alone.
+	// The app answers for other devices.
+	Devices []string `json:"devices,omitempty"`
 }
 
 // StatsPoint is the traffic of a day, or of an hour of a day.
@@ -71,8 +71,18 @@ type StatsReport struct {
 	Oldest string `json:"oldest"`
 }
 
-// Source is days to add to a query, such as another device's.
-type Source map[string]*Day
+// Source is days to add to a query, such as another device's: their
+// totals, and for some, their combinations.
+type Source struct {
+	Days  map[string]*Day
+	Flows map[string]map[flowKey]Entry
+}
+
+// source is a source as a query reads it.
+type source struct {
+	days  map[string]*Day
+	flows func(date string) map[flowKey]Entry
+}
 
 // Query totals a range of the store's days.
 func (s *Store) Query(q StatsQuery) StatsReport { return s.QueryWith(q, true) }
@@ -84,14 +94,16 @@ func (s *Store) QueryWith(q StatsQuery, local bool, sources ...Source) StatsRepo
 	defer s.mu.Unlock()
 	now := s.now()
 	loc := now.Location()
-	all := []Source{}
+	all := []source{}
 	if local {
-		all = append(all, s.days)
+		all = append(all, source{s.days, s.flowsOf})
 	}
-	all = append(all, sources...)
+	for _, src := range sources {
+		all = append(all, source{src.Days, func(d string) map[flowKey]Entry { return src.Flows[d] }})
+	}
 	oldest := ""
 	for _, src := range all {
-		for k, d := range src {
+		for k, d := range src.days {
 			if d != nil && d.Up+d.Down > 0 && (oldest == "" || k < oldest) {
 				oldest = k
 			}
@@ -148,8 +160,8 @@ func (s *Store) QueryWith(q StatsQuery, local bool, sources ...Source) StatsRepo
 	for d := from; !d.After(to); d = d.AddDate(0, 0, 1) {
 		k := d.Format(dateFormat)
 		var day Entry
-		for i, src := range all {
-			sum := src[k]
+		for _, src := range all {
+			sum := src.days[k]
 			if sum == nil {
 				continue
 			}
@@ -165,10 +177,7 @@ func (s *Store) QueryWith(q StatsQuery, local bool, sources ...Source) StatsRepo
 				}
 				continue
 			}
-			var flows map[flowKey]Entry
-			if local && i == 0 {
-				flows = s.flowsOf(k)
-			}
+			flows := src.flows(k)
 			if flows == nil {
 				if sum.Up+sum.Down > 0 {
 					r.Partial = true
@@ -214,8 +223,8 @@ func (s *Store) QueryWith(q StatsQuery, local bool, sources ...Source) StatsRepo
 		var prev Entry
 		for d := pFrom; !d.After(pTo); d = d.AddDate(0, 0, 1) {
 			k := d.Format(dateFormat)
-			for i, src := range all {
-				sum := src[k]
+			for _, src := range all {
+				sum := src.days[k]
 				if sum == nil {
 					continue
 				}
@@ -223,11 +232,9 @@ func (s *Store) QueryWith(q StatsQuery, local bool, sources ...Source) StatsRepo
 					prev.addEntry(sum.Entry)
 					continue
 				}
-				if local && i == 0 {
-					for fk, e := range s.flowsOf(k) {
-						if matches(fk, where) {
-							prev.addEntry(e)
-						}
+				for fk, e := range src.flows(k) {
+					if matches(fk, where) {
+						prev.addEntry(e)
 					}
 				}
 			}

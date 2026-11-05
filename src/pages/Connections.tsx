@@ -121,13 +121,17 @@ export default function Connections() {
   }, [preset]);
   // The closed connections come from the history the statistics keep,
   // which goes on while the page is closed.
-  const loadClosed = async () => {
-    const page = await Stats.closed({ offset: 0, limit: 500 }).catch(() => null);
+  // The search goes to the history, which keeps more than the page shows.
+  const loadClosed = async (q = search) => {
+    const page = await Stats.closed({ filter: q.trim() || undefined, offset: 0, limit: 500 }).catch(() => null);
     if (!page) return;
     setClosed(page.items.map(fromClosed));
     setClosedTotal(page.total);
   };
-  useEffect(() => void loadClosed(), []);
+  useEffect(() => {
+    const id = setTimeout(() => void loadClosed(search), 250);
+    return () => clearTimeout(id);
+  }, [search]);
   useInterval(() => {
     if (!paused) void loadClosed();
   }, view === "closed" ? 3000 : 15000);

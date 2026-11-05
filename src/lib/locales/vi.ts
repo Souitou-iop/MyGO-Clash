@@ -1132,6 +1132,10 @@ const vi: Record<Key, string> = {
   "substore.sub": "Gói đăng ký",
   "substore.collection": "Bộ sưu tập",
   "substore.added": "Đã thêm",
+  "stats.nDevices": "{n} thiết bị",
+  "stats.showAll": "Hiện tất cả",
+  "stats.showLess": "Thu gọn",
+  "sync.everyDevice": "Mọi thiết bị",
 };
 
 export default vi;

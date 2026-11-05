@@ -1132,6 +1132,10 @@ const fa: Record<Key, string> = {
   "substore.sub": "اشتراک",
   "substore.collection": "مجموعه",
   "substore.added": "افزوده شد",
+  "stats.nDevices": "{n} دستگاه",
+  "stats.showAll": "نمایش همه",
+  "stats.showLess": "نمایش کمتر",
+  "sync.everyDevice": "همهٔ دستگاه‌ها",
 };
 
 export default fa;

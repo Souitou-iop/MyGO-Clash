@@ -1132,6 +1132,10 @@ const ko: Record<Key, string> = {
   "substore.sub": "구독",
   "substore.collection": "컬렉션",
   "substore.added": "추가됨",
+  "stats.nDevices": "기기 {n}대",
+  "stats.showAll": "모두 보기",
+  "stats.showLess": "접기",
+  "sync.everyDevice": "모든 기기",
 };
 
 export default ko;

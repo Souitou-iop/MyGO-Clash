@@ -1,12 +1,12 @@
-import { ArrowDownRight, ArrowUpRight, Download, FileUp, ListFilter, MoreHorizontal, Settings2, Trash2, X } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { ArrowDownRight, ArrowUpRight, Check, ChevronDown, Download, FileUp, ListFilter, MonitorSmartphone, MoreHorizontal, Settings2, Trash2, X } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Flag } from "../components/Flag";
 import { PageHeader } from "../components/Page";
-import { bytes, ruleType } from "../lib/format";
+import { bytes, relative, ruleType } from "../lib/format";
 import { useAsync, useInterval } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, toast, useApp } from "../lib/store";
-import { Stats as API, type StatsItem, type StatsPoint, type StatsReport } from "../mygo";
+import { Stats as API, type StatsDevice, type StatsItem, type StatsPoint, type StatsReport } from "../mygo";
 import { Button, Card, confirm, Dialog, Empty, Field, Input, Menu, SearchInput, Segmented, Select, Switch } from "../ui";
 
 type Range = "today" | "7d" | "30d" | "all" | "custom";
@@ -57,6 +57,15 @@ function Bars({ points, hourly, byConns }: { points: StatsPoint[]; hourly: boole
   );
 }
 
+/** capped keeps the top n items, and folds the rest into Other. */
+function capped(items: StatsItem[], n: number): StatsItem[] {
+  const named = items.filter((i) => !i.other);
+  if (named.length <= n) return items;
+  const rest = [...named.slice(n), ...items.filter((i) => i.other)];
+  const other = rest.reduce((o, i) => ({ ...o, up: o.up + i.up, down: o.down + i.down, conns: (o.conns ?? 0) + (i.conns ?? 0) }), { name: "", other: true, up: 0, down: 0, conns: 0 } as StatsItem);
+  return [...named.slice(0, n), other];
+}
+
 /** Ranking lists what carried the traffic, each row filled to its share of the busiest; a row narrows the page to it. */
 function Ranking({
   title,
@@ -67,7 +76,9 @@ function Ranking({
   selected,
   onPick,
   name,
+  more,
 }: {
+  more?: { open: boolean; toggle: () => void };
   title: string;
   items: StatsItem[];
   note?: ReactNode;
@@ -101,6 +112,11 @@ function Ranking({
           );
         })
       )}
+      {more && (
+        <button className="stats-more" onClick={more.toggle}>
+          {more.open ? t("stats.showLess") : t("stats.showAll")}
+        </button>
+      )}
       {note}
     </Card>
   );
@@ -118,6 +134,62 @@ function Delta({ cur, prev }: { cur: number; prev?: number }) {
       {up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
       {Math.abs(pct)}%
     </span>
+  );
+}
+
+/** DevicePicker chooses whose statistics show: this device, or any of those that sync theirs. */
+function DevicePicker({ devices, picked, onChange }: { devices: StatsDevice[]; picked: string[]; onChange: (ids: string[]) => void }) {
+  const t = useT();
+  const lang = useApp((s) => s.lang);
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", close);
+    window.addEventListener("keydown", close);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  const me = devices.find((d) => d.this)?.id ?? "";
+  const ids = picked.length === 0 ? [me] : picked;
+  const all = ids.length === devices.length;
+  const label = all ? t("stats.allDevices") : ids.length === 1 ? (ids[0] === me ? t("stats.thisDevice") : (devices.find((d) => d.id === ids[0])?.name ?? "?")) : t("stats.nDevices", { n: ids.length });
+  const toggle = (id: string) => {
+    const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+    if (next.length === 0) return; // one at least
+    onChange(next.length === 1 && next[0] === me ? [] : next);
+  };
+  return (
+    <div className="device-picker" ref={box}>
+      <Button size="sm" icon={<MonitorSmartphone size={14} />} onClick={() => setOpen(!open)}>
+        {label}
+        <ChevronDown size={13} className="faint" />
+      </Button>
+      {open && (
+        <div className="device-picker-menu card">
+          <button className="device-picker-item" onClick={() => onChange(all ? [] : devices.map((d) => d.id))}>
+            <span className={`device-picker-check${all ? " on" : ""}`}>{all && <Check size={11} />}</span>
+            <span className="grow">{t("stats.allDevices")}</span>
+          </button>
+          <div className="device-picker-sep" />
+          {devices.map((d) => {
+            const on = ids.includes(d.id);
+            return (
+              <button key={d.id} className="device-picker-item" onClick={() => toggle(d.id)}>
+                <span className={`device-picker-check${on ? " on" : ""}`}>{on && <Check size={11} />}</span>
+                <span className="grow ellipsis">{d.name}</span>
+                <span className="faint device-picker-when">{d.this ? t("stats.thisDevice") : d.updated ? relative(d.updated, lang) : ""}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -178,17 +250,21 @@ export default function Stats() {
   const [range, setRange] = useState<Range>("today");
   const [from, setFrom] = useState(() => shift(today(), -6));
   const [to, setTo] = useState(today);
-  const [device, setDevice] = useState("");
+  // The devices shown, by ID; none is this device alone.
+  const [picked, setPicked] = useState<string[]>([]);
   const [filter, setFilter] = useState("");
   const [applied, setApplied] = useState("");
   const [where, setWhere] = useState<Partial<Record<Dim, string>>>({});
   const [sortBy, setSortBy] = useState<SortBy>("traffic");
+  // The cards that list everything, not the top ten.
+  const [expanded, setExpanded] = useState<Set<Dim>>(new Set());
   const [settings, setSettings] = useState(false);
   const findProcess = useApp((s) => s.settings?.clash.findProcessMode);
   const { data: devices } = useAsync(() => API.devices(), []);
   const query = () =>
-    API.query({ range: range === "custom" ? "custom" : range, from: range === "custom" ? from : undefined, to: range === "custom" ? to : undefined, top: 10, filter: applied || undefined, where, sortBy, device });
-  const { data, reload } = useAsync(query, [range, from, to, applied, JSON.stringify(where), sortBy, device]);
+    API.query({ range: range === "custom" ? "custom" : range, from: range === "custom" ? from : undefined, to: range === "custom" ? to : undefined, top: expanded.size ? 100 : 10, filter: applied || undefined, where, sortBy, devices: picked });
+  const { data, reload } = useAsync(query, [range, from, to, applied, JSON.stringify(where), sortBy, picked.join(), expanded.size > 0]);
+  const onlyHere = picked.length === 0 || (picked.length === 1 && !!devices?.find((d) => d.this && d.id === picked[0]));
   useInterval(() => void reload(), 10000);
   useEffect(() => {
     const id = setTimeout(() => setApplied(filter.trim()), 250);
@@ -218,7 +294,7 @@ export default function Stats() {
   };
   const exportAs = async (format: "csv" | "json") => {
     const [f, tt] = range === "custom" ? [from, to] : data ? [data.from, data.to] : ["", ""];
-    const path = await run(() => API.export(format, f, tt), t("common.failed"));
+    const path = await run(() => API.export(format, f, tt, picked), t("common.failed"));
     if (path) toast({ level: "success", message: t("stats.exported"), detail: path });
   };
   const importFile = async () => {
@@ -269,18 +345,7 @@ export default function Stats() {
   return (
     <>
       <PageHeader title={t("nav.stats")}>
-        {(devices?.length ?? 0) > 1 && (
-          <Select
-            value={device}
-            onChange={setDevice}
-            options={[
-              { value: "", label: t("stats.thisDevice") },
-              { value: "all", label: t("stats.allDevices") },
-              ...devices!.filter((d) => !d.this).map((d) => ({ value: d.id, label: d.name })),
-            ]}
-            width={150}
-          />
-        )}
+        {(devices?.length ?? 0) > 1 && <DevicePicker devices={devices!} picked={picked} onChange={setPicked} />}
         <Segmented
           value={range}
           onChange={(v) => {
@@ -302,7 +367,7 @@ export default function Stats() {
           trigger={(open) => <Button size="sm" variant="ghost" icon={<MoreHorizontal size={15} />} onClick={open} tip={t("stats.more")} />}
           items={[
             { label: t("stats.exportCsv"), icon: <Download size={14} />, onClick: () => void exportAs("csv") },
-            { label: t("stats.exportJson"), icon: <Download size={14} />, onClick: () => void exportAs("json") },
+            { label: t("stats.exportJson"), icon: <Download size={14} />, disabled: !onlyHere, onClick: () => void exportAs("json") },
             { label: t("stats.import"), icon: <FileUp size={14} />, onClick: () => void importFile() },
             { separator: true },
             { label: t("stats.settings"), icon: <Settings2 size={14} />, onClick: () => setSettings(true) },
@@ -392,7 +457,7 @@ export default function Stats() {
                   {t("stats.clearFilters")}
                 </button>
               )}
-              {narrowed && device === "" && (
+              {narrowed && onlyHere && (
                 <Button size="sm" variant="ghost" onClick={findConnections} style={{ marginInlineStart: "auto" }}>
                   {t("stats.toConnections")}
                 </Button>
@@ -403,7 +468,12 @@ export default function Stats() {
                 <Ranking
                   key={dim}
                   title={title}
-                  items={items(data)}
+                  items={expanded.has(dim) ? items(data) : capped(items(data), 10)}
+                  more={
+                    (expanded.has(dim) ? items(data).filter((i) => !i.other).length > 10 : items(data).filter((i) => !i.other).length >= 10)
+                      ? { open: expanded.has(dim), toggle: () => setExpanded((e) => { const n = new Set(e); if (n.has(dim)) n.delete(dim); else n.add(dim); return n; }) }
+                      : undefined
+                  }
                   empty={emptyMsg}
                   byConns={sortBy === "conns"}
                   selected={where[dim]}

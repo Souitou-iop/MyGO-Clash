@@ -1132,6 +1132,10 @@ const ru: Record<Key, string> = {
   "substore.sub": "Подписка",
   "substore.collection": "Коллекция",
   "substore.added": "Добавлено",
+  "stats.nDevices": "Устройств: {n}",
+  "stats.showAll": "Показать все",
+  "stats.showLess": "Свернуть",
+  "sync.everyDevice": "Все устройства",
 };
 
 export default ru;

@@ -1132,6 +1132,10 @@ const tr: Record<Key, string> = {
   "substore.sub": "Abonelik",
   "substore.collection": "Koleksiyon",
   "substore.added": "Eklendi",
+  "stats.nDevices": "{n} cihaz",
+  "stats.showAll": "Tümünü göster",
+  "stats.showLess": "Daha az göster",
+  "sync.everyDevice": "Tüm cihazlar",
 };
 
 export default tr;

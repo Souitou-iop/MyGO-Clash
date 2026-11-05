@@ -1132,6 +1132,10 @@ const ar: Record<Key, string> = {
   "substore.sub": "اشتراك",
   "substore.collection": "مجموعة",
   "substore.added": "أُضيف",
+  "stats.nDevices": "{n} أجهزة",
+  "stats.showAll": "عرض الكل",
+  "stats.showLess": "عرض أقل",
+  "sync.everyDevice": "كل الأجهزة",
 };
 
 export default ar;

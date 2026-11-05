@@ -1132,6 +1132,10 @@ const zhTW: Record<Key, string> = {
   "substore.sub": "訂閱",
   "substore.collection": "組合訂閱",
   "substore.added": "已新增",
+  "stats.nDevices": "{n} 台裝置",
+  "stats.showAll": "顯示全部",
+  "stats.showLess": "收起",
+  "sync.everyDevice": "全部裝置",
 };
 
 export default zhTW;

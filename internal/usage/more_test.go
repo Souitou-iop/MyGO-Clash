@@ -96,8 +96,8 @@ func TestExportImportAndCompare(t *testing.T) {
 		t.Fatalf("prev: %+v", r.Prev)
 	}
 	data := s.Export("", "", "laptop")
-	csv := string(s.ExportCSV("", ""))
-	if !strings.Contains(csv, "a.com") || !strings.HasPrefix(csv, "\xef\xbb\xbfdate,hour") {
+	csv := string(s.ExportCSV("", "", "laptop", nil))
+	if !strings.Contains(csv, "laptop,") || !strings.Contains(csv, "a.com") || !strings.HasPrefix(csv, "\xef\xbb\xbfdevice,date,hour") {
 		t.Fatalf("csv: %q", csv)
 	}
 	other := Open(filepath.Join(t.TempDir(), "usage.json"))
@@ -124,8 +124,15 @@ func TestExportImportAndCompare(t *testing.T) {
 	if r.Down != 140 {
 		t.Fatalf("with another device: %+v", r)
 	}
-	if r := other.QueryWith(StatsQuery{Range: "7d", Where: map[string]string{DimApp: "p"}}, true, src); !r.Partial {
-		t.Fatal("another device's days narrow")
+	// Another device's latest days narrow, from the combinations it shares.
+	if r := other.QueryWith(StatsQuery{Range: "7d", Where: map[string]string{DimApp: "p"}}, true, src); r.Partial || r.Down != 140 {
+		t.Fatalf("another device's days narrowed: %+v", r)
+	}
+	if r := other.QueryWith(StatsQuery{Range: "7d"}, false, src); r.Down != 70 {
+		t.Fatalf("another device alone: %+v", r)
+	}
+	if csv := string(other.ExportCSV("", "", "", map[string]Source{"desktop": src})); !strings.Contains(csv, "desktop,") || strings.Contains(csv, "laptop,") {
+		t.Fatalf("csv of another device: %q", csv)
 	}
 }
 
