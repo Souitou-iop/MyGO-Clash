@@ -120,6 +120,17 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 	}
 	if changed(func(s config.Settings) any { return s.Sync }) {
 		a.syncer.restart()
+		// The core's node forwards the port of word between devices.
+		if cur.Tailscale.Mode == "embedded" && changed(func(s config.Settings) any { return []any{s.Sync.Enabled, s.Sync.Tailnet} }) && !needRestart {
+			go func() {
+				if err := a.applyConfig(context.Background()); err != nil {
+					log.Printf("apply the configuration for sync: %v", err)
+				}
+			}()
+		}
+	}
+	if changed(func(s config.Settings) any { return s.Stats }) {
+		a.applyStatsOptions(cur)
 	}
 	if changed(func(s config.Settings) any { return s.Updates }) && a.updates != nil {
 		a.updates.schedule()

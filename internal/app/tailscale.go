@@ -82,6 +82,9 @@ func (m *tailscaleManager) coreConfig(st config.Settings) *coreapi.TailscaleConf
 		cfg.ShareProxyPort = t.ShareProxyPort
 		cfg.ShareProxyTarget = "127.0.0.1:" + itoa(st.Clash.MixedPort)
 	}
+	if target := m.a.nudge.target(); target != "" {
+		cfg.SyncPort, cfg.SyncTarget = nudgePort, target
+	}
 	m.mu.Lock()
 	cfg.State = m.state.State
 	m.mu.Unlock()

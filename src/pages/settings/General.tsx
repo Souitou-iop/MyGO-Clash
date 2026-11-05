@@ -282,6 +282,33 @@ export default function General() {
         </Row>
       </Section>
 
+      <Section title={t("subs.title")}>
+        <Row label={t("subs.quotaAlert")} desc={t("subs.quotaAlertDesc")}>
+          <Switch checked={s.subscriptions.quotaAlert} onChange={(v) => patch({ subscriptions: { quotaAlert: v } })} />
+        </Row>
+        <Collapse open={s.subscriptions.quotaAlert}>
+          <Row label={t("subs.quotaPercent")}>
+            <Select
+              value={s.subscriptions.quotaPercent}
+              onChange={(v) => patch({ subscriptions: { quotaPercent: v } })}
+              options={[5, 10, 20, 30].map((n) => ({ value: n, label: `${n}%` }))}
+              width={110}
+            />
+          </Row>
+          <Row label={t("subs.expireDays")}>
+            <Select
+              value={s.subscriptions.expireDays}
+              onChange={(v) => patch({ subscriptions: { expireDays: v } })}
+              options={[1, 3, 7, 14].map((n) => ({ value: n, label: t("subs.days", { n }) }))}
+              width={110}
+            />
+          </Row>
+        </Collapse>
+        <Row label={t("subs.rollback")} desc={t("subs.rollbackDesc")}>
+          <Switch checked={s.subscriptions.rollback} onChange={(v) => patch({ subscriptions: { rollback: v } })} />
+        </Row>
+      </Section>
+
       <Section title={t("settings.tray")}>
         <Row label={t("settings.trayClick")}>
           <Select

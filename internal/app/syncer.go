@@ -30,7 +30,13 @@ import (
 const (
 	secretSyncPassword = "sync.password"
 	secretSyncKey      = "sync.key"
+	// secretSyncIdentity is the device's key pair, to which other devices
+	// seal a new vault key when they replace it.
+	secretSyncIdentity = "sync.identity"
 )
+
+// usagePrefix is the path of each device's traffic statistics.
+const usagePrefix = "usage/"
 
 // SyncStatus is the state of sync.
 type SyncStatus struct {
@@ -50,6 +56,12 @@ type SyncStatus struct {
 	Report   *cloudsync.Report `json:"report,omitempty"`
 	NextSync time.Time         `json:"nextSync,omitzero"`
 	Labels   map[string]string `json:"labels"`
+	// NeedPassphrase is set when another device replaced the vault's key
+	// and this one needs the new passphrase to follow.
+	NeedPassphrase bool `json:"needPassphrase,omitempty"`
+	// RemovedBy names the device that removed this one from sync, after
+	// it was; "?" when it is not known.
+	RemovedBy string `json:"removedBy,omitempty"`
 }
 
 type syncer struct {
@@ -63,6 +75,9 @@ type syncer struct {
 	cancel   context.CancelFunc
 	trigger  chan struct{}
 	debounce *time.Timer
+	ident    *cloudsync.Identity
+	// names are the names of the vault's devices at the last sync.
+	names map[string]string
 }
 
 const syncStateLabel = "sync/state"
@@ -125,6 +140,11 @@ func (s *syncer) statusSnapshot() SyncStatus {
 		out.Plain = k.Plain()
 	}
 	out.Labels = s.labels()
+	if out.Report != nil {
+		for p, l := range out.Report.Labels {
+			out.Labels[p] = l
+		}
+	}
 	if out.Enabled && st.IntervalMinutes > 0 && !out.LastSync.IsZero() {
 		out.NextSync = out.LastSync.Add(time.Duration(st.IntervalMinutes) * time.Minute)
 	}
@@ -234,6 +254,46 @@ func (s *syncer) client(st config.Sync, password string) (*webdav.Client, error)
 	return webdav.New(st.URL, st.Username, password, webdav.Options{AllowInsecure: st.AllowInsecure, PinnedKey: st.PinnedKey})
 }
 
+// identity returns the device's key pair, made on first use; nil when the
+// secret store cannot keep one.
+func (s *syncer) identity() *cloudsync.Identity {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ident != nil {
+		return s.ident
+	}
+	if raw, err := base64.StdEncoding.DecodeString(s.a.secrets.Get(secretSyncIdentity)); err == nil && len(raw) > 0 {
+		if id, err := cloudsync.IdentityFromRaw(raw); err == nil {
+			s.ident = id
+			return id
+		}
+	}
+	id := cloudsync.NewIdentity()
+	if err := s.a.secrets.Set(secretSyncIdentity, base64.StdEncoding.EncodeToString(id.Raw())); err != nil {
+		log.Printf("sync: keep the device key: %v", err)
+		return nil
+	}
+	s.ident = id
+	return id
+}
+
+// keepKeys saves the vault's keys.
+func (s *syncer) keepKeys(k *cloudsync.Keys) error {
+	return s.a.secrets.Set(secretSyncKey, base64.StdEncoding.EncodeToString(k.Raw()))
+}
+
+// syncLabel names a path for the activity of the vault: profiles by name;
+// the interface names the others.
+func syncLabel(path string, data []byte) string {
+	if strings.HasPrefix(path, itemPrefix) {
+		var it itemFile
+		if json.Unmarshal(data, &it) == nil {
+			return it.Meta.Name
+		}
+	}
+	return ""
+}
+
 // keys returns the vault's keys this device keeps.
 func (s *syncer) keys() (*cloudsync.Keys, error) {
 	raw, err := base64.StdEncoding.DecodeString(s.a.secrets.Get(secretSyncKey))
@@ -253,6 +313,11 @@ func (s *syncer) engine() (*cloudsync.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	self := cloudsync.Device{Version: Version, Arch: runtime.GOARCH, Machine: machineID(), Tailnet: s.a.nudge.address()}
+	ident := s.identity()
+	if ident != nil {
+		self.PubKey = ident.Public()
+	}
 	return &cloudsync.Engine{
 		Client: c, Dir: st.Sync.Dir, Keys: keys, Source: appSource{a: s.a},
 		Policy: st.Sync.ConflictPolicy, DeviceName: s.deviceName(),
@@ -260,7 +325,41 @@ func (s *syncer) engine() (*cloudsync.Engine, error) {
 			return p == "settings" || p == "dns" || p == "tailscale" || strings.HasPrefix(p, itemPrefix)
 		},
 		Wanted: appSource{a: s.a}.wanted,
+		Self:   self, Identity: ident, Label: syncLabel, OnKeys: s.keepKeys,
 	}, nil
+}
+
+// withEngine runs fn on an engine with a copy of the state, which replaces
+// the state when fn is done, as a sync does; no sync runs meanwhile.
+func (s *syncer) withEngine(fn func(eng *cloudsync.Engine) error) error {
+	s.mu.Lock()
+	if s.running {
+		s.mu.Unlock()
+		return errors.New(tr(s.a, "syncBusy"))
+	}
+	s.running = true
+	s.mu.Unlock()
+	s.broadcast()
+	defer func() {
+		s.mu.Lock()
+		s.running = false
+		s.mu.Unlock()
+		s.broadcast()
+	}()
+	eng, err := s.engine()
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	work := cloneState(s.state)
+	s.mu.Unlock()
+	eng.State = work
+	err = fn(eng)
+	s.mu.Lock()
+	*s.state = *work
+	s.save()
+	s.mu.Unlock()
+	return err
 }
 
 // run syncs now.
@@ -291,25 +390,88 @@ func (s *syncer) run(ctx context.Context) (cloudsync.Report, error) {
 	eng.State = work
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
+	started := time.Now()
 	rep, err := eng.Sync(ctx)
+	var removed *cloudsync.RemovedError
 	s.mu.Lock()
 	*s.state = *work
+	ev := cloudsync.Event{At: started, Duration: time.Since(started).Milliseconds()}
 	if err != nil {
 		s.state.LastError = err.Error()
+		ev.Error = err.Error()
+		s.status.NeedPassphrase = errors.Is(err, cloudsync.ErrKeyReplaced)
 	} else {
 		s.status.Pending = false
 		s.status.Report = &rep
 		s.status.Devices = rep.Devices
+		s.status.NeedPassphrase = false
+		label := func(p string) string {
+			if l := rep.Labels[p]; l != "" {
+				return p + "\x00" + l
+			}
+			return p
+		}
+		for _, p := range rep.Pushed {
+			ev.Pushed = append(ev.Pushed, label(p))
+		}
+		for _, p := range rep.Pulled {
+			ev.Pulled = append(ev.Pulled, label(p))
+		}
+		for _, p := range rep.Merged {
+			ev.Merged = append(ev.Merged, label(p))
+		}
+		ev.Conflicts = len(rep.Conflicts)
+		s.names = map[string]string{}
+		for id, d := range eng.Current().Devices {
+			s.names[id] = d.DisplayName()
+		}
+	}
+	// A sync that found nothing to do is not worth a line of the history.
+	if err != nil || len(ev.Pushed)+len(ev.Pulled)+len(ev.Merged)+ev.Conflicts > 0 {
+		s.state.Record(ev)
 	}
 	s.save()
 	s.mu.Unlock()
+	if errors.As(err, &removed) {
+		s.removed(removed.By)
+		return rep, err
+	}
+	if errors.Is(err, cloudsync.ErrKeyReplaced) {
+		s.a.notify(Notice{Level: "warning", Message: tr(s.a, "syncKeyReplaced"), Action: "open-sync", Page: "settings/sync", Important: true})
+		return rep, err
+	}
 	if err != nil {
 		return rep, err
+	}
+	if len(rep.Pushed) > 0 {
+		go s.a.nudge.tell(eng)
 	}
 	if len(rep.Conflicts) > 0 {
 		s.a.notify(Notice{Level: "warning", Message: fmt.Sprintf(tr(s.a, "syncConflicts"), len(rep.Conflicts)), Action: "open-sync", Page: "settings/sync"})
 	}
 	return rep, nil
+}
+
+// removed turns sync off after another device removed this one, and
+// forgets the vault's keys; the data stays.
+func (s *syncer) removed(by string) {
+	if by == "" {
+		by = "?"
+	}
+	_, _ = s.a.updateSettings(s.a.ctx, func(cs *config.Settings) { cs.Sync.Enabled = false })
+	_ = s.a.secrets.Set(secretSyncKey, "")
+	s.mu.Lock()
+	id := s.state.DeviceID
+	*s.state = cloudsync.State{DeviceID: id}
+	s.status.RemovedBy = by
+	s.save()
+	s.mu.Unlock()
+	msg := tr(s.a, "syncRemoved")
+	if by != "?" {
+		msg = fmt.Sprintf(tr(s.a, "syncRemovedBy"), by)
+	}
+	s.a.notify(Notice{Level: "warning", Message: msg, Page: "settings/sync", Important: true})
+	s.broadcast()
 }
 
 // appSource is the app's data, as sync sees it: settings, the DNS
@@ -357,6 +519,8 @@ func (s appSource) wanted(path string) bool {
 		return cats["dns"]
 	case path == pathTailscale || path == pathTSKey:
 		return cats["tailscale"]
+	case strings.HasPrefix(path, usagePrefix):
+		return cats["stats"]
 	}
 	return cats["profiles"] // the order, the profiles and their extensions
 }
@@ -398,10 +562,18 @@ func (s appSource) snapshot(cats map[string]bool) (map[string]cloudsync.Item, er
 		for _, p := range b.Index.Items {
 			order = append(order, p.UID)
 			meta := p
-			meta.Selected, meta.LastError = nil, ""
+			meta.Selected, meta.LastError, meta.Prev = nil, "", nil
 			out[itemPrefix+p.UID] = cloudsync.Item{Data: canonical(itemFile{Meta: meta, Content: b.Contents[p.UID]}), Modified: time.Unix(p.Updated, 0)}
 		}
 		out[pathOrder] = cloudsync.Item{Data: canonical(order), Modified: mtime}
+	}
+	if cats["stats"] {
+		// This device's own, and the others' as they came: a path stays
+		// unchanged here unless this device wrote it.
+		out[usagePrefix+s.a.syncer.state.DeviceID] = cloudsync.Item{Data: s.a.ownUsageData(), Modified: time.Now().Truncate(time.Hour)}
+		for p, data := range s.a.readRemoteUsage() {
+			out[p] = cloudsync.Item{Data: data, Modified: mtime}
+		}
 	}
 	return out, nil
 }
@@ -446,6 +618,10 @@ func (s appSource) Apply(ctx context.Context, changes map[string][]byte) error {
 			if err := json.Unmarshal(data, &d); err == nil {
 				settingsPatch["dns"] = d
 			}
+		case strings.HasPrefix(path, usagePrefix):
+			if id := strings.TrimPrefix(path, usagePrefix); id != s.a.syncer.state.DeviceID {
+				errs = append(errs, s.a.writeRemoteUsage(id, data))
+			}
 		case strings.HasPrefix(path, itemPrefix):
 			uid := strings.TrimPrefix(path, itemPrefix)
 			if data == nil {
@@ -477,7 +653,8 @@ func (s appSource) Apply(ctx context.Context, changes map[string][]byte) error {
 				}
 			}
 			if local, err := s.a.profiles.Get(uid); err == nil {
-				it.Meta.Selected = local.Selected // selections stay the device's
+				// Selections and the previous version stay the device's.
+				it.Meta.Selected, it.Meta.Prev = local.Selected, local.Prev
 			}
 			errs = append(errs, s.a.profiles.UpsertItem(&it.Meta, uid, it.Content))
 		case path == pathOrder && data != nil:
@@ -726,9 +903,10 @@ func (s Sync) Setup(ctx context.Context, setup SyncSetup) (bool, error) {
 	if err := s.a.secrets.Set(secretSyncPassword, password); err != nil {
 		return false, err
 	}
-	if err := s.a.secrets.Set(secretSyncKey, base64.StdEncoding.EncodeToString(keys.Raw())); err != nil {
+	if err := s.a.syncer.keepKeys(keys); err != nil {
 		return false, err
 	}
+	s.a.syncer.join(ctx, &cloudsync.Engine{Client: c, Dir: st.Dir, Keys: keys})
 	if _, err := s.a.updateSettings(ctx, func(cs *config.Settings) {
 		cs.Sync.Enabled, cs.Sync.URL, cs.Sync.Username, cs.Sync.Dir = true, st.URL, st.Username, st.Dir
 		cs.Sync.AllowInsecure, cs.Sync.PinnedKey = st.AllowInsecure, st.PinnedKey
@@ -741,6 +919,36 @@ func (s Sync) Setup(ctx context.Context, setup SyncSetup) (bool, error) {
 		}
 	}()
 	return created, nil
+}
+
+// join records that the device joins the vault now, which lifts an old
+// removal of it. A device that lost its state (the app was installed again)
+// takes the place of its old self, found by the computer and its name,
+// instead of becoming another device.
+func (s *syncer) join(ctx context.Context, eng *cloudsync.Engine) {
+	m, _ := eng.Manifest(ctx)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	me := s.state.DeviceID
+	if _, known := m.Devices[me]; !known && len(s.state.Base) == 0 {
+		if mid := machineID(); mid != "" {
+			for id, d := range m.Devices {
+				if d.Machine == mid && d.Name == s.deviceName() && d.OS == runtime.GOOS {
+					log.Printf("sync: this device was %s before", id)
+					me = id
+					break
+				}
+			}
+		}
+	}
+	if me == s.state.DeviceID && s.state.KeyID == eng.Keys.ID {
+		// The same vault again, as when the server's password changes.
+		s.state.Joined = time.Now()
+	} else {
+		*s.state = cloudsync.State{DeviceID: me, Joined: time.Now(), History: s.state.History}
+	}
+	s.status.RemovedBy, s.status.NeedPassphrase = "", false
+	s.save()
 }
 
 // Status returns the state of sync.
@@ -806,14 +1014,28 @@ func (s Sync) ChangePassphrase(ctx context.Context, passphrase string) error {
 
 // DeviceInfo is a device that syncs.
 type DeviceInfo struct {
-	ID       string    `json:"id"`
+	ID string `json:"id"`
+	// Name is the device's own name; Label the user's for it, if any.
 	Name     string    `json:"name"`
+	Label    string    `json:"label,omitempty"`
 	OS       string    `json:"os"`
+	Arch     string    `json:"arch,omitempty"`
+	Version  string    `json:"version,omitempty"`
 	LastSync time.Time `json:"lastSync"`
+	Joined   time.Time `json:"joined,omitzero"`
 	This     bool      `json:"this"`
+	// Duplicate is set on an older entry of the same name and OS as
+	// another, most likely the same computer before the app was installed
+	// again.
+	Duplicate bool `json:"duplicate,omitempty"`
+	// HasKey reports that the device follows a replaced key by itself;
+	// without, it needs the new passphrase.
+	HasKey bool `json:"hasKey"`
+	// Tailnet is set when the device takes word of changes over Tailscale.
+	Tailnet bool `json:"tailnet,omitempty"`
 }
 
-// Devices lists the devices that sync with the vault.
+// Devices lists the devices that sync with the vault, the latest first.
 func (s Sync) Devices(ctx context.Context) ([]DeviceInfo, error) {
 	eng, err := s.a.syncer.engine()
 	if err != nil {
@@ -823,11 +1045,140 @@ func (s Sync) Devices(ctx context.Context) ([]DeviceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	me := s.a.syncer.state.DeviceID
 	out := []DeviceInfo{}
 	for id, d := range devs {
-		out = append(out, DeviceInfo{ID: id, Name: d.Name, OS: d.OS, LastSync: d.LastSync, This: id == s.a.syncer.state.DeviceID})
+		out = append(out, DeviceInfo{
+			ID: id, Name: d.Name, Label: d.Label, OS: d.OS, Arch: d.Arch, Version: d.Version, LastSync: d.LastSync, Joined: d.Joined,
+			This: id == me, HasKey: len(d.PubKey) > 0, Tailnet: d.Tailnet != "",
+		})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].LastSync.After(out[j].LastSync) })
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].This != out[j].This {
+			return out[i].This
+		}
+		return out[i].LastSync.After(out[j].LastSync)
+	})
+	seen := map[string]bool{}
+	for i := range out {
+		k := strings.ToLower(out[i].Name) + "\x00" + out[i].OS
+		if seen[k] && !out[i].This {
+			out[i].Duplicate = true
+		}
+		seen[k] = true
+	}
+	return out, nil
+}
+
+// RenameDevice names a device for every device of the vault; "" gives it
+// back its own name.
+func (s Sync) RenameDevice(ctx context.Context, id, label string) error {
+	return s.a.syncer.withEngine(func(eng *cloudsync.Engine) error { return eng.RenameDevice(ctx, id, label) })
+}
+
+// RemoveDevices takes devices out of the vault, with their statistics.
+// With revoke, the vault's key and passphrase are replaced too, so that
+// they can no longer read what it holds; the devices that stay follow by
+// themselves (or, for older versions, with the new passphrase).
+func (s Sync) RemoveDevices(ctx context.Context, ids []string, revoke bool, passphrase string) error {
+	var paths []string
+	for _, id := range ids {
+		if id == s.a.syncer.state.DeviceID {
+			return errors.New(tr(s.a, "syncRemoveSelf"))
+		}
+		paths = append(paths, usagePrefix+id)
+	}
+	err := s.a.syncer.withEngine(func(eng *cloudsync.Engine) error {
+		if !revoke {
+			return eng.RemoveDevice(ctx, ids, paths)
+		}
+		// Bring the vault up to date first: what the rotation encrypts
+		// again is what the server has.
+		if _, err := eng.Sync(ctx); err != nil {
+			return err
+		}
+		_, err := eng.Rotate(ctx, passphrase, ids, paths)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	go func() {
+		if _, err := s.a.syncer.run(s.a.ctx); err != nil {
+			log.Printf("sync after removing devices: %v", err)
+		}
+	}()
+	return nil
+}
+
+// Rejoin follows a vault whose key another device replaced, with the new
+// passphrase, and syncs.
+func (s Sync) Rejoin(ctx context.Context, passphrase string) error {
+	err := s.a.syncer.withEngine(func(eng *cloudsync.Engine) error {
+		keys, err := eng.Rejoin(ctx, passphrase)
+		if err != nil {
+			return err
+		}
+		return s.a.syncer.keepKeys(keys)
+	})
+	if err != nil {
+		return err
+	}
+	s.a.syncer.mu.Lock()
+	s.a.syncer.status.NeedPassphrase = false
+	s.a.syncer.mu.Unlock()
+	_, err = s.a.syncer.run(ctx)
+	return err
+}
+
+// SyncActivity is something a device did to the vault.
+type SyncActivity struct {
+	At       time.Time          `json:"at"`
+	DeviceID string             `json:"deviceId"`
+	Device   string             `json:"device"`
+	This     bool               `json:"this"`
+	Kind     string             `json:"kind"`
+	Changes  []cloudsync.Change `json:"changes"`
+	Target   string             `json:"target,omitempty"`
+	Detail   string             `json:"detail,omitempty"`
+}
+
+// Activity lists what the devices did to the vault, the latest first.
+func (s Sync) Activity(ctx context.Context) ([]SyncActivity, error) {
+	eng, err := s.a.syncer.engine()
+	if err != nil {
+		return nil, err
+	}
+	m, err := eng.Manifest(ctx)
+	if err != nil {
+		return nil, err
+	}
+	me := s.a.syncer.state.DeviceID
+	out := make([]SyncActivity, 0, len(m.Activity))
+	for i := len(m.Activity) - 1; i >= 0; i-- {
+		ac := m.Activity[i]
+		it := SyncActivity{At: ac.At, DeviceID: ac.Device, Device: m.DeviceName(ac.Device), This: ac.Device == me, Kind: ac.Kind, Changes: ac.Changes, Detail: ac.Detail}
+		if it.Changes == nil {
+			it.Changes = []cloudsync.Change{}
+		}
+		if ac.Target != "" {
+			it.Target = m.DeviceName(ac.Target)
+		}
+		out = append(out, it)
+	}
+	return out, nil
+}
+
+// History lists what this device's syncs did, the latest first. A path
+// with a name for people is "path\x00name".
+func (s Sync) History(ctx context.Context) ([]cloudsync.Event, error) {
+	s.a.syncer.mu.Lock()
+	defer s.a.syncer.mu.Unlock()
+	h := s.a.syncer.state.History
+	out := make([]cloudsync.Event, 0, len(h))
+	for i := len(h) - 1; i >= 0; i-- {
+		out = append(out, h[i])
+	}
 	return out, nil
 }
 

@@ -432,3 +432,26 @@ func (s Tools) CheckUnlock(ctx context.Context, ids []string, ch *mygo.Channel[t
 	tools.CheckUnlock(ctx, s.a.proxyURL(), ids, func(u tools.Unlock) { _ = ch.Send(u) })
 	return nil
 }
+
+// SpeedTest measures the latency and speeds through the proxy, sending
+// samples as it goes; the last has the phase "done".
+func (s Tools) SpeedTest(ctx context.Context, ch *mygo.Channel[tools.SpeedSample]) error {
+	proxy := s.a.proxyURL()
+	if proxy == "" {
+		return errors.New(tr(s.a, "noRuntime"))
+	}
+	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
+	defer cancel()
+	last := time.Time{}
+	tools.SpeedTest(ctx, proxy, func(sm tools.SpeedSample) {
+		// Every sample would be a lot of messages; a few a second do.
+		if sm.Phase != "done" && time.Since(last) < 200*time.Millisecond && sm.Progress < 1 {
+			return
+		}
+		last = time.Now()
+		if ch.Send(sm) != nil {
+			cancel()
+		}
+	})
+	return nil
+}

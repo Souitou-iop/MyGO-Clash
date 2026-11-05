@@ -74,6 +74,9 @@ type Settings struct {
 	Sync        Sync        `json:"sync"`
 	Backup      Backup      `json:"backup"`
 	Updates     Updates     `json:"updates"`
+	Stats       Stats       `json:"stats"`
+	// Subscriptions is how the app watches remote profiles.
+	Subscriptions Subscriptions `json:"subscriptions"`
 	// ConnectivitySites is the site list of the connectivity page; empty
 	// means the built-in defaults.
 	ConnectivitySites []tools.Site `json:"connectivitySites,omitempty"`
@@ -396,6 +399,37 @@ type Sync struct {
 	// PinnedKey is the SHA-256 of the server certificate's public key,
 	// base64, to trust a self-signed certificate.
 	PinnedKey string `json:"pinnedKey"`
+	// Tailnet lets the devices on the same tailnet tell each other of
+	// their changes, so that they sync at once.
+	Tailnet bool `json:"tailnet"`
+}
+
+// Stats is how the traffic statistics count.
+type Stats struct {
+	// KeepDays is how many days are kept; 0 keeps everything.
+	KeepDays int `json:"keepDays"`
+	// ExcludeLocal leaves out the traffic to the local network and the
+	// tailnet.
+	ExcludeLocal bool `json:"excludeLocal"`
+	// Exclude leaves out the connections that match any of these: a
+	// domain (and its subdomains), an address or CIDR range, or a process
+	// as "process:name".
+	Exclude []string `json:"exclude"`
+}
+
+// Subscriptions is how the app watches remote profiles.
+type Subscriptions struct {
+	// QuotaAlert warns when a subscription's traffic or time runs low.
+	QuotaAlert bool `json:"quotaAlert"`
+	// QuotaPercent is how much traffic left, in percent, warns.
+	QuotaPercent int `json:"quotaPercent"`
+	// ExpireDays is how many days before expiry warn.
+	ExpireDays int `json:"expireDays"`
+	// Rollback keeps the previous content of a remote profile, and goes
+	// back to it when an update leaves a configuration the core refuses.
+	Rollback bool `json:"rollback"`
+	// SubStore is the address of a Sub-Store backend to import from.
+	SubStore string `json:"subStore"`
 }
 
 // Backup makes local backups.
@@ -505,9 +539,12 @@ func Defaults() Settings {
 			IntervalMinutes: 30,
 			OnChange:        true,
 			ConflictPolicy:  "ask",
-			Categories:      []string{"profiles", "settings", "dns"},
+			Categories:      []string{"profiles", "settings", "dns", "stats"},
+			Tailnet:         true,
 		},
-		Backup: Backup{Keep: 10},
+		Backup:        Backup{Keep: 10},
+		Stats:         Stats{KeepDays: 90, Exclude: []string{}},
+		Subscriptions: Subscriptions{QuotaAlert: true, QuotaPercent: 10, ExpireDays: 3, Rollback: true},
 	}
 	if runtime.GOOS == "windows" {
 		s.CopyEnvType = "powershell"
@@ -789,6 +826,23 @@ func (s *Settings) Normalize() error {
 		bad("sync needs a WebDAV address")
 	}
 	sy.Categories = cleanList(sy.Categories)
+	if s.Stats.KeepDays < 0 || s.Stats.KeepDays > 3650 {
+		s.Stats.KeepDays = d.Stats.KeepDays
+	}
+	s.Stats.Exclude = cleanList(s.Stats.Exclude)
+	sub := &s.Subscriptions
+	if sub.QuotaPercent < 1 || sub.QuotaPercent > 90 {
+		sub.QuotaPercent = d.Subscriptions.QuotaPercent
+	}
+	if sub.ExpireDays < 0 || sub.ExpireDays > 60 {
+		sub.ExpireDays = d.Subscriptions.ExpireDays
+	}
+	sub.SubStore = strings.TrimRight(strings.TrimSpace(sub.SubStore), "/")
+	if sub.SubStore != "" {
+		if u, err := url.Parse(sub.SubStore); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+			bad("the Sub-Store address %q is not a URL", sub.SubStore)
+		}
+	}
 	if s.Backup.Keep < 1 {
 		s.Backup.Keep = d.Backup.Keep
 	}

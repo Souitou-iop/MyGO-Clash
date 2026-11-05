@@ -241,6 +241,9 @@ func (a *App) scheduleApply() {
 		ctx, cancel := context.WithTimeout(a.ctx, 2*time.Minute)
 		defer cancel()
 		if err := a.applyConfig(ctx); err != nil {
+			if a.rollbackAfter(ctx, err) {
+				return
+			}
 			a.notifyErr("profiles", tr(a, "applyFailed"), err)
 		}
 	})
@@ -320,6 +323,7 @@ func (a *App) collectUsage() {
 			if !ok {
 				return
 			}
+			a.geo.prepare(snap)
 			a.usage.Observe(snap)
 		}
 	}
@@ -381,7 +385,7 @@ func (a *App) background() {
 	go a.collectUsage()
 	minute := time.NewTicker(time.Minute)
 	defer minute.Stop()
-	var lastDelay, lastBackup time.Time
+	var lastDelay, lastBackup, lastQuota time.Time
 	lastBackup = time.Now()
 	for {
 		select {
@@ -393,6 +397,10 @@ func (a *App) background() {
 			log.Printf("save the traffic statistics: %v", err)
 		}
 		st := a.settings.Get()
+		if time.Since(lastQuota) >= time.Hour {
+			lastQuota = time.Now()
+			go a.checkQuotas()
+		}
 		if st.Latency.AutoCheck && time.Since(lastDelay) >= time.Duration(st.Latency.AutoCheckMinutes)*time.Minute {
 			lastDelay = time.Now()
 			go a.checkCurrentDelays()
@@ -436,7 +444,9 @@ func (a *App) onProfileUpdated(uid string, err error) {
 	p, _ := a.profiles.Get(uid)
 	if err != nil {
 		a.notify(Notice{Level: "warning", Message: fmt.Sprintf(tr(a, "updateFailed"), p.Name), Detail: err.Error(), Page: "profiles"})
+		return
 	}
+	a.checkQuotas()
 }
 
 // onProfilesChanged follows changes of profiles: the page's list, the

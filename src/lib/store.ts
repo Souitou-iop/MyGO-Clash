@@ -63,6 +63,8 @@ interface AppStore {
   toasts: Toast[];
   /** focusGroup is a proxy group for the proxies page to show, once. */
   focusGroup: string | null;
+  /** connPreset is what the connections page opens on, once. */
+  connPreset: { view: "active" | "closed"; search: string } | null;
   navigate: (page: Page, tab?: string) => void;
 }
 
@@ -82,6 +84,7 @@ export const useApp = create<AppStore>((set) => ({
   selection: 0,
   toasts: [],
   focusGroup: null,
+  connPreset: null,
   navigate: (page, tab) => set((s) => ({ page, settingsTab: tab ?? s.settingsTab })),
 }));
 

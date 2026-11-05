@@ -25,6 +25,8 @@ const (
 	PathTSLogout      = "/mygo/tailscale/logout"
 	PathTSPrefs       = "/mygo/tailscale/prefs"
 	PathTSPing        = "/mygo/tailscale/ping"
+	PathTSPost        = "/mygo/tailscale/post"
+	PathGeoIP         = "/mygo/geoip"
 	PathTSStateExport = "/mygo/tailscale/state"
 )
 
@@ -159,6 +161,11 @@ type TailscaleConfig struct {
 	ShareProxyPort int `json:"shareProxyPort,omitempty"`
 	// ShareProxyTarget is the address of the mixed proxy, e.g. 127.0.0.1:7897.
 	ShareProxyTarget string `json:"shareProxyTarget,omitempty"`
+	// SyncPort, when not 0, serves SyncTarget, the app's listener for word
+	// from its other devices that the sync vault changed, to the devices
+	// of the same user on the tailnet.
+	SyncPort   int    `json:"syncPort,omitempty"`
+	SyncTarget string `json:"syncTarget,omitempty"`
 	// State is the node's saved state, keyed by name: its keys and
 	// profile. The app stores it encrypted and hands it back at start.
 	State map[string][]byte `json:"state,omitempty"`
@@ -194,6 +201,25 @@ type TailscalePrefs struct {
 type TailscalePing struct {
 	IP   string `json:"ip"`
 	Type string `json:"type,omitempty"` // disco (default), TSMP, ICMP
+}
+
+// GeoIPQuery asks for the countries of addresses.
+type GeoIPQuery struct {
+	IPs []string `json:"ips"`
+}
+
+// GeoIPResult maps each address to its country code, "" when not known.
+type GeoIPResult struct {
+	Codes map[string]string `json:"codes"`
+}
+
+// TailscalePost posts a small body to a peer over the tailnet, for the
+// app's word to its other devices.
+type TailscalePost struct {
+	// Address is the peer's host:port on the tailnet.
+	Address string `json:"address"`
+	Path    string `json:"path"`
+	Body    []byte `json:"body"`
 }
 
 // TailscalePingResult is the result of a ping.

@@ -63,14 +63,20 @@ type App struct {
 	guard sysproxy.Guard
 	pac   sysproxy.PACServer
 
-	traffic *hub[coreapi.Traffic]
-	memory  *hub[coreapi.Memory]
-	conns   *hub[coreapi.Connections]
-	usage   *usage.Store
-	logs    *logRing
+	traffic  *hub[coreapi.Traffic]
+	memory   *hub[coreapi.Memory]
+	conns    *hub[coreapi.Connections]
+	usage    *usage.Store
+	usageOut ownUsage
+	// alerts remembers the warnings given about subscriptions.
+	alerts     *quotaAlerts
+	alertsOnce sync.Once
+	geo        *geoCache
+	logs       *logRing
 
 	ts      *tailscaleManager
 	syncer  *syncer
+	nudge   *nudger
 	tray    *trayUI
 	panel   *quickPanel
 	speed   *speedWindow
@@ -266,9 +272,13 @@ func (a *App) init() error {
 	})
 	a.conns = newHub(a.pollConnections)
 	a.usage = usage.Open(filepath.Join(a.dirs.Data, "usage.json"))
+	a.geo = newGeoCache(a)
+	a.applyStatsOptions(st)
 	a.logs = newLogRing(2000)
 	a.ts = newTailscaleManager(a)
 	a.syncer = newSyncer(a)
+	a.nudge = newNudger(a)
+	a.nudge.start()
 	a.state = AppState{Mode: st.Clash.Mode, MixedPort: st.Clash.MixedPort, Service: ServiceState{Supported: serviceSupported()}}
 	logx.CleanOld(logs, st.Logs.AutoCleanDays)
 	return nil
@@ -623,6 +633,7 @@ func (a *App) cleanup() {
 	}
 	a.pac.Close()
 	a.syncer.stop()
+	a.nudge.stop()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	a.core.Stop(ctx)

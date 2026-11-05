@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/config"
 	"github.com/mygo-clash/mygo-clash/internal/enhance"
 	"github.com/mygo-clash/mygo-clash/internal/profiles"
+	"github.com/mygo-clash/mygo-clash/internal/tools"
 	"github.com/mygo-clash/mygo-clash/internal/yamlx"
 )
 
@@ -103,7 +105,11 @@ func (s Profiles) Update(ctx context.Context, uid string, withProxy *bool) (prof
 		return profiles.Profile{}, err
 	}
 	_ = ProfilesEvent.Broadcast(s.a.profilesView())
-	return s.a.profiles.Update(ctx, uid, withProxy)
+	p, err := s.a.profiles.Update(ctx, uid, withProxy)
+	if err == nil {
+		go s.a.checkQuotas()
+	}
+	return p, err
 }
 
 // UpdateAll updates every remote profile, and returns those that failed.
@@ -404,4 +410,26 @@ func (s Profiles) RulesOf(ctx context.Context, uid string) ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// SubStore lists the subscriptions and collections of a Sub-Store backend,
+// and keeps its address. It asks directly, and through the proxy when that
+// fails.
+func (s Profiles) SubStore(ctx context.Context, base string) ([]profiles.SubStoreItem, error) {
+	base = strings.TrimRight(strings.TrimSpace(base), "/")
+	items, err := profiles.SubStoreList(ctx, &http.Client{Timeout: 15 * time.Second}, base)
+	if err != nil {
+		if proxy := s.a.proxyURL(); proxy != "" {
+			if items2, err2 := profiles.SubStoreList(ctx, tools.Client(proxy, 15*time.Second, true), base); err2 == nil {
+				items, err = items2, nil
+			}
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	if s.a.settings.Get().Subscriptions.SubStore != base {
+		_, _ = s.a.updateSettings(ctx, func(cs *config.Settings) { cs.Subscriptions.SubStore = base })
+	}
+	return items, nil
 }

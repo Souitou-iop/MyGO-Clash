@@ -235,6 +235,23 @@ func (c *Client) TailscalePing(ctx context.Context, p TailscalePing) (TailscaleP
 	return r, err
 }
 
+// GeoIP looks the countries of addresses up in the core's GeoIP database.
+func (c *Client) GeoIP(ctx context.Context, ips []string) (map[string]string, error) {
+	var r GeoIPResult
+	err := c.do(ctx, http.MethodPost, PathGeoIP, nil, GeoIPQuery{IPs: ips}, &r)
+	return r.Codes, err
+}
+
+// TailscalePost posts to a peer of the embedded node; it returns the
+// peer's HTTP status.
+func (c *Client) TailscalePost(ctx context.Context, p TailscalePost) (int, error) {
+	var r struct {
+		Status int `json:"status"`
+	}
+	err := c.do(ctx, http.MethodPost, PathTSPost, nil, p, &r)
+	return r.Status, err
+}
+
 // TailscaleState returns the embedded node's saved state.
 func (c *Client) TailscaleState(ctx context.Context) (TailscaleState, error) {
 	var s TailscaleState

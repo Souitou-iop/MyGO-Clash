@@ -1,12 +1,12 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Pause, Play, X, XCircle } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Pause, Play, Trash2, X, XCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "../components/Page";
 import { bytes, duration, rate, ruleType } from "../lib/format";
-import { useStream } from "../lib/hooks";
+import { useInterval, useStream } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { run, useApp } from "../lib/store";
-import { Connections as API, type Connection, type Connections as Snapshot } from "../mygo";
+import { Connections as API, type Closed, type Connection, type Connections as Snapshot, Stats } from "../mygo";
 import { Badge, Button, confirm, Dialog, Empty, SearchInput, Segmented } from "../ui";
 import { CoreDown } from "../components/CoreDown";
 
@@ -17,6 +17,32 @@ function host(c: Connection): string {
   const m = c.metadata;
   const h = m.host || m.sniffHost || m.destinationIP;
   return `${h}:${m.destinationPort}`;
+}
+
+/** fromClosed shapes a closed connection of the history like an open one. */
+function fromClosed(c: Closed): Connection & { end: string } {
+  return {
+    id: c.id,
+    start: c.start,
+    end: c.end,
+    upload: c.up,
+    download: c.down,
+    chains: c.chains ?? [],
+    rule: c.rule,
+    rulePayload: c.rulePayload ?? "",
+    metadata: {
+      network: c.network,
+      type: c.type,
+      sourceIP: c.sourceIP ?? "",
+      destinationIP: c.destinationIP ?? "",
+      sourcePort: "",
+      destinationPort: c.destinationPort ?? "",
+      host: c.host,
+      process: c.process,
+      processPath: c.processPath,
+      destinationGeoIP: c.country ? [c.country] : undefined,
+    },
+  } as Connection & { end: string };
 }
 
 function chain(c: Connection): string {
@@ -82,12 +108,29 @@ function Detail({ c, active, onClose }: { c: Connection | null; active: boolean;
 export default function Connections() {
   const t = useT();
   const running = useApp((s) => s.state?.core.status === "running");
+  const preset = useApp((s) => s.connPreset);
   const [snap, setSnap] = useState<Snapshot | null>(null);
-  const [closed, setClosed] = useState<Connection[]>([]);
+  const [closed, setClosed] = useState<(Connection & { end: string })[]>([]);
+  const [closedTotal, setClosedTotal] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(preset?.search ?? "");
   const [net, setNet] = useState<"all" | "tcp" | "udp">("all");
-  const [view, setView] = useState<View>("active");
+  const [view, setView] = useState<View>(preset?.view ?? "active");
+  useEffect(() => {
+    if (preset) useApp.setState({ connPreset: null });
+  }, [preset]);
+  // The closed connections come from the history the statistics keep,
+  // which goes on while the page is closed.
+  const loadClosed = async () => {
+    const page = await Stats.closed({ offset: 0, limit: 500 }).catch(() => null);
+    if (!page) return;
+    setClosed(page.items.map(fromClosed));
+    setClosedTotal(page.total);
+  };
+  useEffect(() => void loadClosed(), []);
+  useInterval(() => {
+    if (!paused) void loadClosed();
+  }, view === "closed" ? 3000 : 15000);
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "start", desc: true });
   // The connection shown in detail, kept up to date while it lasts.
   const [detail, setDetail] = useState<Connection | null>(null);
@@ -97,10 +140,7 @@ export default function Connections() {
     (ch) => API.stream(ch),
     (s) => {
       if (paused) return;
-      const now = new Map(s.connections.map((c) => [c.id, c] as const));
-      const gone = [...prev.current.values()].filter((c) => !now.has(c.id));
-      if (gone.length) setClosed((old) => [...gone, ...old].slice(0, 500));
-      prev.current = now;
+      prev.current = new Map(s.connections.map((c) => [c.id, c] as const));
       setSnap(s);
     },
     [],
@@ -162,9 +202,26 @@ export default function Connections() {
         <Button size="sm" variant="ghost" icon={paused ? <Play size={14} /> : <Pause size={14} />} onClick={() => setPaused(!paused)}>
           {paused ? t("common.resume") : t("common.pause")}
         </Button>
-        <Button size="sm" variant="danger" icon={<XCircle size={14} />} onClick={closeFiltered} disabled={view === "closed" || list.length === 0}>
-          {search || net !== "all" ? t("conn.closeFiltered") : t("conn.closeAll")}
-        </Button>
+        {view === "closed" ? (
+          <Button
+            size="sm"
+            variant="danger"
+            icon={<Trash2 size={14} />}
+            disabled={closedTotal === 0}
+            onClick={async () => {
+              if (await confirm({ title: t("conn.clearClosedTitle"), message: t("conn.clearClosedMsg"), confirm: t("common.clear"), danger: true })) {
+                await run(() => Stats.clearClosed(), t("common.failed"));
+                void loadClosed();
+              }
+            }}
+          >
+            {t("conn.clearClosed")}
+          </Button>
+        ) : (
+          <Button size="sm" variant="danger" icon={<XCircle size={14} />} onClick={closeFiltered} disabled={list.length === 0}>
+            {search || net !== "all" ? t("conn.closeFiltered") : t("conn.closeAll")}
+          </Button>
+        )}
       </PageHeader>
       <div className="page-body flush">
         <div className="list-toolbar">
@@ -173,7 +230,7 @@ export default function Connections() {
             onChange={setView}
             options={[
               { value: "active", label: `${t("conn.active")} ${snap?.connections.length ?? 0}` },
-              { value: "closed", label: `${t("conn.closed")} ${closed.length}` },
+              { value: "closed", label: `${t("conn.closed")} ${closedTotal}` },
             ]}
           />
           <Segmented
@@ -237,7 +294,9 @@ export default function Connections() {
                       <span className="cell tnum">{view === "active" ? rate(c.uploadSpeed ?? 0) : "—"}</span>
                       <span className="cell tnum muted">{bytes(c.download)}</span>
                       <span className="cell tnum muted">{bytes(c.upload)}</span>
-                      <span className="cell tnum faint">{duration(Date.now() - new Date(c.start).getTime())}</span>
+                      <span className="cell tnum faint" title={view === "closed" ? new Date((c as Connection & { end?: string }).end ?? c.start).toLocaleString() : undefined}>
+                        {duration((view === "closed" ? new Date((c as Connection & { end?: string }).end ?? Date.now()).getTime() : Date.now()) - new Date(c.start).getTime())}
+                      </span>
                       <span className="cell" onClick={(e) => e.stopPropagation()}>
                         {view === "active" && <Button size="sm" variant="ghost" icon={<X size={13} />} tip={t("conn.close")} onClick={() => run(() => API.close([c.id]), t("common.failed"))} />}
                       </span>

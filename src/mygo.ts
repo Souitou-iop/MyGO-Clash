@@ -65,6 +65,13 @@ export interface BackupInfo {
   remote: boolean;
 }
 
+/** Change is a path a sync sent. */
+export interface Change {
+  path: string;
+  label?: string;
+  deleted?: boolean;
+}
+
 /** Clash is the part of the core's configuration the app owns. */
 export interface Clash {
   /** rule, global, direct */
@@ -91,12 +98,55 @@ export interface Clash {
   controller: Controller;
 }
 
+/** Closed is a connection that closed. */
+export interface Closed {
+  id: string;
+  start: string;
+  end: string;
+  network: string;
+  type: string;
+  host: string;
+  destinationIP?: string;
+  destinationPort?: string;
+  sourceIP?: string;
+  process?: string;
+  processPath?: string;
+  rule: string;
+  rulePayload?: string;
+  chains: string[];
+  country?: string;
+  up: number;
+  down: number;
+}
+
+/** ClosedPage is a page of closed connections. */
+export interface ClosedPage {
+  items: Closed[];
+  /** Total counts those that match the filter. */
+  total: number;
+  /** Kept is how many the store keeps at most. */
+  kept: number;
+}
+
+/**
+ * ClosedQuery asks for a page of closed connections, the latest first.
+ * Filter keeps those whose host, address, process, rule or chain contains
+ * it, without regard to case.
+ */
+export interface ClosedQuery {
+  filter?: string;
+  offset: number;
+  limit: number;
+}
+
 /** Conflict is a path both sides changed, which waits for the user. */
 export interface Conflict {
   path: string;
   localModified: string;
   remoteModified: string;
   remoteDevice: string;
+  /** RemoteName is the name of the remote device. */
+  remoteName?: string;
   localDeleted: boolean;
   remoteDeleted: boolean;
   detected: string;
@@ -194,10 +244,47 @@ export interface DNSQueryResult {
 /** DeviceInfo is a device that syncs. */
 export interface DeviceInfo {
   id: string;
+  /** Name is the device's own name; Label the user's for it, if any. */
   name: string;
+  label?: string;
   os: string;
+  arch?: string;
+  version?: string;
   lastSync: string;
+  joined?: string;
   this: boolean;
+  /**
+   * Duplicate is set on an older entry of the same name and OS as
+   * another, most likely the same computer before the app was installed
+   * again.
+   */
+  duplicate?: boolean;
+  /**
+   * HasKey reports that the device follows a replaced key by itself;
+   * without, it needs the new passphrase.
+   */
+  hasKey: boolean;
+  /** Tailnet is set when the device takes word of changes over Tailscale. */
+  tailnet?: boolean;
+}
+
+/** Entry is bytes up and down, and the connections that opened. */
+export interface Entry {
+  up: number;
+  down: number;
+  conns?: number;
+}
+
+/** Event is a sync of this device, for its history. */
+export interface Event {
+  at: string;
+  pushed?: string[];
+  pulled?: string[];
+  merged?: string[];
+  conflicts?: number;
+  error?: string;
+  /** Duration is in milliseconds. */
+  duration: number;
 }
 
 /** HomeCard is a card of the home page. */
@@ -471,6 +558,11 @@ export interface Profile {
    * download, in minutes; 0 when it suggested none.
    */
   suggestedInterval?: number;
+  /**
+   * Prev describes the content before the last update that changed it,
+   * which this device keeps to go back to; nil when there is none.
+   */
+  prev?: Version;
 }
 
 /** ProfilesView is the list of profiles the page shows. */
@@ -558,6 +650,8 @@ export interface Report {
   retries: number;
   devices: number;
   Duration: number;
+  /** Labels names the paths sent and received, for people. */
+  labels?: Record<string, string>;
 }
 
 /** Rule is a rule of the running configuration. */
@@ -703,6 +797,9 @@ export interface Settings {
   sync: Sync;
   backup: Backup;
   updates: Updates;
+  stats: Stats;
+  /** Subscriptions is how the app watches remote profiles. */
+  subscriptions: Subscriptions;
   /**
    * ConnectivitySites is the site list of the connectivity page; empty
    * means the built-in defaults.
@@ -732,6 +829,30 @@ export interface SiteResult {
   delayMs: number;
   status: number;
   error?: string;
+}
+
+/**
+ * SpeedSample is how a speed test goes: Phase is latency, download,
+ * upload or done; the speeds are in bits per second and the times in
+ * milliseconds.
+ */
+export interface SpeedSample {
+  phase: string;
+  /** of the phase, 0 to 1 */
+  progress: number;
+  latency: number;
+  jitter: number;
+  download: number;
+  upload: number;
+  /** Bytes is what moved in all. */
+  bytes: number;
+  error?: string;
+  /**
+   * Colo is the Cloudflare data center that answered, and Country where
+   * the test came from, as Cloudflare saw it.
+   */
+  colo?: string;
+  country?: string;
 }
 
 /**
@@ -768,8 +889,34 @@ export interface State {
   restarts: number;
 }
 
+/** Stats is how the traffic statistics count. */
+export interface Stats {
+  /** KeepDays is how many days are kept; 0 keeps everything. */
+  keepDays: number;
+  /**
+   * ExcludeLocal leaves out the traffic to the local network and the
+   * tailnet.
+   */
+  excludeLocal: boolean;
+  /**
+   * Exclude leaves out the connections that match any of these: a
+   * domain (and its subdomains), an address or CIDR range, or a process
+   * as "process:name".
+   */
+  exclude: string[];
+}
+
+/** StatsDevice is a device whose statistics can be shown. */
+export interface StatsDevice {
+  id: string;
+  name: string;
+  os: string;
+  this: boolean;
+  updated?: string;
+}
+
 /**
- * StatsItem is the traffic of an app, site or node. Other collects the
+ * StatsItem is the traffic of a name of a dimension. Other collects the
  * rest, and has no name.
  */
 export interface StatsItem {
@@ -777,6 +924,7 @@ export interface StatsItem {
   other?: boolean;
   up: number;
   down: number;
+  conns?: number;
 }
 
 /** StatsPoint is the traffic of a day, or of an hour of a day. */
@@ -785,14 +933,17 @@ export interface StatsPoint {
   label: string;
   up: number;
   down: number;
+  conns?: number;
 }
 
 /**
  * StatsQuery asks for a range of days. Range is "today", "7d", "30d" or
  * "all" (everything kept); anything else uses From and To ("2006-01-02",
- * both included). Top is how many apps, sites and nodes to list. Filter
- * keeps only the apps, sites and nodes whose name contains it, without
- * regard to case.
+ * both included). Top is how many names of each dimension to list. Filter
+ * keeps only the names that contain it, without regard to case. Where
+ * narrows everything to the traffic of exact names of dimensions (app,
+ * site, node, rule, policy, country), for drilling down. SortBy ranks by
+ * "traffic" (the default) or "conns".
  */
 export interface StatsQuery {
   range: string;
@@ -800,6 +951,13 @@ export interface StatsQuery {
   to?: string;
   top: number;
   filter?: string;
+  where?: Record<string, string>;
+  sortBy?: string;
+  /**
+   * Device is whose statistics: "" this device's, "all" every device's,
+   * or a device's ID. The app answers for other devices.
+   */
+  device?: string;
 }
 
 /** StatsReport is the answer to a query. */
@@ -808,12 +966,26 @@ export interface StatsReport {
   to: string;
   up: number;
   down: number;
+  conns: number;
   days: StatsPoint[];
   /** when the range is a single day */
   hours: StatsPoint[];
   apps: StatsItem[];
   sites: StatsItem[];
   nodes: StatsItem[];
+  rules: StatsItem[];
+  policies: StatsItem[];
+  countries: StatsItem[];
+  /** Prev is the traffic of as many days just before the range. */
+  prev?: Entry;
+  /**
+   * Partial is set when some days of the range could not be narrowed by
+   * Where: days from before the combinations were recorded, or from
+   * other devices, which share only their totals.
+   */
+  partial?: boolean;
+  /** Oldest is the first day with traffic, "" when there is none. */
+  oldest: string;
 }
 
 /** StoreApp is an app container: a Store app. */
@@ -829,12 +1001,41 @@ export interface StoreApp {
   exempt: boolean;
 }
 
+/** SubStoreItem is a subscription or a collection of a Sub-Store backend. */
+export interface SubStoreItem {
+  name: string;
+  displayName?: string;
+  /** Kind is "sub" or "collection". */
+  kind: string;
+  remark?: string;
+  icon?: string;
+  /** URL downloads it as a mihomo configuration. */
+  url: string;
+}
+
 /** SubscriptionInfo is the traffic and expiry a provider reports. */
 export interface SubscriptionInfo {
   Upload: number;
   Download: number;
   Total: number;
   Expire: number;
+}
+
+/** Subscriptions is how the app watches remote profiles. */
+export interface Subscriptions {
+  /** QuotaAlert warns when a subscription's traffic or time runs low. */
+  quotaAlert: boolean;
+  /** QuotaPercent is how much traffic left, in percent, warns. */
+  quotaPercent: number;
+  /** ExpireDays is how many days before expiry warn. */
+  expireDays: number;
+  /**
+   * Rollback keeps the previous content of a remote profile, and goes
+   * back to it when an update leaves a configuration the core refuses.
+   */
+  rollback: boolean;
+  /** SubStore is the address of a Sub-Store backend to import from. */
+  subStore: string;
 }
 
 /**
@@ -867,6 +1068,23 @@ export interface Sync {
    * base64, to trust a self-signed certificate.
    */
   pinnedKey: string;
+  /**
+   * Tailnet lets the devices on the same tailnet tell each other of
+   * their changes, so that they sync at once.
+   */
+  tailnet: boolean;
+}
+
+/** SyncActivity is something a device did to the vault. */
+export interface SyncActivity {
+  at: string;
+  deviceId: string;
+  device: string;
+  this: boolean;
+  kind: string;
+  changes: Change[];
+  target?: string;
+  detail?: string;
 }
 
 /** SyncProbe is what a test of the server found. */
@@ -919,6 +1137,16 @@ export interface SyncStatus {
   report?: Report;
   nextSync?: string;
   labels: Record<string, string>;
+  /**
+   * NeedPassphrase is set when another device replaced the vault's key
+   * and this one needs the new passphrase to follow.
+   */
+  needPassphrase?: boolean;
+  /**
+   * RemovedBy names the device that removed this one from sync, after
+   * it was; "?" when it is not known.
+   */
+  removedBy?: string;
 }
 
 /** SystemProxy is the proxy the app sets for the operating system. */
@@ -1213,6 +1441,14 @@ export interface Usage {
   expire: number;
 }
 
+/** Version describes a content of a profile. */
+export interface Version {
+  updated: number;
+  size: number;
+  proxies: number;
+  groups: number;
+}
+
 // ---- Services ----
 
 /** AppService is the app as a whole. */
@@ -1406,6 +1642,13 @@ export const Profiles = {
   reorder(uids: string[]): Promise<void> {
     return call("Profiles.Reorder", uids);
   },
+  /**
+   * Rollback puts back the content a remote profile had before its last
+   * update; another rollback undoes it.
+   */
+  rollback(uid: string): Promise<Profile> {
+    return call("Profiles.Rollback", uid);
+  },
   /** RulesOf returns the rules a profile has itself, for the rules editor. */
   rulesOf(uid: string): Promise<string[]> {
     return call("Profiles.RulesOf", uid);
@@ -1432,6 +1675,14 @@ export const Profiles = {
   /** SetDNSOverride turns the DNS override on or off for a profile. */
   setDNSOverride(uid: string, on: boolean): Promise<void> {
     return call("Profiles.SetDNSOverride", uid, on);
+  },
+  /**
+   * SubStore lists the subscriptions and collections of a Sub-Store backend,
+   * and keeps its address. It asks directly, and through the proxy when that
+   * fails.
+   */
+  subStore(base: string): Promise<SubStoreItem[]> {
+    return call("Profiles.SubStore", base);
   },
   /** Templates returns the templates of new extensions, by kind. */
   templates(): Promise<Record<string, string>> {
@@ -1507,9 +1758,40 @@ export const Stats = {
   clear(): Promise<void> {
     return call("Stats.Clear");
   },
+  /** ClearClosed forgets the connections that closed. */
+  clearClosed(): Promise<void> {
+    return call("Stats.ClearClosed");
+  },
+  /** Closed returns a page of the connections that closed, the latest first. */
+  closed(q: ClosedQuery): Promise<ClosedPage> {
+    return call("Stats.Closed", q);
+  },
   /**
-   * Query totals the traffic of a range of days, and ranks its apps, sites
-   * and nodes.
+   * Devices lists the devices with statistics: this one, and those whose
+   * statistics came through sync.
+   */
+  devices(): Promise<StatsDevice[]> {
+    return call("Stats.Devices");
+  },
+  /**
+   * Export saves the statistics of a range to a file: "csv" for a
+   * spreadsheet, "json" to import elsewhere. From and To are dates, "" for
+   * no bound. It returns the path, "" when the user cancelled.
+   */
+  export(format: string, from: string, to: string): Promise<string> {
+    return call("Stats.Export", format, from, to);
+  },
+  /**
+   * Import adds the statistics of a file Export wrote, and returns how many
+   * days it read; 0 when the user cancelled.
+   */
+  import(): Promise<number> {
+    return call("Stats.Import");
+  },
+  /**
+   * Query totals the traffic of a range of days, and ranks what carried it.
+   * The device of the query is this one (""), every device of the sync vault
+   * ("all"), or one of them by its ID.
    */
   query(q: StatsQuery): Promise<StatsReport> {
     return call("Stats.Query", q);
@@ -1734,6 +2016,10 @@ export const Tailscale = {
 
 /** Sync is the sync and backup page. */
 export const Sync = {
+  /** Activity lists what the devices did to the vault, the latest first. */
+  activity(): Promise<SyncActivity[]> {
+    return call("Sync.Activity");
+  },
   /**
    * Backups lists the backups of the device and, when sync is set up, of the
    * server.
@@ -1753,7 +2039,7 @@ export const Sync = {
   deleteBackup(name: string, remote: boolean): Promise<void> {
     return call("Sync.DeleteBackup", name, remote);
   },
-  /** Devices lists the devices that sync with the vault. */
+  /** Devices lists the devices that sync with the vault, the latest first. */
   devices(): Promise<DeviceInfo[]> {
     return call("Sync.Devices");
   },
@@ -1771,6 +2057,13 @@ export const Sync = {
   exportBackup(name: string, remote: boolean, password: string): Promise<string> {
     return call("Sync.ExportBackup", name, remote, password);
   },
+  /**
+   * History lists what this device's syncs did, the latest first. A path
+   * with a name for people is "path\x00name".
+   */
+  history(): Promise<Event[]> {
+    return call("Sync.History");
+  },
   /** ImportBackup restores a file made by ExportBackup. */
   importBackup(password: string): Promise<void> {
     return call("Sync.ImportBackup", password);
@@ -1782,6 +2075,29 @@ export const Sync = {
   /** Probe tests a server without changing anything. */
   probe(setup: SyncSetup): Promise<SyncProbe> {
     return call("Sync.Probe", setup);
+  },
+  /**
+   * Rejoin follows a vault whose key another device replaced, with the new
+   * passphrase, and syncs.
+   */
+  rejoin(passphrase: string): Promise<void> {
+    return call("Sync.Rejoin", passphrase);
+  },
+  /**
+   * RemoveDevices takes devices out of the vault, with their statistics.
+   * With revoke, the vault's key and passphrase are replaced too, so that
+   * they can no longer read what it holds; the devices that stay follow by
+   * themselves (or, for older versions, with the new passphrase).
+   */
+  removeDevices(ids: string[], revoke: boolean, passphrase: string): Promise<void> {
+    return call("Sync.RemoveDevices", ids, revoke, passphrase);
+  },
+  /**
+   * RenameDevice names a device for every device of the vault; "" gives it
+   * back its own name.
+   */
+  renameDevice(id: string, label: string): Promise<void> {
+    return call("Sync.RenameDevice", id, label);
   },
   /** Resolve resolves a conflict (local, remote or both) and syncs. */
   resolve(path: string, choice: string): Promise<void> {
@@ -1864,6 +2180,13 @@ export const Tools = {
   /** Sites returns the sites the home page tests. */
   sites(): Promise<Site[]> {
     return call("Tools.Sites");
+  },
+  /**
+   * SpeedTest measures the latency and speeds through the proxy, sending
+   * samples as it goes; the last has the phase "done".
+   */
+  speedTest(ch: Channel<SpeedSample>): Promise<void> {
+    return call("Tools.SpeedTest", ch);
   },
   /**
    * TestSites tests sites through the proxy, sending each result as it

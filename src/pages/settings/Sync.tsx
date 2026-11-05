@@ -7,7 +7,6 @@ import {
   FileUp,
   HardDrive,
   KeyRound,
-  Laptop,
   Lock,
   LockOpen,
   RefreshCw,
@@ -26,6 +25,7 @@ import { run, toast, toastError, useApp } from "../../lib/store";
 import { Sync as API, type BackupInfo, type SyncProbe } from "../../mygo";
 import { Badge, Banner, Button, Card, Collapse, confirm, Dialog, Empty, Field, Input, NumberInput, prompt, Row, Section, Segmented, Select, Spinner, Switch } from "../../ui";
 import { usePatch } from "./General";
+import { DeviceList, KeyReplaced, SyncActivityList } from "./SyncDevices";
 
 /** strength scores a passphrase from 0 to 4. */
 function strength(p: string): number {
@@ -386,6 +386,9 @@ export default function SyncTab() {
   };
   return (
     <>
+      {!sync.configured && sync.removedBy && (
+        <Banner tone="warning">{sync.removedBy === "?" ? t("sync.removedBannerAnon") : t("sync.removedBanner", { device: sync.removedBy })}</Banner>
+      )}
       {!sync.configured ? (
         <div className="card sync-intro cloud-upload-hover">
           <div className="sync-intro-icon">
@@ -402,7 +405,7 @@ export default function SyncTab() {
         </div>
       ) : (
         <>
-          {sync.lastError && <Banner tone="danger">{sync.lastError}</Banner>}
+          {sync.needPassphrase ? <KeyReplaced /> : sync.lastError && <Banner tone="danger">{sync.lastError}</Banner>}
           <Card
             title={t("sync.title")}
             icon={sync.enabled ? <Cloud size={15} /> : <CloudOff size={15} />}
@@ -451,7 +454,7 @@ export default function SyncTab() {
                   <div className="setting-text">
                     <div className="setting-label">{sync.labels[c.path] ?? c.path}</div>
                     <div className="setting-desc">
-                      {t("sync.conflictDesc", { here: relative(c.localModified, lang), there: relative(c.remoteModified, lang), device: c.remoteDevice })}
+                      {t("sync.conflictDesc", { here: relative(c.localModified, lang), there: relative(c.remoteModified, lang), device: c.remoteName || c.remoteDevice })}
                     </div>
                   </div>
                   <Button size="sm" onClick={() => run(() => API.resolve(c.path, "local"), t("common.failed"))}>
@@ -483,6 +486,9 @@ export default function SyncTab() {
             <Row label={t("sync.onChange")} desc={t("sync.onChangeDesc")}>
               <Switch checked={s.sync.onChange} onChange={(v) => patch({ sync: { onChange: v } })} />
             </Row>
+            <Row label={t("sync.tailnet")} desc={s.tailscale.mode === "off" ? t("sync.tailnetOff") : t("sync.tailnetDesc")}>
+              <Switch checked={s.sync.tailnet} onChange={(v) => patch({ sync: { tailnet: v } })} />
+            </Row>
             <Row label={t("sync.policy")} desc={t("sync.policyDesc")}>
               <Select
                 value={s.sync.conflictPolicy}
@@ -493,7 +499,7 @@ export default function SyncTab() {
             </Row>
             <Row label={t("sync.what")} desc={cats.has("tailscale") ? `${t("sync.whatDesc")} · ${t("sync.tsNote")}` : t("sync.whatDesc")}>
               <div className="row" style={{ gap: 6 }}>
-                {["profiles", "settings", "dns", "tailscale"].map((c) => (
+                {["profiles", "settings", "dns", "tailscale", "stats"].map((c) => (
                   <button
                     key={c}
                     className={`chip${cats.has(c) ? " active" : ""}`}
@@ -551,24 +557,8 @@ export default function SyncTab() {
             </Row>
           </Section>
 
-          {(devices?.length ?? 0) > 0 && (
-            <Section title={t("sync.deviceList")}>
-              {devices!.map((d) => (
-                <div key={d.id} className="setting">
-                  <Laptop size={16} className="muted" />
-                  <div className="setting-text">
-                    <div className="setting-label">
-                      {d.name}
-                      {d.this && <Badge tone="accent">{t("sync.thisDevice")}</Badge>}
-                    </div>
-                    <div className="setting-desc">
-                      {d.os} · {t("sync.lastSeen", { when: relative(d.lastSync, lang) })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </Section>
-          )}
+          {(devices?.length ?? 0) > 0 && <DeviceList devices={devices!} plain={sync.plain} reload={() => void reloadDevices()} />}
+          <SyncActivityList configured={sync.configured} lastSync={sync.lastSync} />
         </>
       )}
       <Backups />

@@ -94,6 +94,8 @@ type Entry struct {
 	Device   string    `json:"device"`
 	Clock    VClock    `json:"clock"`
 	Deleted  bool      `json:"deleted,omitempty"`
+	// Label names the path for people, such as a profile's name.
+	Label string `json:"label,omitempty"`
 }
 
 // Manifest lists every path on the server.
@@ -105,6 +107,13 @@ type Manifest struct {
 	KeyID   string            `json:"keyId"`
 	Entries map[string]Entry  `json:"entries"`
 	Devices map[string]Device `json:"devices"`
+	// Removed lists the devices taken out of the vault: a device that finds
+	// itself here stops syncing, unless it joined again since.
+	Removed map[string]Removal `json:"removed,omitempty"`
+	// Activity is what the devices did, newest last, the latest maxActivity.
+	Activity []Activity `json:"activity,omitempty"`
+	// PrevKeyID is the data key this one replaced.
+	PrevKeyID string `json:"prevKeyId,omitempty"`
 }
 
 // Device is a device that syncs.
@@ -112,7 +121,116 @@ type Device struct {
 	Name     string    `json:"name"`
 	OS       string    `json:"os"`
 	LastSync time.Time `json:"lastSync"`
+	// Label is the name the user gave the device, which wins over Name.
+	Label   string `json:"label,omitempty"`
+	Version string `json:"version,omitempty"`
+	Arch    string `json:"arch,omitempty"`
+	// Machine identifies the computer, hashed: an app installed again on it
+	// takes its old place instead of becoming another device.
+	Machine string `json:"machine,omitempty"`
+	// PubKey is the public key of the device's Identity.
+	PubKey []byte `json:"pubKey,omitempty"`
+	// Tailnet is where the device takes word of changes on its tailnet,
+	// host:port, when it does.
+	Tailnet string    `json:"tailnet,omitempty"`
+	Joined  time.Time `json:"joined,omitzero"`
 }
+
+// DisplayName is the device's label, else its name.
+func (d Device) DisplayName() string {
+	if d.Label != "" {
+		return d.Label
+	}
+	return d.Name
+}
+
+// sameInfo reports whether two entries of a device say the same, but for
+// the time of the last sync.
+func (d Device) sameInfo(o Device) bool {
+	return d.Name == o.Name && d.OS == o.OS && d.Label == o.Label && d.Version == o.Version && d.Arch == o.Arch &&
+		d.Machine == o.Machine && string(d.PubKey) == string(o.PubKey) && d.Tailnet == o.Tailnet && d.Joined.Equal(o.Joined)
+}
+
+// Removal is a device taken out of the vault.
+type Removal struct {
+	At   time.Time `json:"at"`
+	By   string    `json:"by"`
+	Name string    `json:"name"`
+}
+
+// Activity is something a device did to the vault.
+type Activity struct {
+	At     time.Time `json:"at"`
+	Device string    `json:"device"`
+	// Kind is sync, join, rename, remove or rotate.
+	Kind    string   `json:"kind"`
+	Changes []Change `json:"changes,omitempty"`
+	// Target is the device a rename or removal was about.
+	Target string `json:"target,omitempty"`
+	Detail string `json:"detail,omitempty"`
+}
+
+// Change is a path a sync sent.
+type Change struct {
+	Path    string `json:"path"`
+	Label   string `json:"label,omitempty"`
+	Deleted bool   `json:"deleted,omitempty"`
+}
+
+const maxActivity = 200
+
+func (m *Manifest) addActivity(a Activity) {
+	m.Activity = append(slices.Clone(m.Activity), a)
+	if n := len(m.Activity) - maxActivity; n > 0 {
+		m.Activity = m.Activity[n:]
+	}
+}
+
+// errSealed is returned when the manifest does not open with the keys.
+var errSealed = errors.New("the manifest does not open with this device's key")
+
+// follow adopts the key in vault.json when it is not the device's: the copy
+// sealed to the device, when another device replaced the key. It reports
+// whether it adopted one.
+func (e *Engine) follow(ctx context.Context, local map[string]Item) (bool, error) {
+	meta, err := ReadVault(ctx, e.Client, e.Dir)
+	if err != nil {
+		return false, err
+	}
+	if meta.KeyID == e.Keys.ID {
+		return false, nil
+	}
+	keys, err := meta.OpenMember(e.State.DeviceID, e.Identity)
+	if errors.Is(err, ErrNoMember) {
+		if e.State.KeyShared || slices.Contains(meta.Removed, e.State.DeviceID) {
+			// The device's key was published, and the device that replaced
+			// the vault's key left it out on purpose.
+			return false, &RemovedError{}
+		}
+		return false, ErrKeyReplaced
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, e.adopt(keys, local)
+}
+
+// RemovedError is returned to a device that was removed from the vault.
+type RemovedError struct {
+	By string
+	At time.Time
+}
+
+func (e *RemovedError) Error() string {
+	if e.By == "" {
+		return "this device was removed from sync"
+	}
+	return "this device was removed from sync by " + e.By
+}
+
+// ErrKeyReplaced is returned when another device replaced the vault's key
+// and left none for this device: it needs the new passphrase.
+var ErrKeyReplaced = errors.New("another device replaced the vault's key: enter the new passphrase")
 
 // Item is a path's local data.
 type Item struct {
@@ -140,9 +258,11 @@ type Conflict struct {
 	LocalModified  time.Time `json:"localModified"`
 	RemoteModified time.Time `json:"remoteModified"`
 	RemoteDevice   string    `json:"remoteDevice"`
-	LocalDeleted   bool      `json:"localDeleted"`
-	RemoteDeleted  bool      `json:"remoteDeleted"`
-	Detected       time.Time `json:"detected"`
+	// RemoteName is the name of the remote device.
+	RemoteName    string    `json:"remoteName,omitempty"`
+	LocalDeleted  bool      `json:"localDeleted"`
+	RemoteDeleted bool      `json:"remoteDeleted"`
+	Detected      time.Time `json:"detected"`
 }
 
 // Resolution of a conflict.
@@ -164,6 +284,35 @@ type State struct {
 	Conflicts   []Conflict        `json:"conflicts"`
 	Resolutions map[string]string `json:"resolutions"`
 	LastGC      time.Time         `json:"lastGc"`
+	// Joined is when the device last joined the vault: removals before it
+	// no longer apply.
+	Joined time.Time `json:"joined,omitzero"`
+	// History is what this device's syncs did, newest last.
+	History []Event `json:"history,omitempty"`
+	// KeyShared is set once the manifest lists the device's public key.
+	KeyShared bool `json:"keyShared,omitempty"`
+}
+
+// Event is a sync of this device, for its history.
+type Event struct {
+	At        time.Time `json:"at"`
+	Pushed    []string  `json:"pushed,omitempty"`
+	Pulled    []string  `json:"pulled,omitempty"`
+	Merged    []string  `json:"merged,omitempty"`
+	Conflicts int       `json:"conflicts,omitempty"`
+	Error     string    `json:"error,omitempty"`
+	// Duration is in milliseconds.
+	Duration int64 `json:"duration"`
+}
+
+const maxHistory = 100
+
+// Record adds an event to the history.
+func (s *State) Record(ev Event) {
+	s.History = append(s.History, ev)
+	if n := len(s.History) - maxHistory; n > 0 {
+		s.History = slices.Clone(s.History[n:])
+	}
 }
 
 // Report says what a sync did.
@@ -176,6 +325,8 @@ type Report struct {
 	Retries   int        `json:"retries"`
 	Devices   int        `json:"devices"`
 	Duration  time.Duration
+	// Labels names the paths sent and received, for people.
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 // Changed reports whether the sync changed local data.
@@ -199,6 +350,18 @@ type Engine struct {
 	Wanted func(path string) bool
 	// Now is the clock, for tests.
 	Now func() time.Time
+	// Self is what the manifest says of this device, beside its name, OS
+	// and the time of its sync, which the engine fills.
+	Self Device
+	// Identity is the device's key pair, to follow a replaced data key.
+	Identity *Identity
+	// Label names a path for people, from its content.
+	Label func(path string, data []byte) string
+	// OnKeys keeps the keys the engine adopted when another device
+	// replaced the data key.
+	OnKeys func(*Keys) error
+
+	cur Manifest // the manifest of the sync in progress, for names
 }
 
 const manifestFile = "manifest.bin"
@@ -221,20 +384,23 @@ type remoteManifest struct {
 func (e *Engine) fetchManifest(ctx context.Context) (remoteManifest, error) {
 	data, etag, err := e.Client.Get(ctx, e.p(manifestFile))
 	if errors.Is(err, webdav.ErrNotFound) {
-		return remoteManifest{m: Manifest{Format: 1, Entries: map[string]Entry{}, Devices: map[string]Device{}}}, nil
+		return remoteManifest{m: Manifest{Format: 1, Entries: map[string]Entry{}, Devices: map[string]Device{}, Removed: map[string]Removal{}}}, nil
 	}
 	if err != nil {
 		return remoteManifest{}, err
 	}
 	var m Manifest
 	if err := e.Keys.OpenJSON(data, "manifest", &m); err != nil {
-		return remoteManifest{}, err
+		return remoteManifest{}, fmt.Errorf("%w: %v", errSealed, err)
 	}
 	if m.Entries == nil {
 		m.Entries = map[string]Entry{}
 	}
 	if m.Devices == nil {
 		m.Devices = map[string]Device{}
+	}
+	if m.Removed == nil {
+		m.Removed = map[string]Removal{}
 	}
 	return remoteManifest{m: m, etag: etag, exists: true}, nil
 }
@@ -273,6 +439,14 @@ func (e *Engine) Sync(ctx context.Context) (Report, error) {
 	if e.State.BaseData == nil {
 		e.State.BaseData = map[string][]byte{}
 	}
+	if e.Wanted != nil {
+		// Bases written before they kept to the wanted paths.
+		for p := range e.State.Base {
+			if !e.Wanted(p) {
+				delete(e.State.Base, p)
+			}
+		}
+	}
 	if err := e.Client.MkdirAll(ctx, e.p("objects")); err != nil {
 		return rep, err
 	}
@@ -288,12 +462,30 @@ func (e *Engine) Sync(ctx context.Context) (Report, error) {
 	for attempt := 0; attempt < 4; attempt++ {
 		rep = Report{Retries: attempt}
 		rm, err := e.fetchManifest(ctx)
+		if errors.Is(err, errSealed) || (err == nil && rm.exists && rm.m.KeyID != "" && rm.m.KeyID != e.Keys.ID) {
+			// Another device may have replaced the key.
+			followed, ferr := e.follow(ctx, local)
+			if ferr != nil {
+				return rep, ferr
+			}
+			if !followed {
+				if err == nil {
+					err = errors.New("the manifest on the server belongs to another vault")
+				}
+				return rep, err
+			}
+			for p, it := range local {
+				hashes[p] = e.Keys.Hash(it.Data)
+			}
+			continue
+		}
 		if err != nil {
 			return rep, err
 		}
-		if rm.exists && rm.m.KeyID != "" && rm.m.KeyID != e.Keys.ID {
-			return rep, errors.New("the manifest on the server belongs to another vault")
+		if r, ok := rm.m.Removed[e.State.DeviceID]; ok && !r.At.Before(e.State.Joined) {
+			return rep, e.removedError(rm.m, r)
 		}
+		e.cur = rm.m
 		steps, err := e.plan(ctx, local, hashes, rm.m, &rep)
 		if err != nil {
 			return rep, err
@@ -308,8 +500,10 @@ func (e *Engine) Sync(ctx context.Context) (Report, error) {
 				changedRemote = true
 			}
 		}
-		_, known := rm.m.Devices[e.State.DeviceID]
-		if changedRemote || !rm.exists || !known || e.now().Sub(rm.m.Devices[e.State.DeviceID].LastSync) > time.Hour {
+		me, known := rm.m.Devices[e.State.DeviceID]
+		_, removed := rm.m.Removed[e.State.DeviceID]
+		stale := !known || removed || !me.sameInfo(next.Devices[e.State.DeviceID]) || e.now().Sub(me.LastSync) > time.Hour
+		if changedRemote || !rm.exists || stale {
 			ok, err := e.writeManifest(ctx, rm, next)
 			if err != nil {
 				return rep, err
@@ -326,6 +520,15 @@ func (e *Engine) Sync(ctx context.Context) (Report, error) {
 		}
 		oldBase := e.State.Base
 		e.State.Base = maps.Clone(next.Entries)
+		// The base is what this device has seen: a path it does not sync
+		// stays out, or turning it on later would read as a deletion here.
+		if e.Wanted != nil {
+			for p := range e.State.Base {
+				if !e.Wanted(p) {
+					delete(e.State.Base, p)
+				}
+			}
+		}
 		// A conflict keeps its base until it is resolved, or the next sync
 		// would take the local side for the only one that changed.
 		for _, c := range rep.Conflicts {
@@ -357,9 +560,19 @@ func (e *Engine) Sync(ctx context.Context) (Report, error) {
 				delete(e.State.BaseData, p)
 			}
 		}
+		e.cur = next
 		e.State.LastSync, e.State.LastError = e.now(), ""
+		e.State.KeyShared = len(next.Devices[e.State.DeviceID].PubKey) > 0
 		rep.Devices = len(next.Devices)
 		rep.Duration = time.Since(start)
+		rep.Labels = map[string]string{}
+		for _, list := range [][]string{rep.Pushed, rep.Pulled, rep.Merged} {
+			for _, p := range list {
+				if l := next.Entries[p].Label; l != "" {
+					rep.Labels[p] = l
+				}
+			}
+		}
 		e.maybeGC(ctx, next)
 		if len(rep.Copies) > 0 {
 			// The copies kept aside are local data the server lacks: one more
@@ -518,7 +731,7 @@ func (e *Engine) resolve(p string, lp *Item, r Entry, conflicts *[]Conflict) act
 // conflict records a path waiting for the user to choose a side.
 func (e *Engine) conflict(p string, lp *Item, r Entry, conflicts *[]Conflict) action {
 	*conflicts = append(*conflicts, Conflict{
-		Path: p, LocalModified: lp.Modified, RemoteModified: r.Modified, RemoteDevice: r.Device,
+		Path: p, LocalModified: lp.Modified, RemoteModified: r.Modified, RemoteDevice: r.Device, RemoteName: e.deviceName(r.Device),
 		LocalDeleted: lp == nil, RemoteDeleted: r.Deleted, Detected: e.now(),
 	})
 	return actConflict
@@ -555,16 +768,9 @@ func (e *Engine) upload(ctx context.Context, hash string, plain []byte) error {
 // buildManifest uploads the objects of pushed paths and returns the new
 // manifest.
 func (e *Engine) buildManifest(ctx context.Context, remote Manifest, steps []step, hashes map[string]string) (Manifest, error) {
-	next := remote
-	next.Entries = maps.Clone(remote.Entries)
-	next.Devices = maps.Clone(remote.Devices)
-	if next.Entries == nil {
-		next.Entries = map[string]Entry{}
-	}
-	if next.Devices == nil {
-		next.Devices = map[string]Device{}
-	}
+	next := remote.clone()
 	now := e.now().UTC()
+	var changes []Change
 	for i := range steps {
 		s := &steps[i]
 		switch s.act {
@@ -580,7 +786,13 @@ func (e *Engine) buildManifest(ctx context.Context, remote Manifest, steps []ste
 			}
 			if s.local == nil && s.act == actPush {
 				en.Deleted = true
+				if s.remote != nil {
+					en.Label = s.remote.Label
+				} else {
+					en.Label = e.State.Base[s.path].Label
+				}
 			} else {
+				en.Label = e.label(s.path, data)
 				en.Hash, en.Size = hashes[s.path], len(data)
 				if s.local != nil && !s.local.Modified.IsZero() && s.act == actPush {
 					en.Modified = s.local.Modified.UTC()
@@ -590,7 +802,11 @@ func (e *Engine) buildManifest(ctx context.Context, remote Manifest, steps []ste
 				}
 			}
 			next.Entries[s.path] = en
+			changes = append(changes, Change{Path: s.path, Label: en.Label, Deleted: en.Deleted})
 		}
+	}
+	if len(changes) > 0 {
+		next.addActivity(Activity{At: now, Device: e.State.DeviceID, Kind: "sync", Changes: changes})
 	}
 	// Forget deletions everyone has seen for a month.
 	for p, en := range next.Entries {
@@ -601,8 +817,107 @@ func (e *Engine) buildManifest(ctx context.Context, remote Manifest, steps []ste
 	next.Format, next.KeyID = 1, e.Keys.ID
 	next.Seq++
 	next.Updated, next.Writer = now, e.State.DeviceID
-	next.Devices[e.State.DeviceID] = Device{Name: e.DeviceName, OS: runtime.GOOS, LastSync: now}
+	old, known := next.Devices[e.State.DeviceID]
+	if r, ok := next.Removed[e.State.DeviceID]; ok && r.At.Before(e.State.Joined) {
+		// Removed once, joined again since.
+		delete(next.Removed, e.State.DeviceID)
+		known = false
+	}
+	next.Devices[e.State.DeviceID] = e.self(old, known, now)
+	if !known {
+		next.addActivity(Activity{At: now, Device: e.State.DeviceID, Kind: "join"})
+	}
+	next.pruneRemoved(now)
 	return next, nil
+}
+
+// self is this device's entry in the manifest, keeping what the old one
+// had of the user's.
+func (e *Engine) self(old Device, known bool, now time.Time) Device {
+	d := e.Self
+	d.Name, d.OS, d.LastSync = e.DeviceName, runtime.GOOS, now
+	if known {
+		d.Label, d.Joined = old.Label, old.Joined
+	}
+	if d.Joined.IsZero() {
+		d.Joined = now
+		if !e.State.Joined.IsZero() {
+			d.Joined = e.State.Joined.UTC()
+		}
+	}
+	return d
+}
+
+func (e *Engine) removedError(m Manifest, r Removal) error {
+	by := r.By
+	if d, ok := m.Devices[r.By]; ok {
+		by = d.DisplayName()
+	}
+	return &RemovedError{By: by, At: r.At}
+}
+
+// clone copies the manifest's maps and lists, so that changes to the copy
+// leave the original as it is.
+func (m Manifest) clone() Manifest {
+	out := m
+	out.Entries = maps.Clone(m.Entries)
+	out.Devices = maps.Clone(m.Devices)
+	out.Removed = maps.Clone(m.Removed)
+	out.Activity = slices.Clone(m.Activity)
+	if out.Entries == nil {
+		out.Entries = map[string]Entry{}
+	}
+	if out.Devices == nil {
+		out.Devices = map[string]Device{}
+	}
+	if out.Removed == nil {
+		out.Removed = map[string]Removal{}
+	}
+	return out
+}
+
+// pruneRemoved forgets removals older than half a year.
+func (m *Manifest) pruneRemoved(now time.Time) {
+	for id, r := range m.Removed {
+		if now.Sub(r.At) > 180*24*time.Hour {
+			delete(m.Removed, id)
+		}
+	}
+}
+
+func (e *Engine) label(path string, data []byte) string {
+	if e.Label == nil {
+		return ""
+	}
+	return e.Label(path, data)
+}
+
+// adopt switches to keys another device put in place of the current ones,
+// and carries the base over: a path's base hash names its content under the
+// old naming key; the device that replaced the key kept every content as it
+// was, so a path unchanged here gets its hash under the new key, and one
+// changed here stays changed.
+func (e *Engine) adopt(keys *Keys, local map[string]Item) error {
+	old := e.Keys
+	base := maps.Clone(e.State.Base)
+	for p, b := range base {
+		if b.Deleted {
+			continue
+		}
+		if it, ok := local[p]; ok && old.Hash(it.Data) == b.Hash {
+			b.Hash = keys.Hash(it.Data)
+		} else {
+			b.Hash = "changed"
+		}
+		base[p] = b
+	}
+	if e.OnKeys != nil {
+		if err := e.OnKeys(keys); err != nil {
+			return err
+		}
+	}
+	e.Keys, e.State.Base, e.State.KeyID = keys, base, keys.ID
+	return nil
 }
 
 // writeManifest writes next if the server still has what was read. It
@@ -721,7 +1036,18 @@ func (e *Engine) applyLocal(ctx context.Context, steps []step, rep *Report) erro
 	return e.Source.Apply(ctx, changes)
 }
 
-func (e *Engine) deviceName(id string) string { return id }
+func (e *Engine) deviceName(id string) string { return e.cur.DeviceName(id) }
+
+// DeviceName is the name of a device in the manifest, else its ID.
+func (m Manifest) DeviceName(id string) string {
+	if d, ok := m.Devices[id]; ok {
+		return d.DisplayName()
+	}
+	if r, ok := m.Removed[id]; ok && r.Name != "" {
+		return r.Name
+	}
+	return id
+}
 
 // maybeGC deletes objects nothing refers to, once a day.
 func (e *Engine) maybeGC(ctx context.Context, m Manifest) {
@@ -750,11 +1076,97 @@ func (e *Engine) maybeGC(ctx context.Context, m Manifest) {
 
 // Devices returns the devices that synced with the vault.
 func (e *Engine) Devices(ctx context.Context) (map[string]Device, error) {
-	rm, err := e.fetchManifest(ctx)
+	m, err := e.Manifest(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return rm.m.Devices, nil
+	return m.Devices, nil
+}
+
+// Manifest reads the manifest on the server.
+func (e *Engine) Manifest(ctx context.Context) (Manifest, error) {
+	rm, err := e.fetchManifest(ctx)
+	if err != nil {
+		return Manifest{}, err
+	}
+	return rm.m, nil
+}
+
+// UpdateManifest changes the manifest on the server with fn, starting over
+// when another device writes it in between.
+func (e *Engine) UpdateManifest(ctx context.Context, fn func(m *Manifest) error) error {
+	for attempt := 0; attempt < 5; attempt++ {
+		rm, err := e.fetchManifest(ctx)
+		if err != nil {
+			return err
+		}
+		if !rm.exists {
+			return errors.New("the vault has no manifest yet: sync first")
+		}
+		if rm.m.KeyID != "" && rm.m.KeyID != e.Keys.ID {
+			return errors.New("sync first: the vault's key changed")
+		}
+		next := rm.m.clone()
+		if err := fn(&next); err != nil {
+			return err
+		}
+		next.Seq++
+		next.Updated, next.Writer = e.now().UTC(), e.State.DeviceID
+		ok, err := e.writeManifest(ctx, rm, next)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+	}
+	return errors.New("other devices kept changing the server; try again")
+}
+
+// RenameDevice gives a device a name of the user's, "" for its own.
+func (e *Engine) RenameDevice(ctx context.Context, id, label string) error {
+	label = strings.TrimSpace(label)
+	return e.UpdateManifest(ctx, func(m *Manifest) error {
+		d, ok := m.Devices[id]
+		if !ok {
+			return errors.New("no such device")
+		}
+		d.Label = label
+		m.Devices[id] = d
+		m.addActivity(Activity{At: e.now().UTC(), Device: e.State.DeviceID, Kind: "rename", Target: id, Detail: label})
+		return nil
+	})
+}
+
+// RemoveDevice takes devices out of the vault: they leave the list and
+// stop syncing when they next try. The paths given are deleted with them,
+// such as the data only they wrote. Their copy of the key still opens what
+// they have seen; Rotate takes that away too.
+func (e *Engine) RemoveDevice(ctx context.Context, ids []string, paths []string) error {
+	return e.UpdateManifest(ctx, func(m *Manifest) error {
+		e.removeFrom(m, ids, paths)
+		return nil
+	})
+}
+
+func (e *Engine) removeFrom(m *Manifest, ids []string, paths []string) {
+	now := e.now().UTC()
+	for _, id := range ids {
+		if id == e.State.DeviceID {
+			continue
+		}
+		d := m.Devices[id]
+		delete(m.Devices, id)
+		m.Removed[id] = Removal{At: now, By: e.State.DeviceID, Name: d.DisplayName()}
+		m.addActivity(Activity{At: now, Device: e.State.DeviceID, Kind: "remove", Target: id, Detail: d.DisplayName()})
+	}
+	for _, p := range paths {
+		en, ok := m.Entries[p]
+		if !ok || en.Deleted {
+			continue
+		}
+		m.Entries[p] = Entry{Device: e.State.DeviceID, Clock: en.Clock.Inc(e.State.DeviceID), Modified: now, Deleted: true, Label: en.Label}
+	}
 }
 
 // Resolve records the user's choice for a conflict, applied at the next
@@ -890,3 +1302,6 @@ func (e *Engine) DeleteBackup(ctx context.Context, name string) error {
 	}
 	return e.Client.Delete(ctx, e.p("backups", name), "")
 }
+
+// Current is the manifest of the last sync, as it was written or read.
+func (e *Engine) Current() Manifest { return e.cur }

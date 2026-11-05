@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDashed, CirclePlus, Eye, EyeOff, HelpCircle, Loader2, MinusCircle, Play, RefreshCw, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, CircleDashed, CirclePlus, Eye, EyeOff, Gauge, HelpCircle, Loader2, MinusCircle, Play, RefreshCw, Square, XCircle } from "lucide-react";
 import { Channel } from "mygo-runtime";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { SitesDialog } from "../components/SitesDialog";
@@ -10,7 +10,7 @@ import { delayClass, delayText, relative } from "../lib/format";
 import { usePrivate } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { toastError, useApp } from "../lib/store";
-import { type IPInfo, Proxies, type ProxiesView, type Site, type SiteResult, Tools, type Unlock } from "../mygo";
+import { type IPInfo, Proxies, type ProxiesView, type Site, type SiteResult, type SpeedSample, Tools, type Unlock } from "../mygo";
 import { Badge, Banner, Button, reflow, useFresh } from "../ui";
 import { CoreDown } from "../components/CoreDown";
 
@@ -57,6 +57,7 @@ export default function Connectivity() {
         <IPSection {...ips} running={running} p={p} />
         <SiteSection {...sites} running={running} />
         <UnlockSection {...unlock} running={running} p={p} />
+        <SpeedSection running={running} />
       </div>
     </>
   );
@@ -433,6 +434,110 @@ function UnlockSection({ items, results, checking, check, busy, running, exit, p
             </div>
           );
         })}
+      </div>
+    </section>
+  );
+}
+
+// ---------- Speed ----------
+
+type SpeedResult = SpeedSample & { at?: string; via?: string };
+
+function loadSpeed(): SpeedResult | null {
+  try {
+    return JSON.parse(localStorage.getItem("speed.result") ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+function mbps(bps: number): string {
+  const v = bps / 1e6;
+  return v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+}
+
+function SpeedSection({ running }: { running: boolean }) {
+  const t = useT();
+  const lang = useApp((s) => s.lang);
+  const exit = useExit();
+  const [res, setRes] = useState<SpeedResult | null>(loadSpeed);
+  const [busy, setBusy] = useState(false);
+  const stop = useRef<(() => void) | null>(null);
+  const start = async () => {
+    setBusy(true);
+    const via = exit;
+    const ch = new Channel<SpeedSample>((sm) => {
+      const next = { ...sm, via, at: new Date().toISOString() };
+      setRes(next);
+      if (sm.phase === "done") {
+        try {
+          localStorage.setItem("speed.result", JSON.stringify(next));
+        } catch {
+          // kept for the session only
+        }
+      }
+    });
+    stop.current = () => ch.close();
+    try {
+      await Tools.speedTest(ch);
+    } catch (e) {
+      toastError(t("speed.failed"), e);
+    }
+    stop.current = null;
+    setBusy(false);
+  };
+  const phase = busy ? res?.phase : "done";
+  const metric = (key: "download" | "upload", icon: ReactNode, label: string) => (
+    <div className={`speed-metric${phase === key ? " is-live" : ""}`}>
+      <div className="speed-label muted">
+        {icon}
+        {label}
+      </div>
+      <div className="speed-value tnum">
+        {res && (res[key] > 0 || phase === key) ? mbps(res[key]) : "—"}
+        <span className="speed-unit faint">Mbps</span>
+      </div>
+      <div className="speed-track">{phase === key && <i style={{ width: `${(res?.progress ?? 0) * 100}%` }} />}</div>
+    </div>
+  );
+  return (
+    <section className="cty-section">
+      <Heading title={t("speed.title")} hint={t("speed.hint")}>
+        {busy ? (
+          <Button size="sm" icon={<Square size={12} />} onClick={() => stop.current?.()}>
+            {t("speed.stop")}
+          </Button>
+        ) : (
+          <Button size="sm" icon={<Gauge size={14} />} disabled={!running} onClick={start}>
+            {res ? t("speed.again") : t("speed.start")}
+          </Button>
+        )}
+      </Heading>
+      <div className="card card-pad speed-card">
+        <div className={`speed-metric${phase === "latency" ? " is-live" : ""}`}>
+          <div className="speed-label muted">{t("speed.latency")}</div>
+          <div className="speed-value tnum">
+            {res && res.latency > 0 ? Math.round(res.latency) : "—"}
+            <span className="speed-unit faint">ms</span>
+          </div>
+          <div className="speed-sub faint tnum">{res && res.jitter > 0 ? t("speed.jitter", { n: res.jitter.toFixed(1) }) : "\u00a0"}</div>
+        </div>
+        {metric("download", <ArrowDown size={13} />, t("common.download"))}
+        {metric("upload", <ArrowUp size={13} />, t("common.upload"))}
+        <div className="speed-foot faint">
+          {res?.error ? (
+            <span style={{ color: "var(--danger)" }}>{res.error}</span>
+          ) : (
+            res && (
+              <>
+                {res.via && t("unlock.via", { node: res.via })}
+                {res.colo && ` · Cloudflare ${res.colo}`}
+                {!busy && res.at && ` · ${relative(res.at, lang)}`}
+                {res.bytes > 0 && ` · ${t("speed.used", { mb: Math.round(res.bytes / 1048576) })}`}
+              </>
+            )
+          )}
+        </div>
       </div>
     </section>
   );

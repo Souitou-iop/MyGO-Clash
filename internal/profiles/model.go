@@ -66,6 +66,17 @@ type Profile struct {
 	// Suggested is the update interval the provider suggested at the last
 	// download, in minutes; 0 when it suggested none.
 	Suggested int `json:"suggestedInterval,omitempty"`
+	// Prev describes the content before the last update that changed it,
+	// which this device keeps to go back to; nil when there is none.
+	Prev *Version `json:"prev,omitempty"`
+}
+
+// Version describes a content of a profile.
+type Version struct {
+	Updated int64 `json:"updated"`
+	Size    int   `json:"size"`
+	Proxies int   `json:"proxies"`
+	Groups  int   `json:"groups"`
 }
 
 // DefaultInterval is how often a subscription updates when neither its

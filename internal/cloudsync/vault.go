@@ -45,6 +45,13 @@ type VaultMeta struct {
 	WrappedKey []byte    `json:"wrappedKey,omitempty"` // nonce | sealed data key
 	KeyID      string    `json:"keyId"`                // identifies the data key, not secret
 	Created    time.Time `json:"created"`
+	// Members holds the data key sealed to the identity of each device
+	// that stayed when the key was last replaced (see Identity), by device
+	// ID. Others open the vault with the passphrase.
+	Members map[string][]byte `json:"members,omitempty"`
+	// Removed lists the devices left out when the key was replaced, so
+	// that one that cannot read the manifest still learns why.
+	Removed []string `json:"removed,omitempty"`
 }
 
 // KDFParams are the Argon2id parameters.
@@ -182,6 +189,40 @@ func (m VaultMeta) Open(passphrase string) (*Keys, error) {
 		return nil, errors.New("the vault's key does not match its identifier")
 	}
 	return keys, nil
+}
+
+// OpenMember opens the vault with the copy of the data key sealed to the
+// device's identity, ErrNoMember when it has none.
+func (m VaultMeta) OpenMember(device string, id *Identity) (*Keys, error) {
+	if m.Plain() {
+		return &Keys{ID: m.KeyID, plain: true}, nil
+	}
+	sealed := m.Members[device]
+	if id == nil || len(sealed) == 0 {
+		return nil, ErrNoMember
+	}
+	data, err := id.Open(sealed)
+	if err != nil {
+		return nil, err
+	}
+	keys := keysFrom(data)
+	if keys.ID != m.KeyID {
+		return nil, errors.New("the vault's key does not match its identifier")
+	}
+	return keys, nil
+}
+
+// ErrNoMember is returned when vault.json holds no key for the device.
+var ErrNoMember = errors.New("the vault holds no key for this device")
+
+// Subkey derives a key for another purpose from the vault's key; a plain
+// vault's derives from its identifier, which only its devices know.
+func (k *Keys) Subkey(info string) []byte {
+	if k.plain {
+		sum := sha256.Sum256([]byte("mygo-clash/plain/" + k.ID + "/" + info))
+		return sum[:]
+	}
+	return subkey(k.data, "mygo-clash/sync/"+info)
 }
 
 // Rewrap returns the vault's metadata under a new passphrase.

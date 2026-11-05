@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/metacubex/mihomo/component/mmdb"
@@ -170,4 +171,49 @@ func place(path string, r io.Reader, isMMDB bool) error {
 	}
 	_ = os.Chmod(tmp.Name(), 0o644)
 	return os.Rename(tmp.Name(), path)
+}
+
+// lookupCountries returns the country codes of addresses from the GeoIP
+// database, when there is one: mihomo exits when asked for a database it
+// cannot open.
+func lookupCountries(ips []string) map[string]string {
+	out := make(map[string]string, len(ips))
+	path := C.Path.MMDB()
+	if fi, err := os.Stat(path); err != nil || fi.Size() == 0 || !mmdbUsable(path) {
+		return out
+	}
+	reader := mmdb.IPInstance()
+	for _, s := range ips {
+		ip := net.ParseIP(s)
+		if ip == nil || len(out) >= 512 {
+			continue
+		}
+		code := ""
+		for _, c := range reader.LookupCode(ip) {
+			if len(c) == 2 {
+				code = strings.ToUpper(c)
+				break
+			}
+		}
+		out[s] = code
+	}
+	return out
+}
+
+var (
+	mmdbChecked = map[string]bool{}
+	mmdbMu      sync.Mutex
+)
+
+func mmdbUsable(path string) bool {
+	mmdbMu.Lock()
+	defer mmdbMu.Unlock()
+	if mmdbChecked[path] {
+		return true
+	}
+	ok := mmdb.Verify(path)
+	if ok {
+		mmdbChecked[path] = true
+	}
+	return ok
 }

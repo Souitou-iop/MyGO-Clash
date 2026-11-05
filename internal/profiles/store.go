@@ -1,6 +1,7 @@
 package profiles
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -103,6 +104,56 @@ func (m *Manager) saveIndex() error {
 
 func (m *Manager) writeContent(uid string, data []byte) error {
 	return m.sealer.WriteFile(m.contentPath(uid), data, contentLabel(uid))
+}
+
+func (m *Manager) prevPath(uid string) string { return filepath.Join(m.dir, uid+".prev.bin") }
+
+func prevLabel(uid string) string { return "profiles/prev/" + uid }
+
+// Rollback puts back the content a profile had before its last update, and
+// keeps the one it replaces as the previous, so that a second rollback
+// undoes the first.
+func (m *Manager) Rollback(uid string) (Profile, error) {
+	m.mu.Lock()
+	i := m.find(uid)
+	if i < 0 {
+		m.mu.Unlock()
+		return Profile{}, ErrNotFound
+	}
+	p := m.index.Items[i]
+	m.mu.Unlock()
+	if p.Prev == nil {
+		return Profile{}, errors.New("the profile has no previous version")
+	}
+	prev, err := m.sealer.ReadFile(m.prevPath(uid), prevLabel(uid))
+	if err != nil {
+		return Profile{}, fmt.Errorf("read the previous version: %w", err)
+	}
+	cur, err := m.Content(uid)
+	if err != nil {
+		return Profile{}, err
+	}
+	if err := m.sealer.WriteFile(m.prevPath(uid), cur, prevLabel(uid)); err != nil {
+		return Profile{}, err
+	}
+	if err := m.writeContent(uid, prev); err != nil {
+		return Profile{}, err
+	}
+	m.mu.Lock()
+	if i = m.find(uid); i < 0 {
+		m.mu.Unlock()
+		return Profile{}, ErrNotFound
+	}
+	it := &m.index.Items[i]
+	old := Version{Updated: it.Updated, Size: it.Size, Proxies: it.Proxies, Groups: it.Groups}
+	it.Updated, it.Size, it.Proxies, it.Groups = it.Prev.Updated, it.Prev.Size, it.Prev.Proxies, it.Prev.Groups
+	it.Prev = &old
+	it.LastError = ""
+	p = *it
+	err = m.saveIndex()
+	m.mu.Unlock()
+	m.changed(uid, true)
+	return p, err
 }
 
 func (m *Manager) changed(uid string, content bool) {
@@ -340,6 +391,13 @@ func (m *Manager) Update(ctx context.Context, uid string, withProxy *bool) (Prof
 		m.changed(uid, false)
 		return Profile{}, err
 	}
+	// The content it replaces stays aside, to go back to.
+	var prev *Version
+	if old, err := m.Content(uid); err == nil && len(old) > 0 && !bytes.Equal(old, f.Content) {
+		if err := m.sealer.WriteFile(m.prevPath(uid), old, prevLabel(uid)); err == nil {
+			prev = &Version{Updated: p.Updated, Size: p.Size, Proxies: p.Proxies, Groups: p.Groups}
+		}
+	}
 	if err := m.writeContent(uid, f.Content); err != nil {
 		return Profile{}, err
 	}
@@ -348,6 +406,9 @@ func (m *Manager) Update(ctx context.Context, uid string, withProxy *bool) (Prof
 	if i < 0 {
 		m.mu.Unlock()
 		return Profile{}, ErrNotFound
+	}
+	if prev != nil {
+		m.index.Items[i].Prev = prev
 	}
 	applyFetched(&m.index.Items[i], f)
 	p = m.index.Items[i]
@@ -554,6 +615,7 @@ func (m *Manager) Delete(uid string) error {
 	m.mu.Unlock()
 	for _, g := range gone {
 		_ = os.Remove(m.contentPath(g))
+		_ = os.Remove(m.prevPath(g))
 	}
 	if wasCurrent {
 		m.changed("", true) // another profile (or none) runs now

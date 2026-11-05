@@ -1,6 +1,7 @@
 package tailnet
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"maps"
 	"net"
+	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
@@ -61,6 +63,7 @@ type Node struct {
 	probe   controlProbe  // last reachability check of the control server
 	running chan struct{} // closed while the backend is Running
 	share   net.Listener
+	syncLn  net.Listener
 
 	watchMu  sync.Mutex
 	watchers map[chan coreapi.TailscaleEvent]struct{}
@@ -112,7 +115,8 @@ func (n *Node) Configure(cfg *coreapi.TailscaleConfig) error {
 	if n.srv != nil && n.cfg.SameNode(cfg) {
 		old, lc := n.cfg, n.lc
 		n.cfg = cfg
-		shareChanged := old.ShareProxyPort != cfg.ShareProxyPort || old.ShareProxyTarget != cfg.ShareProxyTarget
+		shareChanged := old.ShareProxyPort != cfg.ShareProxyPort || old.ShareProxyTarget != cfg.ShareProxyTarget ||
+			old.SyncPort != cfg.SyncPort || old.SyncTarget != cfg.SyncTarget
 		if shareChanged {
 			n.restartShareLocked()
 		}
@@ -203,6 +207,10 @@ func (n *Node) stopLocked() {
 	if n.share != nil {
 		_ = n.share.Close()
 		n.share = nil
+	}
+	if n.syncLn != nil {
+		_ = n.syncLn.Close()
+		n.syncLn = nil
 	}
 	if n.cancel != nil {
 		n.cancel()
@@ -686,6 +694,37 @@ func (n *Node) Ping(ctx context.Context, p coreapi.TailscalePing) (coreapi.Tails
 	return pingResult(r), nil
 }
 
+// Post posts a small body to a peer, over the tailnet, and returns its
+// HTTP status.
+func (n *Node) Post(ctx context.Context, p coreapi.TailscalePost) (int, error) {
+	srv, err := n.ready(ctx)
+	if err != nil {
+		return 0, err
+	}
+	host, _, err := net.SplitHostPort(p.Address)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := parseIP(host); err != nil {
+		return 0, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	client := &http.Client{Transport: &http.Transport{DialContext: srv.Dial, DisableKeepAlives: true}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+p.Address+p.Path, bytes.NewReader(p.Body))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+	resp.Body.Close()
+	return resp.StatusCode, nil
+}
+
 // QueryDNS resolves a name with Tailscale's DNS (MagicDNS and the tailnet's
 // resolvers), returning the packed DNS response.
 func (n *Node) QueryDNS(ctx context.Context, name, qtype string) ([]byte, error) {
@@ -753,6 +792,18 @@ func (n *Node) restartShareLocked() {
 	if n.share != nil {
 		_ = n.share.Close()
 		n.share = nil
+	}
+	if n.syncLn != nil {
+		_ = n.syncLn.Close()
+		n.syncLn = nil
+	}
+	if cfg := n.cfg; n.srv != nil && cfg != nil && cfg.SyncPort != 0 && cfg.SyncTarget != "" {
+		if ln, err := n.srv.Listen("tcp", fmt.Sprintf(":%d", cfg.SyncPort)); err != nil {
+			log.Warnln("[Tailscale] sync port: %v", err)
+		} else {
+			n.syncLn = ln
+			go n.serveShare(ln, n.lc, cfg.SyncTarget)
+		}
 	}
 	cfg := n.cfg
 	if n.srv == nil || cfg == nil || cfg.ShareProxyPort == 0 || cfg.ShareProxyTarget == "" {

@@ -247,6 +247,25 @@ func (h *host) routes(r chi.Router) {
 		}
 		writeJSON(w, http.StatusOK, res)
 	})
+	r.Post(coreapi.PathGeoIP, func(w mhttp.ResponseWriter, r *mhttp.Request) {
+		var req coreapi.GeoIPQuery
+		if !readJSON(w, r, &req) {
+			return
+		}
+		writeJSON(w, http.StatusOK, coreapi.GeoIPResult{Codes: lookupCountries(req.IPs)})
+	})
+	r.Post(coreapi.PathTSPost, func(w mhttp.ResponseWriter, r *mhttp.Request) {
+		var req coreapi.TailscalePost
+		if !readJSON(w, r, &req) {
+			return
+		}
+		status, err := h.node.Post(r.Context(), req)
+		if err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]int{"status": status})
+	})
 }
 
 func (h *host) health(w mhttp.ResponseWriter, r *mhttp.Request) {

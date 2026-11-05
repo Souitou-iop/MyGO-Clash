@@ -1,4 +1,5 @@
 import {
+  Boxes,
   CheckCircle2,
   Code2,
   Download,
@@ -9,6 +10,7 @@ import {
   FileUp,
   Globe,
   GripVertical,
+  History,
   Info,
   ListOrdered,
   Merge,
@@ -23,6 +25,7 @@ import {
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { EditorDialog } from "../components/profiles/EditorDialog";
+import { SubStoreDialog } from "../components/profiles/SubStoreDialog";
 import { ProfileDialog } from "../components/profiles/ProfileDialog";
 import { type SeqKind, SeqEditor } from "../components/profiles/SeqEditor";
 import { PageHeader } from "../components/Page";
@@ -125,6 +128,18 @@ function ProfileCard({
                   { label: t("profiles.update"), icon: <RefreshCw size={14} />, onClick: () => act("update", () => API.update(p.uid, null), t("profiles.updateFailed"), t("profiles.updated")) },
                   { label: t("profiles.updateViaProxy"), icon: <Waypoints size={14} />, onClick: () => act("update", () => API.update(p.uid, true), t("profiles.updateFailed"), t("profiles.updated")) },
                   { label: t("profiles.copyUrl"), icon: <Globe size={14} />, onClick: () => App.copyText(p.url ?? "").then(() => toast({ level: "success", message: t("common.copied") })) },
+                  ...(p.prev
+                    ? [
+                        {
+                          label: t("profiles.rollback", { when: dateOnly(p.prev.updated) }),
+                          icon: <History size={14} />,
+                          onClick: async () => {
+                            if (await confirm({ title: t("profiles.rollbackTitle"), message: t("profiles.rollbackMsg", { n: p.prev!.proxies }), confirm: t("profiles.rollbackOk") }))
+                              await act("update", () => API.rollback(p.uid), t("common.failed"), t("profiles.rolledBack"));
+                          },
+                        },
+                      ]
+                    : []),
                 ]
               : []),
             ...(p.home ? [{ label: t("profiles.home"), icon: <ExternalLink size={14} />, onClick: () => App.openURL(p.home!) }] : []),
@@ -292,6 +307,7 @@ export default function Profiles() {
   const [seq, setSeq] = useState<SeqEditing>(null);
   const [runtime, setRuntime] = useState(false);
   const [logs, setLogs] = useState(false);
+  const [subStore, setSubStore] = useState(false);
   const [updatingAll, setUpdatingAll] = useState(false);
   const [dragged, setDragged] = useState<string | null>(null);
   useNow();
@@ -369,6 +385,7 @@ export default function Profiles() {
           </Button>
           <Button size="lg" icon={<FileUp size={15} />} onClick={() => run(() => API.importFile(), t("profiles.importFailed"))} tip={t("profiles.fromFile")} />
           <Button size="lg" icon={<FilePlus2 size={15} />} onClick={() => setDialog({ open: true, profile: null })} tip={t("profiles.new")} />
+          <Button size="lg" icon={<Boxes size={15} />} onClick={() => setSubStore(true)} tip={t("substore.import")} />
         </div>
         {items.length === 0 ? (
           <Empty title={t("profiles.empty")} art>
@@ -431,6 +448,7 @@ export default function Profiles() {
         }}
       />
       <RuntimeDialog open={runtime} onClose={() => setRuntime(false)} />
+      <SubStoreDialog open={subStore} onClose={() => setSubStore(false)} known={new Set(items.map((p) => p.url ?? ""))} />
       <LogsDialog open={logs} onClose={() => setLogs(false)} names={names} />
     </>
   );
