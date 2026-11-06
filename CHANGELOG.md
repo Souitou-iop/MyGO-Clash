@@ -2,6 +2,14 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.29-beta
+
+MyGo 框架升级至 0.7.4，改善托盘快捷面板在多显示器上的定位，并修复原生窗口首次显示的问题。/ Updates MyGo to 0.7.4, improving the tray quick panel's placement across displays and fixing first-frame rendering of native windows.
+
+### 🔧 改进 / Improvements
+
+- 将 MyGo Go 框架与 `mygo-runtime` 同步升级至 0.7.4，改进原生窗口首帧显示和托盘图标跨屏定位 / Upgrades the MyGo Go framework and `mygo-runtime` together to 0.7.4, improving native-window first-frame rendering and tray-icon placement across displays
+
 ## 0.2.28-beta
 
 流量统计可以任意勾选要看的设备，其他设备的流量也能按应用、网站等下钻；排行可以展开全部，同步记录与备份可以按设备筛选。/ The statistics show any set of devices you pick, and other devices' traffic narrows by app, site and the rest too; rankings expand to everything, and the sync activity and the backups filter by device.
