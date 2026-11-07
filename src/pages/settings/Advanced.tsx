@@ -114,7 +114,7 @@ export default function Advanced() {
               <Five height={16} />
             </div>
             <div className="about-version selectable">
-              v{info?.version ?? ""} · mihomo {info?.coreVersion ?? ""} · {info?.os ?? ""}/{info?.arch ?? ""}
+              v{info?.version ?? ""} · mihomo {info?.coreVersion ?? ""} · MyGo {info?.mygoVersion ?? ""} · {info?.os ?? ""}/{info?.arch ?? ""}
             </div>
             <div className="about-motto">
               <span lang="ja" dir="ltr">迷子でもいい、前へ進め。</span>
@@ -124,7 +124,7 @@ export default function Advanced() {
           <Button
             size="sm"
             icon={<Copy size={13} />}
-            onClick={() => App.copyText(`MyGO-Clash v${info?.version} (mihomo ${info?.coreVersion}, ${info?.os}/${info?.arch})`).then(() => toast({ level: "success", message: t("common.copied") }))}
+            onClick={() => App.copyText(`MyGO-Clash v${info?.version} (mihomo ${info?.coreVersion}, MyGo ${info?.mygoVersion}, ${info?.os}/${info?.arch})`).then(() => toast({ level: "success", message: t("common.copied") }))}
           >
             {t("common.copy")}
           </Button>
