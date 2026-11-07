@@ -82,24 +82,52 @@ type updateChecker struct {
 	failed   time.Time // the last that failed, since
 	checking bool
 	ready    string
+	backedUp string // the version whose update a backup has been taken for
 }
 
 func newUpdateChecker(a *App) *updateChecker {
 	c := &updateChecker{a: a, file: filepath.Join(a.dirs.Data, "update-check.json")}
 	var saved struct {
 		LastCheck time.Time `json:"lastCheck"`
+		BackedUp  string    `json:"backedUp,omitempty"`
 	}
 	if b, err := os.ReadFile(c.file); err == nil && json.Unmarshal(b, &saved) == nil {
 		c.last = saved.LastCheck
+		c.backedUp = saved.BackedUp
 	}
 	if updater.AutomaticChecks() {
 		updater.SetAutomaticChecks(false) // this schedule instead
 	}
 	updater.OnChange(c.changed)
+	c.backupForUpdate()
 	// Timers stop while the computer sleeps: see what is due on waking.
 	mygo.Power.OnResume(func() { go c.schedule() })
 	c.schedule()
 	return c
+}
+
+// backupForUpdate takes the settings backup of an update that is in place
+// and not backed up yet: the restart that applies it should not be able to
+// lose the profiles and settings to a bad upgrade. One backup per version.
+func (c *updateChecker) backupForUpdate() {
+	v := updater.AvailableVersion()
+	if v == "" {
+		return
+	}
+	c.mu.Lock()
+	if c.backedUp == v {
+		c.mu.Unlock()
+		return
+	}
+	c.backedUp = v
+	c.save()
+	c.mu.Unlock()
+	name, err := c.a.createLocalBackup()
+	if err != nil {
+		log.Printf("the backup before the update to %s failed: %v", v, err)
+		return
+	}
+	log.Printf("backup before the update to %s: %s", v, name)
 }
 
 func (c *updateChecker) state() UpdateState {
@@ -125,7 +153,10 @@ func (c *updateChecker) state() UpdateState {
 }
 
 // changed tells the pages about the state.
-func (c *updateChecker) changed() { _ = UpdateEvent.Broadcast(c.state()) }
+func (c *updateChecker) changed() {
+	c.backupForUpdate()
+	_ = UpdateEvent.Broadcast(c.state())
+}
 
 // schedule arms the timer of the next background check: an interval after
 // the last one that worked, at most an hour after one that failed.
@@ -203,9 +234,10 @@ func (c *updateChecker) check() {
 	c.schedule()
 }
 
-// save keeps the time of the last check. c.mu is held.
+// save keeps the time of the last check, and the version backed up.
+// c.mu is held.
 func (c *updateChecker) save() {
-	b, _ := json.Marshal(map[string]time.Time{"lastCheck": c.last})
+	b, _ := json.Marshal(map[string]any{"lastCheck": c.last, "backedUp": c.backedUp})
 	if err := os.WriteFile(c.file, b, 0o600); err != nil {
 		log.Printf("update check: %v", err)
 	}
