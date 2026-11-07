@@ -190,6 +190,7 @@ func (a *App) start() {
 	}
 	a.registerHotkeys(st)
 	a.watchWake()
+	a.watchWiFi()
 	if !st.SystemProxy.Enabled {
 		go a.clearStaleProxy(st)
 	}

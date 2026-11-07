@@ -30,6 +30,7 @@ var messages = map[string]string{
 	"coreCrashed":       "The core stopped unexpectedly; restarting it",
 	"coreCrashes":       "The core has restarted %d times and keeps trying; check the logs if this goes on",
 	"coreRecovered":     "The core recovered and is running again",
+	"wifiApplied":       "Joined %s: adjusted as the scene asks",
 	"tunWake":           "Waking up: the core restarted to restore TUN mode",
 	"applyFailed":       "Could not apply the configuration",
 	"updateFailed":      "Could not update %s",

@@ -57,6 +57,10 @@ type Settings struct {
 	WebUIs []string `json:"webUis"`
 	// RuleSets are the rule sets the user added from the rules page.
 	RuleSets []RuleSet `json:"ruleSets,omitempty"`
+	// WiFiRules act once each time the computer joins the network they
+	// name: the profile to switch to, the proxy and TUN to turn on or off,
+	// the mode to set. A nil switch keeps what there is.
+	WiFiRules []WiFiRule `json:"wifiRules,omitempty"`
 
 	UI          UI          `json:"ui"`
 	SystemProxy SystemProxy `json:"systemProxy"`
@@ -225,24 +229,24 @@ type Tun struct {
 
 // Clash is the part of the core's configuration the app owns.
 type Clash struct {
-	Mode            string     `json:"mode"` // rule, global, direct
-	MixedPort       int        `json:"mixedPort"`
-	SocksPort       int        `json:"socksPort"`
-	SocksEnabled    bool       `json:"socksEnabled"`
-	HTTPPort        int        `json:"httpPort"`
-	HTTPEnabled     bool       `json:"httpEnabled"`
-	RedirPort       int        `json:"redirPort"`
-	RedirEnabled    bool       `json:"redirEnabled"`
-	TProxyPort      int        `json:"tproxyPort"`
-	TProxyEnabled   bool       `json:"tproxyEnabled"`
-	AllowLAN        bool       `json:"allowLan"`
-	LANAuth         LANAuth    `json:"lanAuth"`
-	IPv6            bool       `json:"ipv6"`
-	LogLevel        string     `json:"logLevel"` // debug, info, warning, error, silent
-	UnifiedDelay    bool       `json:"unifiedDelay"`
-	TCPConcurrent   bool       `json:"tcpConcurrent"`
-	FindProcessMode string     `json:"findProcessMode"` // "", always, strict, off
-	Interface       string     `json:"interface"`
+	Mode            string  `json:"mode"` // rule, global, direct
+	MixedPort       int     `json:"mixedPort"`
+	SocksPort       int     `json:"socksPort"`
+	SocksEnabled    bool    `json:"socksEnabled"`
+	HTTPPort        int     `json:"httpPort"`
+	HTTPEnabled     bool    `json:"httpEnabled"`
+	RedirPort       int     `json:"redirPort"`
+	RedirEnabled    bool    `json:"redirEnabled"`
+	TProxyPort      int     `json:"tproxyPort"`
+	TProxyEnabled   bool    `json:"tproxyEnabled"`
+	AllowLAN        bool    `json:"allowLan"`
+	LANAuth         LANAuth `json:"lanAuth"`
+	IPv6            bool    `json:"ipv6"`
+	LogLevel        string  `json:"logLevel"` // debug, info, warning, error, silent
+	UnifiedDelay    bool    `json:"unifiedDelay"`
+	TCPConcurrent   bool    `json:"tcpConcurrent"`
+	FindProcessMode string  `json:"findProcessMode"` // "", always, strict, off
+	Interface       string  `json:"interface"`
 	// GeoAutoUpdate has the core refresh the geo databases itself, every
 	// GeoUpdateInterval hours; GeoMirror takes them from a mirror rather
 	// than GitHub, which is out of reach for many.
@@ -263,6 +267,20 @@ type RuleSet struct {
 	Format   string `json:"format"`   // mrs, yaml, text; "" is yaml
 	Policy   string `json:"policy"`   // DIRECT, REJECT, PROXY
 	Enabled  bool   `json:"enabled"`
+}
+
+// WiFiRule is what to do when the computer joins a Wi-Fi network.
+type WiFiRule struct {
+	SSID string `json:"ssid"`
+	// ProfileUID switches to the profile when set; ProfileName labels it in
+	// the interface.
+	ProfileUID  string `json:"profileUid,omitempty"`
+	ProfileName string `json:"profileName,omitempty"`
+	// SysProxy and Tun turn their switches on or off when set; nil keeps
+	// what there is.
+	SysProxy *bool  `json:"sysProxy,omitempty"`
+	Tun      *bool  `json:"tun,omitempty"`
+	Mode     string `json:"mode,omitempty"` // rule, global, direct; "" keeps
 }
 
 // LANAuth is the login the proxy ports ask of other devices when allow-lan

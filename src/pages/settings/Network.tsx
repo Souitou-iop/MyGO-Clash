@@ -1,11 +1,11 @@
-import { Dices, Eye, EyeOff, Globe, KeyRound, Monitor, Network as NetIcon, ShieldCheck, ShieldOff, Webcam, Wrench } from "lucide-react";
+import { Dices, Eye, EyeOff, Globe, KeyRound, Monitor, Network as NetIcon, Plus, ShieldCheck, ShieldOff, Trash2, Webcam, Wrench } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
 import { enableTunWithService } from "../../lib/service";
 import { patchSettings, run, useApp } from "../../lib/store";
 import { Settings as SettingsAPI, System, type SystemProxy, type Tun } from "../../mygo";
-import { Badge, Banner, Button, confirm, Dialog, Field, Input, NumberInput, Row, Section, Segmented, Spinner, Switch } from "../../ui";
+import { Badge, Banner, Button, confirm, Dialog, Field, Input, NumberInput, Row, Section, Segmented, Select, Spinner, Switch } from "../../ui";
 import { usePatch } from "./General";
 
 const CodeEditor = lazy(() => import("../../components/CodeEditor"));
@@ -311,6 +311,11 @@ export default function Network() {
   const patch = usePatch();
   const [dialog, setDialog] = useState<"" | "sysproxy" | "tun" | "lanauth" | "lanauth-on">("");
   const [busy, setBusy] = useState("");
+  const profiles = useApp((st) => st.profiles);
+  // A tri-state select reads and writes the "keep / on / off" of an
+  // optional switch.
+  const tri = (v: boolean | undefined) => (v === undefined ? "keep" : v ? "on" : "off");
+  const triVal = (v: string) => (v === "keep" ? undefined : v === "on");
   const toggle = async (key: string, p: Parameters<typeof patch>[0]) => {
     setBusy(key);
     await patch(p);
@@ -359,6 +364,77 @@ export default function Network() {
             />
           </Row>
         )}
+      </Section>
+
+      <Section title={t("settings.wifi")}>
+        {(s.wifiRules ?? []).map((r, i) => (
+          <div key={i} className="col" style={{ gap: 8, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10 }}>
+            <div className="row" style={{ gap: 8 }}>
+              <Input
+                value={r.ssid}
+                onChange={(e) => patch({ wifiRules: (s.wifiRules ?? []).map((x, j) => (j === i ? { ...x, ssid: e.target.value } : x)) })}
+                placeholder={t("settings.wifiSSID")}
+                style={{ flex: 1 }}
+                spellCheck={false}
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={<Trash2 size={14} />}
+                onClick={() => patch({ wifiRules: (s.wifiRules ?? []).filter((_, j) => j !== i) })}
+                tip={t("common.delete")}
+              />
+            </div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <Select
+                value={r.profileUid || "keep"}
+                onChange={(v) =>
+                  patch({
+                    wifiRules: (s.wifiRules ?? []).map((x, j) =>
+                      j === i ? { ...x, profileUid: v === "keep" ? "" : v, profileName: v === "keep" ? "" : (profiles?.items.find((p) => p.uid === v)?.name ?? "") } : x,
+                    ),
+                  })
+                }
+                options={[{ value: "keep", label: t("settings.wifiProfile") }, ...(profiles?.items ?? []).map((p) => ({ value: p.uid, label: p.name }))]}
+                width={170}
+              />
+              <Select
+                value={tri(r.sysProxy)}
+                onChange={(v) => patch({ wifiRules: (s.wifiRules ?? []).map((x, j) => (j === i ? { ...x, sysProxy: triVal(v) } : x)) })}
+                options={[
+                  { value: "keep", label: `${t("settings.wifiSys")} · ${t("settings.wifiKeep")}` },
+                  { value: "on", label: `${t("settings.wifiSys")} · ${t("settings.wifiOn")}` },
+                  { value: "off", label: `${t("settings.wifiSys")} · ${t("settings.wifiOff")}` },
+                ]}
+                width={190}
+              />
+              <Select
+                value={tri(r.tun)}
+                onChange={(v) => patch({ wifiRules: (s.wifiRules ?? []).map((x, j) => (j === i ? { ...x, tun: triVal(v) } : x)) })}
+                options={[
+                  { value: "keep", label: `${t("settings.wifiTun")} · ${t("settings.wifiKeep")}` },
+                  { value: "on", label: `${t("settings.wifiTun")} · ${t("settings.wifiOn")}` },
+                  { value: "off", label: `${t("settings.wifiTun")} · ${t("settings.wifiOff")}` },
+                ]}
+                width={190}
+              />
+              <Select
+                value={r.mode || "keep"}
+                onChange={(v: string) => patch({ wifiRules: (s.wifiRules ?? []).map((x, j) => (j === i ? { ...x, mode: v === "keep" ? "" : v } : x)) })}
+                options={[
+                  { value: "keep", label: `${t("settings.wifiMode")} · ${t("settings.wifiKeep")}` },
+                  ...["rule", "global", "direct"].map((m) => ({ value: m, label: t(`mode.${m}` as never) })),
+                ]}
+                width={190}
+              />
+            </div>
+          </div>
+        ))}
+        <Row label={t("settings.wifiDesc")}>
+          <Button size="sm" variant="ghost" icon={<Plus size={14} />} onClick={() => patch({ wifiRules: [...(s.wifiRules ?? []), { ssid: "", profileUid: "", profileName: "" }] })}>
+            {t("settings.wifiAdd")}
+          </Button>
+        </Row>
       </Section>
       {os === "windows" && (
         <Section title={t("settings.leakProtection")}>

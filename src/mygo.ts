@@ -816,6 +816,12 @@ export interface Settings {
   webUis: string[];
   /** RuleSets are the rule sets the user added from the rules page. */
   ruleSets?: RuleSet[];
+  /**
+   * WiFiRules act once each time the computer joins the network they
+   * name: the profile to switch to, the proxy and TUN to turn on or off,
+   * the mode to set. A nil switch keeps what there is.
+   */
+  wifiRules?: WiFiRule[];
   ui: UI;
   systemProxy: SystemProxy;
   tun: Tun;
@@ -1492,6 +1498,25 @@ export interface Version {
   size: number;
   proxies: number;
   groups: number;
+}
+
+/** WiFiRule is what to do when the computer joins a Wi-Fi network. */
+export interface WiFiRule {
+  ssid: string;
+  /**
+   * ProfileUID switches to the profile when set; ProfileName labels it in
+   * the interface.
+   */
+  profileUid?: string;
+  profileName?: string;
+  /**
+   * SysProxy and Tun turn their switches on or off when set; nil keeps
+   * what there is.
+   */
+  sysProxy?: boolean;
+  tun?: boolean;
+  /** rule, global, direct; "" keeps */
+  mode?: string;
 }
 
 // ---- Services ----
