@@ -189,6 +189,7 @@ func (a *App) start() {
 		mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
 	}
 	a.registerHotkeys(st)
+	a.watchWake()
 	if !st.SystemProxy.Enabled {
 		go a.clearStaleProxy(st)
 	}
@@ -646,3 +647,21 @@ func (a *App) cleanup() {
 func (a *App) quit() { mygo.App.Quit() }
 
 var errNotReady = errors.New("the app is starting")
+
+// watchWake restores TUN after the computer wakes: the device and its
+// routes often do not survive sleep, so the core starts again, and lays
+// them out once more.
+func (a *App) watchWake() {
+	mygo.Power.OnResume(func() {
+		st := a.settings.Get()
+		if !st.Tun.Enabled || a.core.State().Status != coremgr.StatusRunning {
+			return
+		}
+		go func() {
+			time.Sleep(3 * time.Second) // let the network stack settle
+			log.Printf("wake: restarting the core to restore TUN")
+			a.notify(Notice{Level: "info", Message: tr(a, "tunWake")})
+			a.startCore(context.Background())
+		}()
+	})
+}
