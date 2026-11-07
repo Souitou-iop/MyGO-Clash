@@ -28,6 +28,8 @@ var messages = map[string]string{
 	"serviceFallback":   "The service could not start the core; running it without privileges (no TUN)",
 	"coreStartFailed":   "The core did not start",
 	"coreCrashed":       "The core stopped unexpectedly; restarting it",
+	"coreCrashes":       "The core has restarted %d times and keeps trying; check the logs if this goes on",
+	"coreRecovered":     "The core recovered and is running again",
 	"applyFailed":       "Could not apply the configuration",
 	"updateFailed":      "Could not update %s",
 	"tunNeedsService":   "TUN mode needs the service: install it first",

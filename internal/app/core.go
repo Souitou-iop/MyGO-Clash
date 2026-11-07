@@ -107,8 +107,18 @@ func (a *App) onCoreState(s coremgr.State) {
 			st.Tun = false
 		}
 	})
-	if s.Status == coremgr.StatusError && s.Restarts == 1 {
+	switch {
+	case s.Status == coremgr.StatusError && s.Restarts == 1:
+		a.coreSeen.Store(1)
 		a.notify(Notice{Level: "error", Message: tr(a, "coreCrashed"), Detail: s.Error})
+	case s.Status == coremgr.StatusError && s.Restarts >= 4 && s.Restarts%4 == 0:
+		a.coreSeen.Store(int32(s.Restarts))
+		a.notify(Notice{Level: "warning", Message: fmt.Sprintf(tr(a, "coreCrashes"), s.Restarts), Detail: s.Error, Important: true})
+	case s.Status == coremgr.StatusRunning && a.coreSeen.Load() >= 2:
+		a.coreSeen.Store(0)
+		a.notify(Notice{Level: "info", Message: tr(a, "coreRecovered")})
+	case s.Status == coremgr.StatusError:
+		a.coreSeen.Store(int32(s.Restarts))
 	}
 }
 
