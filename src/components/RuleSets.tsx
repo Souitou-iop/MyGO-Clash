@@ -5,17 +5,73 @@ import { patchSettings, run, useApp } from "../lib/store";
 import type { RuleSet } from "../mygo";
 import { Badge, Button, Dialog, Input, Select, Switch } from "../ui";
 
-/** A preset of the catalog: a rule set the maintainers vouched for, with
- * the policy most people want from it. */
-type Preset = { id: string; key: string; url: string; behavior: string; format: string; policy: string };
+/** A preset of the catalog: a rule set the maintainers vouched for — its
+ * URL checked to answer — with the policy most people want from it. */
+type Preset = { id: string; nameKey?: string; name?: string; url: string; behavior: string; format: string; policy: string };
 
-const PRESETS: Preset[] = [
-  { id: "ads", key: "rulesets.pAds", url: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-ads-all.mrs", behavior: "domain", format: "mrs", policy: "REJECT" },
-  { id: "openai", key: "rulesets.pOpenai", url: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/openai.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
-  { id: "telegram", key: "rulesets.pTelegram", url: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/telegram.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
-  { id: "cn", key: "rulesets.pCn", url: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/cn.mrs", behavior: "domain", format: "mrs", policy: "DIRECT" },
-  { id: "microsoft", key: "rulesets.pMicrosoft", url: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/microsoft.mrs", behavior: "domain", format: "mrs", policy: "DIRECT" },
-  { id: "apple", key: "rulesets.pApple", url: "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/apple.mrs", behavior: "domain", format: "mrs", policy: "DIRECT" },
+/** A group of the catalog, shown under its own heading. */
+type Group = { key: string; items: Preset[] };
+
+const RULES_DAT = "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/";
+const LOYAL = "https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/";
+const BM7 = "https://fastly.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/";
+
+const CATALOG: Group[] = [
+  {
+    key: "rulesets.catAds",
+    items: [
+      { id: "ads", nameKey: "rulesets.pAds", url: RULES_DAT + "category-ads-all.mrs", behavior: "domain", format: "mrs", policy: "REJECT" },
+      { id: "ads-loyal", nameKey: "rulesets.pAdsL", url: LOYAL + "reject.txt", behavior: "domain", format: "yaml", policy: "REJECT" },
+      { id: "ads-bm7", nameKey: "rulesets.pAdsB", url: BM7 + "Advertising/Advertising.yaml", behavior: "classical", format: "yaml", policy: "REJECT" },
+    ],
+  },
+  {
+    key: "rulesets.catAI",
+    items: [
+      { id: "openai", nameKey: "rulesets.pOpenai", url: RULES_DAT + "openai.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "anthropic", name: "Anthropic · Claude", url: RULES_DAT + "anthropic.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+    ],
+  },
+  {
+    key: "rulesets.catStream",
+    items: [
+      { id: "netflix", name: "Netflix", url: RULES_DAT + "netflix.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "disney", name: "Disney", url: RULES_DAT + "disney.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "youtube", name: "YouTube", url: RULES_DAT + "youtube.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "spotify", name: "Spotify", url: RULES_DAT + "spotify.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+    ],
+  },
+  {
+    key: "rulesets.catCN",
+    items: [
+      { id: "cn", nameKey: "rulesets.pCn", url: RULES_DAT + "cn.mrs", behavior: "domain", format: "mrs", policy: "DIRECT" },
+      { id: "outbound", nameKey: "rulesets.pOutbound", url: RULES_DAT + "geolocation-!cn.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "proxy-loyal", nameKey: "rulesets.pProxyList", url: LOYAL + "proxy.txt", behavior: "domain", format: "yaml", policy: "PROXY" },
+      { id: "gfw", nameKey: "rulesets.pGfw", url: LOYAL + "gfw.txt", behavior: "domain", format: "yaml", policy: "PROXY" },
+      { id: "direct-loyal", nameKey: "rulesets.pDirectL", url: LOYAL + "direct.txt", behavior: "domain", format: "yaml", policy: "DIRECT" },
+    ],
+  },
+  {
+    key: "rulesets.catPlatform",
+    items: [
+      { id: "telegram", nameKey: "rulesets.pTelegram", url: RULES_DAT + "telegram.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "telegram-ip", nameKey: "rulesets.pTelegramIP", url: LOYAL + "telegramcidr.txt", behavior: "ipcidr", format: "yaml", policy: "PROXY" },
+      { id: "twitter", name: "Twitter / X", url: RULES_DAT + "twitter.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "facebook", name: "Facebook / Meta", url: RULES_DAT + "facebook.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "github", name: "GitHub", url: RULES_DAT + "github.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "google", name: "Google", url: RULES_DAT + "google.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "microsoft", nameKey: "rulesets.pMicrosoft", url: RULES_DAT + "microsoft.mrs", behavior: "domain", format: "mrs", policy: "DIRECT" },
+      { id: "apple", nameKey: "rulesets.pApple", url: RULES_DAT + "apple.mrs", behavior: "domain", format: "mrs", policy: "DIRECT" },
+    ],
+  },
+  {
+    key: "rulesets.catMisc",
+    items: [
+      { id: "steam", name: "Steam", url: RULES_DAT + "steam.mrs", behavior: "domain", format: "mrs", policy: "PROXY" },
+      { id: "bilibili", name: "Bilibili", url: RULES_DAT + "bilibili.mrs", behavior: "domain", format: "mrs", policy: "DIRECT" },
+      { id: "apps", nameKey: "rulesets.pApps", url: LOYAL + "applications.txt", behavior: "classical", format: "yaml", policy: "DIRECT" },
+    ],
+  },
 ];
 
 const BEHAVIORS = ["domain", "ipcidr", "classical"];
@@ -23,7 +79,7 @@ const FORMATS = ["mrs", "yaml", "text"];
 const newID = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 /** RuleSetsDialog manages the rule sets the user added: the catalog's
- * presets, a set of their own, and the ones in place. */
+ * presets by category, a set of their own, and the ones in place. */
 export function RuleSetsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT();
   const s = useApp((st) => st.settings!);
@@ -36,10 +92,11 @@ export function RuleSetsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [format, setFormat] = useState("mrs");
   const [policy, setPolicy] = useState("PROXY");
 
-  const addPreset = (p: Preset) => {
+  const add = (p: Preset) => {
     if (sets.some((x) => x.url === p.url)) return;
-    void save([...sets, { id: newID(), name: t(p.key as never), url: p.url, behavior: p.behavior, format: p.format, policy: p.policy, enabled: true }]);
+    void save([...sets, { id: newID(), name: p.nameKey ? t(p.nameKey as never) : p.name ?? p.id, url: p.url, behavior: p.behavior, format: p.format, policy: p.policy, enabled: true }]);
   };
+  const added = (p: Preset) => sets.some((x) => x.url === p.url);
   const addCustom = () => {
     const u = url.trim();
     if (!/^https?:\/\//.test(u)) return;
@@ -57,6 +114,7 @@ export function RuleSetsDialog({ open, onClose }: { open: boolean; onClose: () =
     }
   };
   const policyLabel = (p: string) => (p === "PROXY" ? t("rulesets.policyProxy") : p);
+  const presetName = (p: Preset) => (p.nameKey ? t(p.nameKey as never) : p.name ?? p.id);
 
   return (
     <Dialog open={open} onClose={onClose} title={t("rulesets.title")} icon={<Layers2 size={16} />} size="wide">
@@ -89,17 +147,34 @@ export function RuleSetsDialog({ open, onClose }: { open: boolean; onClose: () =
         </div>
       )}
 
-      <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>{t("rulesets.preset")}</div>
-      <div className="row" style={{ gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        {PRESETS.map((p) => (
-          <Button key={p.id} size="sm" variant={sets.some((x) => x.url === p.url) ? "primary" : "ghost"} onClick={() => addPreset(p)}>
-            {t(p.key as never)}
-          </Button>
+      <div style={{ maxHeight: 320, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingRight: 4 }}>
+        {CATALOG.map((g) => (
+          <div key={g.key}>
+            <div className="muted" style={{ fontSize: 12, margin: "4px 0 6px", fontWeight: 600 }}>{t(g.key as never)}</div>
+            <div className="col" style={{ gap: 4 }}>
+              {g.items.map((p) => {
+                const inPlace = added(p);
+                return (
+                  <div key={p.id} className="row" style={{ gap: 8, padding: "5px 8px", borderRadius: 8, alignItems: "center" }}>
+                    <span className="grow ellipsis" style={{ fontSize: 13 }}>{presetName(p)}</span>
+                    <span className="faint" style={{ fontSize: 11 }}>{policyLabel(p.policy)}</span>
+                    {inPlace ? (
+                      <Badge>{t("rulesets.inPlace")}</Badge>
+                    ) : (
+                      <Button size="sm" variant="ghost" icon={<Plus size={13} />} onClick={() => add(p)}>
+                        {t("common.add")}
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         ))}
       </div>
 
       {custom ? (
-        <div className="col" style={{ gap: 8 }}>
+        <div className="col" style={{ gap: 8, marginTop: 12 }}>
           <div className="row" style={{ gap: 8 }}>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("rulesets.name")} width={150} />
             <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={t("rulesets.url")} style={{ flex: 1 }} spellCheck={false} />
@@ -126,7 +201,7 @@ export function RuleSetsDialog({ open, onClose }: { open: boolean; onClose: () =
           </div>
         </div>
       ) : (
-        <Button size="sm" variant="ghost" icon={<Plus size={14} />} onClick={() => setCustom(true)}>
+        <Button size="sm" variant="ghost" icon={<Plus size={14} />} onClick={() => setCustom(true)} style={{ marginTop: 12 }}>
           {t("rulesets.custom")}
         </Button>
       )}
