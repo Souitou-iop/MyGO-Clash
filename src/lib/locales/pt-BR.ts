@@ -998,6 +998,8 @@ const ptBR: Record<Key, string> = {
   "proxies.type.LoadBalance": "Balanceamento",
   "proxies.type.Relay": "Cadeia",
   "proxies.hideDead": "Ocultar indisponíveis",
+  "proxies.hidePh": "Ocultar nós que correspondam (regex)",
+  "proxies.hideTip": "Oculta nós pelo nome com uma expressão regular — x2|x3 oculta os de multiplicador alto. Vazio mostra todos.",
   "proxies.hideDeadTip": "Oculta nós cujo último teste falhou; o selecionado continua",
   "unlock.via": "via {node}",
   "unlock.changed": "nó trocado",

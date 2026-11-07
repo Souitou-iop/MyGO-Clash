@@ -998,6 +998,8 @@ const tr: Record<Key, string> = {
   "proxies.type.LoadBalance": "Yük dengeleme",
   "proxies.type.Relay": "Zincir",
   "proxies.hideDead": "Kullanılamayanları gizle",
+  "proxies.hidePh": "Eşleşen düğümleri gizle (regex)",
+  "proxies.hideTip": "Düğümleri ada göre düzenli ifadeyle gizler — x2|x3 yüksek çarpanlıları gizler. Boşsa tümü gösterilir.",
   "proxies.hideDeadTip": "Son testi başarısız düğümleri gizler; seçili olan kalır",
   "unlock.via": "{node} üzerinden",
   "unlock.changed": "düğüm değişti",

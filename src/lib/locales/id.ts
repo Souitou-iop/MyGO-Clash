@@ -998,6 +998,8 @@ const id: Record<Key, string> = {
   "proxies.type.LoadBalance": "Penyeimbang beban",
   "proxies.type.Relay": "Rantai",
   "proxies.hideDead": "Sembunyikan yang tidak tersedia",
+  "proxies.hidePh": "Sembunyikan node yang cocok (regex)",
+  "proxies.hideTip": "Menyembunyikan node menurut nama dengan regex — x2|x3 menyembunyikan pengali tinggi. Kosong menampilkan semua.",
   "proxies.hideDeadTip": "Menyembunyikan node yang gagal diuji; yang dipilih tetap tampil",
   "unlock.via": "melalui {node}",
   "unlock.changed": "node berganti",

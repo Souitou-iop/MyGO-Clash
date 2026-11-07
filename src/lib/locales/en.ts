@@ -1015,6 +1015,8 @@ export const en = {
   "proxies.type.LoadBalance": "Load balance",
   "proxies.type.Relay": "Chain",
   "proxies.hideDead": "Hide unavailable",
+  "proxies.hidePh": "Hide nodes matching (regex)",
+  "proxies.hideTip": "Hide nodes by name, as a regular expression — x2|x3 hides high multipliers. Empty shows everything.",
   "proxies.hideDeadTip": "Hides nodes whose last test failed; the selected one stays",
   "unlock.via": "via {node}",
   "unlock.changed": "node changed",

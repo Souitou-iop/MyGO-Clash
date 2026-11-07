@@ -998,6 +998,8 @@ const ar: Record<Key, string> = {
   "proxies.type.LoadBalance": "موازنة الحمل",
   "proxies.type.Relay": "سلسلة",
   "proxies.hideDead": "إخفاء غير المتاح",
+  "proxies.hidePh": "إخفاء العقد المطابقة (تعبير نمطي)",
+  "proxies.hideTip": "يخفي العقد حسب الاسم بتعبير نمطي — x2|x3 يخفي المضاعفات العالية. فارغ يعرض الكل.",
   "proxies.hideDeadTip": "يخفي العقد التي فشل اختبارها الأخير؛ وتبقى المختارة",
   "unlock.via": "عبر {node}",
   "unlock.changed": "تغيّرت العقدة",

@@ -998,6 +998,8 @@ const ko: Record<Key, string> = {
   "proxies.type.LoadBalance": "부하 분산",
   "proxies.type.Relay": "체인",
   "proxies.hideDead": "사용 불가 숨기기",
+  "proxies.hidePh": "일치하는 노드 숨기기(정규식)",
+  "proxies.hideTip": "정규식으로 노드 이름을 숨깁니다. 예: x2|x3은 고배율 노드를 숨깁니다. 비우면 모두 표시합니다.",
   "proxies.hideDeadTip": "마지막 테스트에 실패한 노드를 숨깁니다(선택된 노드는 유지)",
   "unlock.via": "{node} 경유",
   "unlock.changed": "노드 변경됨",

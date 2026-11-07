@@ -97,15 +97,19 @@ var UpdateIntervals = []string{"hourly", "daily", "weekly", "monthly"}
 
 // UI is how the interface looks.
 type UI struct {
-	CollapseNav   bool       `json:"collapseNav"`
-	TrafficGraph  bool       `json:"trafficGraph"`
-	MemoryUsage   bool       `json:"memoryUsage"`
-	GroupIcons    bool       `json:"groupIcons"`
-	ToastPosition string     `json:"toastPosition"` // top-right, top-left, bottom-right, bottom-left
-	ProxyColumns  int        `json:"proxyColumns"`  // 0: as many as fit
-	ProxyLayout   string     `json:"proxyLayout"`   // card, list
-	PauseOnBlur   bool       `json:"pauseOnBlur"`
-	HomeCards     []HomeCard `json:"homeCards"`
+	CollapseNav   bool   `json:"collapseNav"`
+	TrafficGraph  bool   `json:"trafficGraph"`
+	MemoryUsage   bool   `json:"memoryUsage"`
+	GroupIcons    bool   `json:"groupIcons"`
+	ToastPosition string `json:"toastPosition"` // top-right, top-left, bottom-right, bottom-left
+	ProxyColumns  int    `json:"proxyColumns"`  // 0: as many as fit
+	ProxyLayout   string `json:"proxyLayout"`   // card, list
+	// ProxyHide hides the nodes whose name matches this regular
+	// expression, on the proxies page: a way to keep high-multiplier or
+	// long-dead nodes out of the way. Empty shows everything.
+	ProxyHide   string     `json:"proxyHide,omitempty"`
+	PauseOnBlur bool       `json:"pauseOnBlur"`
+	HomeCards   []HomeCard `json:"homeCards"`
 	// Nav lists the pages of the sidebar in order; pages missing from it
 	// are hidden.
 	Nav []string `json:"nav"`

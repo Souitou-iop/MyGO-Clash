@@ -998,6 +998,8 @@ const fa: Record<Key, string> = {
   "proxies.type.LoadBalance": "توزیع بار",
   "proxies.type.Relay": "زنجیره",
   "proxies.hideDead": "پنهان کردن ناموجودها",
+  "proxies.hidePh": "پنهان کردن گره‌های منطبق (الگو)",
+  "proxies.hideTip": "گره‌ها را با الگوی باقاعده بر اساس نام پنهان می‌کند — x2|x3 ضریب‌های بالا را پنهان می‌کند. خالی یعنی نمایش همه.",
   "proxies.hideDeadTip": "گره‌هایی که آزمون آخرشان ناموفق بود پنهان می‌شوند؛ گره انتخاب‌شده می‌ماند",
   "unlock.via": "از طریق {node}",
   "unlock.changed": "گره عوض شد",

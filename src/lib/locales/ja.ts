@@ -998,6 +998,8 @@ const ja: Record<Key, string> = {
   "proxies.type.LoadBalance": "負荷分散",
   "proxies.type.Relay": "チェーン",
   "proxies.hideDead": "使用不可を隠す",
+  "proxies.hidePh": "一致するノードを隠す（正規表現）",
+  "proxies.hideTip": "ノード名を正規表現で隠します。例: x2|x3 で高倍率ノードを隠す。空欄で全表示。",
   "proxies.hideDeadTip": "前回のテストに失敗したノードを隠します（選択中のものは残ります）",
   "unlock.via": "{node} 経由",
   "unlock.changed": "ノード変更済み",

@@ -998,6 +998,8 @@ const fr: Record<Key, string> = {
   "proxies.type.LoadBalance": "Répartition",
   "proxies.type.Relay": "Chaîne",
   "proxies.hideDead": "Masquer les indisponibles",
+  "proxies.hidePh": "Masquer les nœuds correspondants (regex)",
+  "proxies.hideTip": "Masque les nœuds par nom via une expression régulière — x2|x3 masque les multiplicateurs élevés. Vide : tout afficher.",
   "proxies.hideDeadTip": "Masque les nœuds dont le dernier test a échoué ; le choisi reste",
   "unlock.via": "via {node}",
   "unlock.changed": "nœud changé",

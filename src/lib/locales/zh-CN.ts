@@ -998,6 +998,8 @@ const zhCN: Record<Key, string> = {
   "proxies.type.LoadBalance": "负载均衡",
   "proxies.type.Relay": "链式代理",
   "proxies.hideDead": "隐藏不可用",
+  "proxies.hidePh": "隐藏匹配的节点（正则）",
+  "proxies.hideTip": "按正则隐藏节点名，如 x2|x3 隐藏高倍率节点。留空显示全部。",
   "proxies.hideDeadTip": "隐藏上次测速失败的节点，当前选中的节点始终保留",
   "unlock.via": "经由 {node}",
   "unlock.changed": "节点已更换",

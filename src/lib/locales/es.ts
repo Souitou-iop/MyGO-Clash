@@ -998,6 +998,8 @@ const es: Record<Key, string> = {
   "proxies.type.LoadBalance": "Balanceo",
   "proxies.type.Relay": "Cadena",
   "proxies.hideDead": "Ocultar no disponibles",
+  "proxies.hidePh": "Ocultar nodos que coincidan (regex)",
+  "proxies.hideTip": "Oculta nodos por nombre con una expresión regular; x2|x3 oculta los de multiplicador alto. Vacío los muestra todos.",
   "proxies.hideDeadTip": "Oculta nodos cuya última prueba falló; el elegido se queda",
   "unlock.via": "vía {node}",
   "unlock.changed": "nodo cambiado",

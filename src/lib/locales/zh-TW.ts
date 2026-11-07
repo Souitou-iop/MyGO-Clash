@@ -998,6 +998,8 @@ const zhTW: Record<Key, string> = {
   "proxies.type.LoadBalance": "負載平衡",
   "proxies.type.Relay": "鏈式代理",
   "proxies.hideDead": "隱藏不可用",
+  "proxies.hidePh": "隱藏符合的節點（正規表示式）",
+  "proxies.hideTip": "按正規表示式隱藏節點名稱，如 x2|x3 隱藏高倍率節點。留空顯示全部。",
   "proxies.hideDeadTip": "隱藏上次測速失敗的節點，目前選取的節點始終保留",
   "unlock.via": "經由 {node}",
   "unlock.changed": "節點已更換",

@@ -998,6 +998,8 @@ const vi: Record<Key, string> = {
   "proxies.type.LoadBalance": "Cân bằng tải",
   "proxies.type.Relay": "Chuỗi",
   "proxies.hideDead": "Ẩn nút không dùng được",
+  "proxies.hidePh": "Ẩn node khớp (regex)",
+  "proxies.hideTip": "Ẩn node theo tên bằng biểu thức chính quy — x2|x3 ẩn các node hệ số cao. Để trống là hiện tất cả.",
   "proxies.hideDeadTip": "Ẩn các nút kiểm tra thất bại; nút đang chọn vẫn hiện",
   "unlock.via": "qua {node}",
   "unlock.changed": "đã đổi nút",

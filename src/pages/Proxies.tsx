@@ -6,7 +6,7 @@ import { useAsync } from "../lib/hooks";
 import { useT } from "../lib/i18n";
 import { patchSettings, run, useApp } from "../lib/store";
 import { Core, Proxies as API, type ProxyGroup, type ProxyItem } from "../mygo";
-import { Badge, Banner, Button, Collapse, Delay, Empty, Progress, reflow, SearchInput, Segmented, Select, Spinner } from "../ui";
+import { Badge, Banner, Button, Collapse, Delay, Empty, Input, Progress, reflow, SearchInput, Segmented, Select, Spinner } from "../ui";
 import { CoreDown } from "../components/CoreDown";
 
 type Sort = "default" | "delay" | "name";
@@ -99,6 +99,7 @@ function Group({
   showIcon,
   flash,
   hideDead,
+  hide,
 }: {
   group: ProxyGroup;
   open: boolean;
@@ -111,6 +112,8 @@ function Group({
   showIcon: boolean;
   flash?: boolean;
   hideDead: boolean;
+  /** hide matches the names of the nodes the list keeps out. */
+  hide: RegExp | null;
 }) {
   const t = useT();
   const [delays, setDelays] = useState<Record<string, number>>({});
@@ -125,9 +128,11 @@ function Group({
     const q = search.trim().toLowerCase();
     // Hiding the unavailable keeps the selected one, so the group still shows where it goes.
     const dead = (m: ProxyItem) => m.name !== group.now && (delays[m.name] === 0 || (delays[m.name] === undefined && !m.alive));
-    const list = group.all.filter((m) => (!q || m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q)) && !(hideDead && dead(m)));
+    const list = group.all.filter(
+      (m) => (!q || m.name.toLowerCase().includes(q) || m.type.toLowerCase().includes(q)) && !(hideDead && dead(m)) && !(hide && hide.test(m.name) && m.name !== group.now),
+    );
     return sortItems(list, sort, delays);
-  }, [group.all, group.now, search, sort, delays, hideDead]);
+  }, [group.all, group.now, search, sort, delays, hideDead, hide]);
   if (search && items.length === 0) return null;
   const testOne = async (name: string) => {
     setTesting((s) => ({ ...s, [name]: true }));
@@ -281,8 +286,25 @@ export default function Proxies() {
   const [sort, setSort] = useState<Sort>(() => (localStorage.getItem("proxies.sort") as Sort) || "default");
   const [open, setOpen] = useState<Record<string, boolean>>(loadOpen);
   const [hideDead, setHideDead] = useState(() => localStorage.getItem("proxies.hideDead") === "1");
+  const [hideInput, setHideInput] = useState(() => settings?.ui.proxyHide ?? "");
   const layout = settings?.ui.proxyLayout ?? "card";
   const mode = settings?.clash.mode ?? "rule";
+  // A bad regular expression filters nothing, rather than breaking the page.
+  const hide = useMemo(() => {
+    const v = (settings?.ui.proxyHide ?? "").trim();
+    if (!v) return null;
+    try {
+      return new RegExp(v, "i");
+    } catch {
+      return null;
+    }
+  }, [settings?.ui.proxyHide]);
+  const saveHide = () => {
+    const v = hideInput.trim();
+    if (v === (settings?.ui.proxyHide ?? "")) return;
+    void run(() => patchSettings({ ui: { proxyHide: v } }), t("common.failed"));
+  };
+  useEffect(() => setHideInput(settings?.ui.proxyHide ?? ""), [settings?.ui.proxyHide]);
   const toggle = (name: string) => {
     const next = { ...open, [name]: !isOpen(name) };
     setOpen(next);
@@ -350,6 +372,16 @@ export default function Proxies() {
           >
             {t("proxies.hideDead")}
           </Button>
+          <Input
+            value={hideInput}
+            onChange={(e) => setHideInput(e.target.value)}
+            onBlur={saveHide}
+            onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+            placeholder={t("proxies.hidePh")}
+            title={t("proxies.hideTip")}
+            width={150}
+            spellCheck={false}
+          />
           <div className="spacer" />
           <Segmented
             value={layout}
@@ -389,6 +421,7 @@ export default function Proxies() {
                 showIcon={settings?.ui.groupIcons ?? true}
                 flash={flash === g.name}
                 hideDead={hideDead}
+                hide={hide}
               />
             ))}
           </div>

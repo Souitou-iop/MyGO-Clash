@@ -998,6 +998,8 @@ const ru: Record<Key, string> = {
   "proxies.type.LoadBalance": "Балансировка",
   "proxies.type.Relay": "Цепочка",
   "proxies.hideDead": "Скрыть недоступные",
+  "proxies.hidePh": "Скрыть совпавшие узлы (регулярка)",
+  "proxies.hideTip": "Скрывает узлы по имени по регулярному выражению — x2|x3 скроет повышенные коэффициенты. Пусто — показать все.",
   "proxies.hideDeadTip": "Скрывает узлы, не прошедшие проверку; выбранный остаётся",
   "unlock.via": "через {node}",
   "unlock.changed": "узел сменился",

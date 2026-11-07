@@ -998,6 +998,8 @@ const de: Record<Key, string> = {
   "proxies.type.LoadBalance": "Lastverteilung",
   "proxies.type.Relay": "Kette",
   "proxies.hideDead": "Nicht verfügbare ausblenden",
+  "proxies.hidePh": "Knoten ausblenden (Regex)",
+  "proxies.hideTip": "Blendet Knoten nach Name per regulärem Ausdruck aus — x2|x3 verbirgt hohe Multiplikatoren. Leer zeigt alle.",
   "proxies.hideDeadTip": "Blendet Knoten aus, deren letzter Test scheiterte; der gewählte bleibt",
   "unlock.via": "über {node}",
   "unlock.changed": "Knoten gewechselt",
