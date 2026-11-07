@@ -55,6 +55,8 @@ type Settings struct {
 	CoreMode string `json:"coreMode"`
 	// WebUIs are dashboards to open, with %host, %port and %secret.
 	WebUIs []string `json:"webUis"`
+	// RuleSets are the rule sets the user added from the rules page.
+	RuleSets []RuleSet `json:"ruleSets,omitempty"`
 
 	UI          UI          `json:"ui"`
 	SystemProxy SystemProxy `json:"systemProxy"`
@@ -248,6 +250,19 @@ type Clash struct {
 	GeoUpdateInterval int        `json:"geoUpdateInterval"` // hours, 0: 24
 	GeoMirror         bool       `json:"geoMirror"`
 	Controller        Controller `json:"controller"`
+}
+
+// RuleSet is a rule set the user added from the rules page: an open
+// source list, or a file of their own, that the core downloads and
+// refreshes, with a policy the matched traffic goes to.
+type RuleSet struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	Behavior string `json:"behavior"` // domain, ipcidr, classical
+	Format   string `json:"format"`   // mrs, yaml, text; "" is yaml
+	Policy   string `json:"policy"`   // DIRECT, REJECT, PROXY
+	Enabled  bool   `json:"enabled"`
 }
 
 // LANAuth is the login the proxy ports ask of other devices when allow-lan

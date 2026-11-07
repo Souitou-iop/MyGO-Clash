@@ -703,6 +703,24 @@ export interface RuleProvider {
   updatedAt?: string;
 }
 
+/**
+ * RuleSet is a rule set the user added from the rules page: an open
+ * source list, or a file of their own, that the core downloads and
+ * refreshes, with a policy the matched traffic goes to.
+ */
+export interface RuleSet {
+  id: string;
+  name: string;
+  url: string;
+  /** domain, ipcidr, classical */
+  behavior: string;
+  /** mrs, yaml, text; "" is yaml */
+  format: string;
+  /** DIRECT, REJECT, PROXY */
+  policy: string;
+  enabled: boolean;
+}
+
 /** RulesView is the rules and their providers. */
 export interface RulesView {
   rules: Rule[];
@@ -796,6 +814,8 @@ export interface Settings {
   coreMode: string;
   /** WebUIs are dashboards to open, with %host, %port and %secret. */
   webUis: string[];
+  /** RuleSets are the rule sets the user added from the rules page. */
+  ruleSets?: RuleSet[];
   ui: UI;
   systemProxy: SystemProxy;
   tun: Tun;

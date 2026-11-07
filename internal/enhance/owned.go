@@ -41,7 +41,10 @@ type Base struct {
 	GeoUpdateInterval int
 	// GeoMirror serves the geo databases from a mirror rather than GitHub.
 	GeoMirror bool
-	Tun       Tun
+	// RuleSets are the rule sets the user added, above the rules of the
+	// profile and its subscription.
+	RuleSets []RuleSet
+	Tun      Tun
 }
 
 // Tun is the TUN section the app manages.

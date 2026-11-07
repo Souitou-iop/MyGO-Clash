@@ -94,7 +94,7 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 		structural := changed(func(s config.Settings) any {
 			c := s.Clash
 			c.Mode = ""
-			return []any{c, s.Tun, s.DNS, s.BuiltinEnhanced, s.Tailscale}
+			return []any{c, s.Tun, s.DNS, s.BuiltinEnhanced, s.Tailscale, s.RuleSets}
 		})
 		switch {
 		case structural:

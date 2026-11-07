@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, CornerLeftUp, Crosshair, Info, MoreHorizontal, Pencil, RefreshCw, SquareArrowOutUpRight, Zap } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, CornerLeftUp, Crosshair, Info, Layers2, MoreHorizontal, Pencil, RefreshCw, SquareArrowOutUpRight, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { RuleSetsDialog } from "../components/RuleSets";
 import { RuleTest } from "../components/RuleTest";
 import { EditorDialog } from "../components/profiles/EditorDialog";
 import { RULE_TYPES, SeqEditor, type RuleDraft } from "../components/profiles/SeqEditor";
@@ -46,6 +47,7 @@ export default function Rules() {
   const [restoring, setRestoring] = useState(false);
   const [seq, setSeq] = useState<{ uid: string; title: string; draft?: RuleDraft } | null>(null);
   const [raw, setRaw] = useState<{ uid: string; title: string } | null>(null);
+  const [setsOpen, setSetsOpen] = useState(false);
   const all = data?.rules ?? [];
   const types = useMemo(() => [...new Set(all.map(syntax))].sort(), [all]);
   const off = useMemo(() => all.filter((r) => r.extra?.disabled).length, [all]);
@@ -147,6 +149,9 @@ export default function Rules() {
             {t("rules.quickRules")}
           </Button>
         )}
+        <Button size="sm" variant="ghost" icon={<Layers2 size={14} />} onClick={() => setSetsOpen(true)} tip={t("rulesets.hint")}>
+          {t("rulesets.title")}
+        </Button>
         {running && profile && (
           <Button size="sm" variant="ghost" icon={<Pencil size={14} />} onClick={() => edit()} tip={t("rules.editTip")}>
             {t("rules.edit")}
@@ -326,6 +331,7 @@ export default function Rules() {
         )}
       </div>
       <RuleTest open={testing} onClose={() => setTesting(false)} onLocate={showRule} onAdd={addQuick} />
+      <RuleSetsDialog open={setsOpen} onClose={() => setSetsOpen(false)} />
       <SeqEditor
         uid={seq?.uid ?? null}
         profileUid={profile}

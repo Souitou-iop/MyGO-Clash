@@ -158,6 +158,11 @@ func (a *App) inputs(st config.Settings) profiles.Inputs {
 			RouteExcludeAddress: st.Tun.RouteExcludeAddress,
 		},
 	}
+	for _, r := range st.RuleSets {
+		base.RuleSets = append(base.RuleSets, enhance.RuleSet{
+			ID: r.ID, URL: r.URL, Behavior: r.Behavior, Format: r.Format, Policy: r.Policy, Enabled: r.Enabled,
+		})
+	}
 	if c.LANAuth.Enabled && c.LANAuth.Username != "" && c.LANAuth.Password != "" {
 		base.LANAuth = []string{c.LANAuth.Username + ":" + c.LANAuth.Password}
 	}
