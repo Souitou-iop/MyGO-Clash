@@ -44,7 +44,9 @@ type Base struct {
 	// RuleSets are the rule sets the user added, above the rules of the
 	// profile and its subscription.
 	RuleSets []RuleSet
-	Tun      Tun
+	// ProxyChains front some proxies with others: dialer-proxy.
+	ProxyChains []ProxyChain
+	Tun         Tun
 }
 
 // Tun is the TUN section the app manages.

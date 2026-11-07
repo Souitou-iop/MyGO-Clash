@@ -629,6 +629,18 @@ export interface Proxy {
   pac?: string;
 }
 
+/**
+ * ProxyChain fronts the proxies whose name matches with a node or group of
+ * the profile: a chain, as dialer-proxy sets it.
+ */
+export interface ProxyChain {
+  /** a name, or a regular expression of names */
+  match: string;
+  /** the node or group that fronts them */
+  through: string;
+  enabled: boolean;
+}
+
 /** ProxyGroup is a group of proxies. */
 export interface ProxyGroup {
   name: string;
@@ -816,6 +828,11 @@ export interface Settings {
   webUis: string[];
   /** RuleSets are the rule sets the user added from the rules page. */
   ruleSets?: RuleSet[];
+  /**
+   * ProxyChains front some proxies with others: the matched ones dial
+   * through their front first.
+   */
+  proxyChains?: ProxyChain[];
   /**
    * WiFiRules act once each time the computer joins the network they
    * name: the profile to switch to, the proxy and TUN to turn on or off,

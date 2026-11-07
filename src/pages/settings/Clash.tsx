@@ -1,4 +1,5 @@
 import { Dices, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
+
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
@@ -431,6 +432,34 @@ export default function Clash() {
         <Row label={t("settings.geoFiles")} desc={geoDesc}>
           <Button size="sm" loading={updatingGeo} onClick={updateGeo}>
             {t("settings.geoUpdateNow")}
+          </Button>
+        </Row>
+      </Section>
+
+      <Section title={t("settings.chain")}>
+        {(s.proxyChains ?? []).map((ch, i) => (
+          <div key={i} className="row" style={{ gap: 8, padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 10, alignItems: "center" }}>
+            <Switch checked={ch.enabled} onChange={(v) => patch({ proxyChains: (s.proxyChains ?? []).map((x, j) => (j === i ? { ...x, enabled: v } : x)) })} />
+            <Input
+              value={ch.match}
+              onChange={(e) => patch({ proxyChains: (s.proxyChains ?? []).map((x, j) => (j === i ? { ...x, match: e.target.value } : x)) })}
+              placeholder={t("settings.chainMatch")}
+              style={{ flex: 1 }}
+              spellCheck={false}
+            />
+            <Input
+              value={ch.through}
+              onChange={(e) => patch({ proxyChains: (s.proxyChains ?? []).map((x, j) => (j === i ? { ...x, through: e.target.value } : x)) })}
+              placeholder={t("settings.chainThrough")}
+              width={190}
+              spellCheck={false}
+            />
+            <Button size="sm" variant="ghost" icon={<Trash2 size={14} />} onClick={() => patch({ proxyChains: (s.proxyChains ?? []).filter((_, j) => j !== i) })} tip={t("common.delete")} />
+          </div>
+        ))}
+        <Row label={t("settings.chainDesc")}>
+          <Button size="sm" variant="ghost" icon={<Plus size={14} />} onClick={() => patch({ proxyChains: [...(s.proxyChains ?? []), { match: "", through: "", enabled: true }] })}>
+            {t("settings.chainAdd")}
           </Button>
         </Row>
       </Section>

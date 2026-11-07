@@ -57,6 +57,9 @@ type Settings struct {
 	WebUIs []string `json:"webUis"`
 	// RuleSets are the rule sets the user added from the rules page.
 	RuleSets []RuleSet `json:"ruleSets,omitempty"`
+	// ProxyChains front some proxies with others: the matched ones dial
+	// through their front first.
+	ProxyChains []ProxyChain `json:"proxyChains,omitempty"`
 	// WiFiRules act once each time the computer joins the network they
 	// name: the profile to switch to, the proxy and TUN to turn on or off,
 	// the mode to set. A nil switch keeps what there is.
@@ -267,6 +270,14 @@ type RuleSet struct {
 	Format   string `json:"format"`   // mrs, yaml, text; "" is yaml
 	Policy   string `json:"policy"`   // DIRECT, REJECT, PROXY
 	Enabled  bool   `json:"enabled"`
+}
+
+// ProxyChain fronts the proxies whose name matches with a node or group of
+// the profile: a chain, as dialer-proxy sets it.
+type ProxyChain struct {
+	Match   string `json:"match"`   // a name, or a regular expression of names
+	Through string `json:"through"` // the node or group that fronts them
+	Enabled bool   `json:"enabled"`
 }
 
 // WiFiRule is what to do when the computer joins a Wi-Fi network.

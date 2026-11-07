@@ -89,6 +89,7 @@ func (m *Manager) Generate(ctx context.Context, in Inputs) (*Runtime, error) {
 	// The app's settings, which extensions cannot override.
 	enhance.ApplyBase(cfg, in.Base)
 	enhance.ApplyRuleSets(cfg, in.Base.RuleSets)
+	enhance.ApplyChains(cfg, in.Base.ProxyChains)
 	if in.Builtin {
 		enhance.ApplyBuiltins(cfg)
 	}

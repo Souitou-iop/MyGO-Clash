@@ -163,6 +163,9 @@ func (a *App) inputs(st config.Settings) profiles.Inputs {
 			ID: r.ID, URL: r.URL, Behavior: r.Behavior, Format: r.Format, Policy: r.Policy, Enabled: r.Enabled,
 		})
 	}
+	for _, ch := range st.ProxyChains {
+		base.ProxyChains = append(base.ProxyChains, enhance.ProxyChain{Match: ch.Match, Through: ch.Through, Enabled: ch.Enabled})
+	}
 	if c.LANAuth.Enabled && c.LANAuth.Username != "" && c.LANAuth.Password != "" {
 		base.LANAuth = []string{c.LANAuth.Username + ":" + c.LANAuth.Password}
 	}
