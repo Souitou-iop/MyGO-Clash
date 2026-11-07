@@ -2,6 +2,16 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.31-beta
+
+MyGo 框架升级到 0.8.3：圆角裁剪更准、动画不再堆积显存，韩文按词换行，更新时清理旧版残留文件。/ Updates the MyGo framework to 0.8.3: rounded clipping is more accurate and animations stop piling up GPU memory, Korean text breaks lines between words, and updating removes files that old versions shipped.
+
+### 🔧 改进 / Improvements
+
+- 将 MyGo Go 框架与 `mygo-runtime` 同步升级至 0.8.3：圆角卡片内的内容在各平台都贴合圆角裁剪，展开动画复用同一遮罩，不再逐帧新增而堆积数百 MB 显存 / Upgrades the MyGo Go framework and `mygo-runtime` together to 0.8.3: content inside rounded cards keeps to their corners on every platform, and expanding animations reuse one mask instead of allocating a new one each frame and piling up hundreds of MB of GPU memory
+- 韩语界面按词换行；macOS 上韩文两集合键盘组字途中按回车，不再把没打完的字和回车一起送出 / Korean text breaks lines between words; on macOS, pressing Return while composing with the Korean 2-Set keyboard no longer sends the half-finished syllable along with it
+- 在 Linux 与 Windows 上更新后，自动移除新版本不再附带的旧文件 / After updating on Linux and Windows, files that the new version no longer ships are removed automatically
+
 ## 0.2.30-beta
 
 MyGo 框架升级到 0.8.1：原生界面画得更快、也更省显存，快捷面板与测速悬浮窗在别的窗口在前面时仍保持 MyGO 蓝。/ Updates the MyGo framework to 0.8.1: the native UI draws faster and saves memory, and the quick panel and the speed overlay keep MyGO's blue while another window is in front.
