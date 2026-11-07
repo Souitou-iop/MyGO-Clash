@@ -2,6 +2,16 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.30-beta
+
+MyGo 框架升级到 0.8.1：原生界面画得更快、也更省显存，快捷面板与测速悬浮窗在别的窗口在前面时仍保持 MyGO 蓝。/ Updates the MyGo framework to 0.8.1: the native UI draws faster and saves memory, and the quick panel and the speed overlay keep MyGO's blue while another window is in front.
+
+### 🔧 改进 / Improvements
+
+- MyGo Go 框架与 `mygo-runtime` 同步升级至 0.8.1，原生界面在 Windows 上每帧耗时约减半，macOS 上动画不再堆积显存 / Upgrades the MyGo Go framework and `mygo-runtime` together to 0.8.1, which about halves the GPU time of a native frame on Windows and stops animations from piling up GPU memory on macOS
+- 快捷面板与测速悬浮窗不是当前窗口时也显示 MyGO 的蓝，而不是框架新默认的非活动灰 / The quick panel and the speed overlay show MyGO's blue when they are not the key window, instead of the inactive gray the framework now fades to by default
+- 关于页与诊断报告显示 MyGo 框架版本，复制版本信息时一并带上 / The About page and diagnostics report show the MyGo framework version, and copying the version includes it
+
 ## 0.2.29-beta
 
 MyGo 框架升级至 0.7.4，改善托盘快捷面板在多显示器上的定位，并修复原生窗口首次显示的问题。/ Updates MyGo to 0.7.4, improving the tray quick panel's placement across displays and fixing first-frame rendering of native windows.
