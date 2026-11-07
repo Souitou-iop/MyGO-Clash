@@ -2,6 +2,25 @@
 
 The section of each version is what the app's update window shows.
 
+## 0.2.32-beta
+
+规则与自动化的一个大版本：快捷规则、社区规则集、链式代理与 WiFi 场景自动化。/ A release about rules and automation: quick rules, community rule sets, proxy chains, and Wi-Fi scenes.
+
+### ✨ 新增功能 / New Features
+
+- 规则页新增**快捷规则**：一键添加“此域名直连/走代理”之类规则，换订阅、更新订阅都不会丢；规则测试里测完可一键转为规则 / The rules page gains **quick rules**: add “this domain goes direct / through the proxy” at once — they survive profile changes and updates, and what the rule test just tested turns into a rule
+- 规则页新增**规则集**：内置 24 个社区知名规则组（广告拦截、AI、流媒体、国内外分流、平台与通讯等六类，来自 MetaCubeX、blackmatrix7 与 Loyalsoldier），由内核自行下载与定时更新；也可添加任意 mihomo rule-provider 地址 / The rules page gains **rule sets**: twenty-four well-known community lists in six categories (ads, AI, streaming, the China/global split, platforms and more, from MetaCubeX, blackmatrix7 and Loyalsoldier), downloaded and refreshed by the core itself; any mihomo rule-provider address joins them
+- 代理页支持按**正则隐藏节点**：如填 `x2|x3` 把高倍率节点藏起来，选中的节点始终保留 / The proxies page hides nodes by a **regular expression** of their name — `x2|x3` keeps the high multipliers out, and the node in use stays visible
+- 设置新增 **GeoData 管理区**：数据库的大小与更新时间一目了然，可立即更新，可打开内核自动更新并设间隔，更新源可选镜像或 GitHub / A **GeoData** section in the settings: the databases' size and age at a glance, an update button, the core's own auto-update with its interval, and the choice between a mirror and GitHub
+- 设置新增 **WiFi 自动化**：连上指定 WiFi 时自动切换订阅、开关系统代理或虚拟网卡、设定代理模式——家里和公司各一套状态 / **Wi-Fi automation**: joining a network switches the profile, turns the system proxy or TUN on or off, and sets the mode — one state at home, another at work
+- 设置新增**链式代理**：让匹配的节点先经过前置节点或组再连接目标（落地 IP、中转加速），支持正则匹配，成环自动丢弃 / **Proxy chains**: the nodes whose name matches dial through a front node or group first — a landing IP behind the exit, or a relay in the middle; names take regular expressions and a loop drops itself
+
+### 🔧 改进 / Improvements
+
+- 升级前自动备份设置与订阅（保留份数照旧），升级翻车可从同步与备份页回滚 / Settings and profiles are backed up before every upgrade (the usual retention applies), so a bad one rolls back from the sync page
+- 内核崩溃的提醒更完整：反复重启时按周期警告（原为仅首次提示），恢复运行后亦会告知 / The core's crashes are reported more completely: a warning repeats as the restarts go on (only the first used to say anything), and its recovery is announced too
+- 电脑唤醒后，TUN 开启时自动重启内核以重建路由：睡眠常把虚拟网卡的路由弄丢 / After the computer wakes with TUN on, the core restarts to lay its routes again: sleep often takes them away
+
 ## 0.2.31-beta
 
 MyGo 框架升级到 0.8.3：圆角裁剪更准、动画不再堆积显存，韩文按词换行，更新时清理旧版残留文件。/ Updates the MyGo framework to 0.8.3: rounded clipping is more accurate and animations stop piling up GPU memory, Korean text breaks lines between words, and updating removes files that old versions shipped.
