@@ -171,7 +171,7 @@ func TestProfilesSealedAndGenerated(t *testing.T) {
 	if err := m.Delete(p.UID); err != nil {
 		t.Fatal(err)
 	}
-	if left := m.List().Items; len(left) != 2 {
+	if left := m.List().Items; len(left) != 3 { // the three global extensions
 		t.Fatalf("left %v", left)
 	}
 }
@@ -251,5 +251,38 @@ func TestIntervalFollowsOptionThenProvider(t *testing.T) {
 		if got := c.p.Interval(); got != c.want {
 			t.Errorf("%s: Interval() = %d, want %d", c.name, got, c.want)
 		}
+	}
+}
+
+// TestGlobalQuickRules checks that the global rules extension applies to
+// every profile, its rules above the profile's own.
+func TestGlobalQuickRules(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, sub) }))
+	defer srv.Close()
+	m := newManager(t)
+	ctx := context.Background()
+	p, err := m.Create(ctx, NewProfile{Type: TypeRemote, URL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	uid, err := m.Extension(p.UID, TypeRules)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.SetContent(uid, []byte("prepend: ['DOMAIN-SUFFIX,profile.example,DIRECT']\n")); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.SetContent(GlobalRules, []byte("prepend: ['DOMAIN-SUFFIX,quick.example,DIRECT']\n")); err != nil {
+		t.Fatal(err)
+	}
+	rt, err := m.Generate(ctx, Inputs{
+		Base: enhance.Base{Mode: "rule", MixedPort: 7897, LogLevel: "info"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules := rt.Core.Slice("rules")
+	if len(rules) < 2 || rules[0] != "DOMAIN-SUFFIX,quick.example,DIRECT" || rules[1] != "DOMAIN-SUFFIX,profile.example,DIRECT" {
+		t.Fatalf("the quick rules do not lead: %v", rules[:min(3, len(rules))])
 	}
 }

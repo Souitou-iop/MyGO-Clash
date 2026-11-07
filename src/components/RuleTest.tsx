@@ -1,15 +1,25 @@
-import { ChevronRight, Crosshair, Info } from "lucide-react";
+import { ChevronRight, Crosshair, Info, SquarePlus } from "lucide-react";
 import { Fragment, useState } from "react";
 import { errorText, ruleType } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { type MatchResult, Rules } from "../mygo";
 import { Badge, Banner, Button, Dialog, Input, Segmented } from "../ui";
+import type { RuleDraft } from "./profiles/SeqEditor";
+
+/** draftOf turns a tested target into a rule to start from: a host
+ * becomes a domain suffix, an address a CIDR of one. */
+export function draftOf(target: string): RuleDraft {
+  const v = target.trim().replace(/^[a-z]+:\/\//i, "").split(/[/:?#]/)[0] || target.trim();
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(v)) return { type: "IP-CIDR", payload: `${v}/32` };
+  if (/^[0-9a-f]*:[0-9a-f:]+$/i.test(v) && v.includes(":")) return { type: "IP-CIDR6", payload: `${v}/128` };
+  return { type: "DOMAIN-SUFFIX", payload: v };
+}
 
 /**
  * RuleTest answers which rule a connection to a domain, an address or a
  * URL would hit, and the proxy it would go through.
  */
-export function RuleTest({ open, onClose, onLocate }: { open: boolean; onClose: () => void; onLocate: (index: number) => void }) {
+export function RuleTest({ open, onClose, onLocate, onAdd }: { open: boolean; onClose: () => void; onLocate: (index: number) => void; onAdd?: (draft: RuleDraft) => void }) {
   const t = useT();
   const [target, setTarget] = useState("");
   const [network, setNetwork] = useState<"tcp" | "udp">("tcp");
@@ -104,6 +114,17 @@ export function RuleTest({ open, onClose, onLocate }: { open: boolean; onClose: 
           <div className="faint rt-foot">
             {r.host}:{r.port} · {r.network.toUpperCase()}
             {r.disabled > 0 && ` · ${t("rules.test.skipped", { n: r.disabled })}`}
+            {onAdd && target.trim() && (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={<SquarePlus size={13} />}
+                onClick={() => onAdd(draftOf(target))}
+                tip={t("rules.quickTip")}
+              >
+                {t("rules.addAsRule")}
+              </Button>
+            )}
           </div>
         </div>
       )}

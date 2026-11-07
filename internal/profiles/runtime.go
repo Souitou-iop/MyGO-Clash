@@ -94,9 +94,13 @@ func (m *Manager) Generate(ctx context.Context, in Inputs) (*Runtime, error) {
 	applied := enhance.ApplyDNSOverride(cfg, in.DNS)
 	owned := enhance.Capture(cfg, applied)
 
-	// Global extensions, then the profile's.
+	// Global extensions, then the profile's. The global rules go first of
+	// all, so the quick rules beat every other rule.
 	var exts []struct{ uid, kind string }
-	exts = append(exts, struct{ uid, kind string }{GlobalMerge, TypeMerge}, struct{ uid, kind string }{GlobalScript, TypeScript})
+	exts = append(exts,
+		struct{ uid, kind string }{GlobalRules, TypeRules},
+		struct{ uid, kind string }{GlobalMerge, TypeMerge},
+		struct{ uid, kind string }{GlobalScript, TypeScript})
 	if ok {
 		if uid := cur.Option.Merge; uid != "" {
 			exts = append(exts, struct{ uid, kind string }{uid, TypeMerge})
@@ -111,6 +115,16 @@ func (m *Manager) Generate(ctx context.Context, in Inputs) (*Runtime, error) {
 			continue
 		}
 		switch e.kind {
+		case TypeRules:
+			patch, err := enhance.ParseSeq(data)
+			if err != nil {
+				logf(e.uid, enhance.LogEntry{Level: "exception", Message: err.Error()})
+				continue
+			}
+			if patch.Empty() {
+				continue
+			}
+			enhance.ApplySeq(cfg, "rules", patch)
 		case TypeMerge:
 			patch, err := yamlx.Parse(data)
 			if err != nil {

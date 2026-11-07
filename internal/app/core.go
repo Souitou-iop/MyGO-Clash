@@ -465,7 +465,7 @@ func (a *App) onProfilesChanged(uid string, content bool) {
 // affectsRuntime reports whether an item takes part in the runtime
 // configuration: the current profile, its extensions, the global ones.
 func (a *App) affectsRuntime(uid string) bool {
-	if uid == "" || uid == profiles.GlobalMerge || uid == profiles.GlobalScript {
+	if uid == "" || uid == profiles.GlobalMerge || uid == profiles.GlobalScript || uid == profiles.GlobalRules {
 		return true
 	}
 	cur, ok := a.profiles.Current()

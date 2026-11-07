@@ -1,5 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, CornerLeftUp, Crosshair, Info, MoreHorizontal, Pencil, RefreshCw, SquareArrowOutUpRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, CornerLeftUp, Crosshair, Info, MoreHorizontal, Pencil, RefreshCw, SquareArrowOutUpRight, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RuleTest } from "../components/RuleTest";
 import { EditorDialog } from "../components/profiles/EditorDialog";
@@ -87,6 +87,15 @@ export default function Rules() {
     const uid = await run(() => Profiles.extension(profile, "rules"), t("common.failed"));
     if (uid) setSeq({ uid, title: `${t("profiles.ext.rules")} · ${profileName}`, draft });
   };
+  // The global quick rules: they apply to every profile, above its own.
+  const editQuick = async (draft?: RuleDraft) => {
+    const uid = await run(() => Profiles.extension("Rules", "rules"), t("common.failed"));
+    if (uid) setSeq({ uid, title: t("rules.quickRules"), draft });
+  };
+  const addQuick = (draft: RuleDraft) => {
+    setTesting(false);
+    void editQuick(draft);
+  };
   // Brings a rule of the test into view: the filters would hide it, so
   // they go, and the list scrolls once it has been rebuilt.
   const [testing, setTesting] = useState(false);
@@ -131,6 +140,11 @@ export default function Rules() {
         {running && (
           <Button size="sm" variant="ghost" icon={<Crosshair size={14} />} onClick={() => setTesting(true)} tip={t("rules.test.tip")}>
             {t("rules.test")}
+          </Button>
+        )}
+        {running && (
+          <Button size="sm" variant="ghost" icon={<Zap size={14} />} onClick={() => editQuick()} tip={t("rules.quickTip")}>
+            {t("rules.quickRules")}
           </Button>
         )}
         {running && profile && (
@@ -311,7 +325,7 @@ export default function Rules() {
           </div>
         )}
       </div>
-      <RuleTest open={testing} onClose={() => setTesting(false)} onLocate={showRule} />
+      <RuleTest open={testing} onClose={() => setTesting(false)} onLocate={showRule} onAdd={addQuick} />
       <SeqEditor
         uid={seq?.uid ?? null}
         profileUid={profile}

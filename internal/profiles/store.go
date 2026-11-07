@@ -70,6 +70,7 @@ func Open(dir string, sealer *secure.Sealer) (*Manager, error) {
 	for _, g := range []struct{ uid, kind, name string }{
 		{GlobalMerge, TypeMerge, "Global Merge"},
 		{GlobalScript, TypeScript, "Global Script"},
+		{GlobalRules, TypeRules, "Global Rules"},
 	} {
 		if m.find(g.uid) < 0 {
 			m.index.Items = append(m.index.Items, Profile{UID: g.uid, Type: g.kind, Name: g.name, Updated: time.Now().Unix()})
@@ -562,6 +563,9 @@ func (m *Manager) Extension(uid, kind string) (string, error) {
 	if !slices.Contains(ExtensionKinds, kind) {
 		return "", fmt.Errorf("unknown extension %q", kind)
 	}
+	if uid == GlobalRules && kind == TypeRules {
+		return uid, nil // the global quick rules are their own extension
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	i := m.find(uid)
@@ -585,7 +589,7 @@ func (m *Manager) Extension(uid, kind string) (string, error) {
 // Delete deletes an item and its extensions. Deleting the current profile
 // makes the next one current.
 func (m *Manager) Delete(uid string) error {
-	if uid == GlobalMerge || uid == GlobalScript {
+	if uid == GlobalMerge || uid == GlobalScript || uid == GlobalRules {
 		return errors.New("the global extensions cannot be deleted")
 	}
 	m.mu.Lock()

@@ -35,6 +35,10 @@ const (
 const (
 	GlobalMerge  = "Merge"
 	GlobalScript = "Script"
+	// GlobalRules is the global rules extension: the quick rules the user
+	// adds from the rules page. It applies to every profile, above the
+	// rules of the profile's own extensions.
+	GlobalRules = "Rules"
 )
 
 // Profile is a profile or an extension.
