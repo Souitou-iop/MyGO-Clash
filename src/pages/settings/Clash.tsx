@@ -2,6 +2,7 @@ import { Dices, ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useAsync } from "../../lib/hooks";
 import { useT } from "../../lib/i18n";
+import { bytes, relative } from "../../lib/format";
 import { patchSettings, run, useApp } from "../../lib/store";
 import { App, Core, Settings as SettingsAPI, System, type Clash as ClashSettings, type Controller, type StoreApp } from "../../mygo";
 import { Button, Collapse, Dialog, Empty, Field, Input, NumberInput, Row, SearchInput, Section, Select, Spinner, Switch } from "../../ui";
@@ -337,7 +338,20 @@ export default function Clash() {
   const [testUrl, setTestUrl] = useState(s.latency.url);
   useEffect(() => setTestUrl(s.latency.url), [s.latency.url]);
   const { data: ifaces } = useAsync(() => App.networkInterfaces(), []);
+  const { data: geoFiles, reload: reloadGeo } = useAsync(() => Core.geoFiles().catch(() => []), []);
+  const [updatingGeo, setUpdatingGeo] = useState(false);
   const c = s.clash;
+  const lang = useApp((st) => st.lang);
+  const geoDesc =
+    (geoFiles ?? []).length > 0
+      ? (geoFiles ?? []).map((f) => `${f.name} · ${bytes(f.size)} · ${relative(f.updated * 1000, lang)}`).join("  ·  ")
+      : t("settings.geoNone");
+  const updateGeo = async () => {
+    setUpdatingGeo(true);
+    await run(() => Core.updateGeo(), t("settings.geoUpdateFailed"), t("settings.geoUpdated"));
+    setUpdatingGeo(false);
+    void reloadGeo();
+  };
   const act = async (key: string, fn: () => Promise<unknown>, ok: string) => {
     setBusy(key);
     await run(fn, t("common.failed"), ok);
@@ -394,6 +408,33 @@ export default function Clash() {
         </Row>
       </Section>
 
+      <Section title={t("settings.geo")}>
+        <Row label={t("settings.geoSource")} desc={t("settings.geoSourceDesc")}>
+          <Select
+            value={c.geoMirror ? "mirror" : "official"}
+            onChange={(v) => patch({ clash: { geoMirror: v === "mirror" } })}
+            options={[
+              { value: "mirror", label: t("settings.geoMirror") },
+              { value: "official", label: t("settings.geoOfficial") },
+            ]}
+            width={170}
+          />
+        </Row>
+        <Row label={t("settings.geoAuto")} desc={t("settings.geoAutoDesc")}>
+          <Switch checked={c.geoAutoUpdate} onChange={(v) => patch({ clash: { geoAutoUpdate: v } })} />
+        </Row>
+        {c.geoAutoUpdate && (
+          <Row label={t("settings.geoInterval")} desc={t("settings.geoIntervalDesc")}>
+            <NumberInput value={c.geoUpdateInterval || 24} min={1} max={168} onChange={(v) => patch({ clash: { geoUpdateInterval: v } })} width={110} />
+          </Row>
+        )}
+        <Row label={t("settings.geoFiles")} desc={geoDesc}>
+          <Button size="sm" loading={updatingGeo} onClick={updateGeo}>
+            {t("settings.geoUpdateNow")}
+          </Button>
+        </Row>
+      </Section>
+
       <Section title="DNS">
         <Row label={t("settings.dnsOverrideDefault")} desc={t("settings.dnsOverrideDesc")}>
           <Button size="sm" onClick={() => setDialog("dns")}>
@@ -434,11 +475,6 @@ export default function Clash() {
         </Row>
         <Row label={t("settings.builtin")} desc={t("settings.builtinDesc")}>
           <Switch checked={s.builtinEnhanced} onChange={(v) => patch({ builtinEnhanced: v })} />
-        </Row>
-        <Row label={t("settings.geo")} desc={t("settings.geoDesc")}>
-          <Button size="sm" icon={<RefreshCw size={13} />} loading={busy === "geo"} onClick={() => act("geo", () => Core.updateGeo(), t("settings.geoUpdated"))}>
-            {t("common.update")}
-          </Button>
         </Row>
         {os === "windows" && (
           <Row label={t("settings.uwp")} desc={t("settings.uwpDesc")}>

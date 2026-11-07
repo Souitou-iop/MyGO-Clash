@@ -140,6 +140,7 @@ func (a *App) inputs(st config.Settings) profiles.Inputs {
 		TProxyPort: port(c.TProxyPort, c.TProxyEnabled && runtime.GOOS == "linux"),
 		AllowLAN:   c.AllowLAN, IPv6: c.IPv6, LogLevel: c.LogLevel, UnifiedDelay: c.UnifiedDelay,
 		TCPConcurrent: c.TCPConcurrent, FindProcessMode: c.FindProcessMode, Interface: c.Interface,
+		GeoAutoUpdate: c.GeoAutoUpdate, GeoUpdateInterval: c.GeoUpdateInterval, GeoMirror: c.GeoMirror,
 		Tun: enhance.Tun{
 			Enable: st.Tun.Enabled && privileged, Stack: st.Tun.Stack, Device: st.Tun.Device,
 			AutoRoute: st.Tun.AutoRoute, StrictRoute: st.Tun.StrictRoute, AutoDetectInterface: st.Tun.AutoDetectInterface,

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -453,6 +454,28 @@ func (s Core) UpdateGeo(ctx context.Context) error {
 		return err
 	}
 	return c.UpdateGeo(ctx)
+}
+
+// GeoFile is a geodata file of the core's home, with its size and age.
+type GeoFile struct {
+	Name    string `json:"name"`
+	Size    int64  `json:"size"`
+	Updated int64  `json:"updated"` // Unix seconds
+}
+
+// GeoFiles lists the geo databases the core has, those that are there.
+func (s Core) GeoFiles(ctx context.Context) ([]GeoFile, error) {
+	if err := s.a.waitReady(ctx); err != nil {
+		return nil, err
+	}
+	names := []string{"geoip.metadb", "geoip.dat", "geosite.dat", "GeoLite2-ASN.mmdb", "country.mmdb"}
+	out := []GeoFile{}
+	for _, n := range names {
+		if st, err := os.Stat(filepath.Join(s.a.dirs.Core, n)); err == nil {
+			out = append(out, GeoFile{Name: n, Size: st.Size(), Updated: st.ModTime().Unix()})
+		}
+	}
+	return out, nil
 }
 
 // FlushFakeIP empties the fake-ip cache.

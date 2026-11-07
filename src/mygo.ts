@@ -97,6 +97,15 @@ export interface Clash {
   /** "", always, strict, off */
   findProcessMode: string;
   interface: string;
+  /**
+   * GeoAutoUpdate has the core refresh the geo databases itself, every
+   * GeoUpdateInterval hours; GeoMirror takes them from a mirror rather
+   * than GitHub, which is out of reach for many.
+   */
+  geoAutoUpdate: boolean;
+  /** hours, 0: 24 */
+  geoUpdateInterval: number;
+  geoMirror: boolean;
   controller: Controller;
 }
 
@@ -287,6 +296,14 @@ export interface Event {
   error?: string;
   /** Duration is in milliseconds. */
   duration: number;
+}
+
+/** GeoFile is a geodata file of the core's home, with its size and age. */
+export interface GeoFile {
+  name: string;
+  size: number;
+  /** Unix seconds */
+  updated: number;
 }
 
 /** HomeCard is a card of the home page. */
@@ -1367,6 +1384,12 @@ export interface UI {
   proxyColumns: number;
   /** card, list */
   proxyLayout: string;
+  /**
+   * ProxyHide hides the nodes whose name matches this regular
+   * expression, on the proxies page: a way to keep high-multiplier or
+   * long-dead nodes out of the way. Empty shows everything.
+   */
+  proxyHide?: string;
   pauseOnBlur: boolean;
   homeCards: HomeCard[];
   /**
@@ -1867,6 +1890,10 @@ export const Core = {
   /** FlushFakeIP empties the fake-ip cache. */
   flushFakeIP(): Promise<void> {
     return call("Core.FlushFakeIP");
+  },
+  /** GeoFiles lists the geo databases the core has, those that are there. */
+  geoFiles(): Promise<GeoFile[]> {
+    return call("Core.GeoFiles");
   },
   /** Memory sends the core's memory use every second. */
   memory(ch: Channel<Memory>): Promise<void> {

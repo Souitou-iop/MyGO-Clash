@@ -150,7 +150,7 @@ func (m *Manager) Generate(ctx context.Context, in Inputs) (*Runtime, error) {
 	}
 	enhance.EnsureLANBind(cfg)
 	enhance.ApplyLANAuth(cfg, in.Base.LANAuth)
-	enhance.DefaultGeoX(cfg)
+	enhance.DefaultGeoX(cfg, in.Base.GeoMirror)
 
 	if in.Tailnet != nil {
 		logf("tailscale", enhance.ApplyTailscale(cfg, *in.Tailnet)...)

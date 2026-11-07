@@ -35,7 +35,13 @@ type Base struct {
 	Secret             string
 	CORSOrigins        []string
 	CORSPrivateNetwork bool
-	Tun                Tun
+	// GeoAutoUpdate has the core refresh the geo databases itself, every
+	// GeoUpdateInterval hours (24 when less).
+	GeoAutoUpdate     bool
+	GeoUpdateInterval int
+	// GeoMirror serves the geo databases from a mirror rather than GitHub.
+	GeoMirror bool
+	Tun       Tun
 }
 
 // Tun is the TUN section the app manages.
@@ -109,6 +115,16 @@ func ApplyBase(cfg *yamlx.Map, b Base) {
 	cfg.Set("log-level", b.LogLevel)
 	cfg.Set("unified-delay", b.UnifiedDelay)
 	cfg.Set("tcp-concurrent", b.TCPConcurrent)
+	cfg.Set("geo-auto-update", b.GeoAutoUpdate)
+	if b.GeoAutoUpdate {
+		interval := b.GeoUpdateInterval
+		if interval <= 0 {
+			interval = 24
+		}
+		cfg.Set("geo-update-interval", interval)
+	} else {
+		cfg.Delete("geo-update-interval")
+	}
 	if b.FindProcessMode != "" {
 		cfg.Set("find-process-mode", b.FindProcessMode)
 	}

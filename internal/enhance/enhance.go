@@ -348,13 +348,20 @@ func ApplyBuiltins(cfg *yamlx.Map) {
 // default, is often out of reach.
 const geoMirror = "https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/"
 
+// geoOfficial is the source the databases come from without a mirror.
+const geoOfficial = "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/"
+
 // DefaultGeoX points the geo databases the profile has no address for at
-// a mirror, for the updates of GeoData.
-func DefaultGeoX(cfg *yamlx.Map) {
+// the mirror, or, without one, at GitHub, for the updates of GeoData.
+func DefaultGeoX(cfg *yamlx.Map, mirror bool) {
+	base := geoOfficial
+	if mirror {
+		base = geoMirror
+	}
 	urls := cfg.EnsureMap("geox-url")
 	for _, f := range [][2]string{{"geoip", "geoip.dat"}, {"geosite", "geosite.dat"}, {"mmdb", "geoip.metadb"}, {"asn", "GeoLite2-ASN.mmdb"}} {
 		if strings.TrimSpace(urls.String(f[0])) == "" {
-			urls.Set(f[0], geoMirror+f[1])
+			urls.Set(f[0], base+f[1])
 		}
 	}
 }

@@ -241,7 +241,13 @@ type Clash struct {
 	TCPConcurrent   bool       `json:"tcpConcurrent"`
 	FindProcessMode string     `json:"findProcessMode"` // "", always, strict, off
 	Interface       string     `json:"interface"`
-	Controller      Controller `json:"controller"`
+	// GeoAutoUpdate has the core refresh the geo databases itself, every
+	// GeoUpdateInterval hours; GeoMirror takes them from a mirror rather
+	// than GitHub, which is out of reach for many.
+	GeoAutoUpdate     bool       `json:"geoAutoUpdate"`
+	GeoUpdateInterval int        `json:"geoUpdateInterval"` // hours, 0: 24
+	GeoMirror         bool       `json:"geoMirror"`
+	Controller        Controller `json:"controller"`
 }
 
 // LANAuth is the login the proxy ports ask of other devices when allow-lan
@@ -509,6 +515,7 @@ func Defaults() Settings {
 			LogLevel:      "info",
 			UnifiedDelay:  true,
 			TCPConcurrent: true,
+			GeoMirror:     true,
 			Controller: Controller{
 				Address:             "127.0.0.1:9097",
 				AllowOrigins:        []string{"https://metacubex.github.io", "https://yacd.metacubex.one", "https://board.zash.run.place"},
