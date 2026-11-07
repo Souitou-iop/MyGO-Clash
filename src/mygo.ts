@@ -9,6 +9,8 @@ export interface AppInfo {
   name: string;
   version: string;
   coreVersion: string;
+  /** MyGoVersion is the version of the framework the app is built with. */
+  mygoVersion: string;
   os: string;
   arch: string;
   dataDir: string;

@@ -27,9 +27,11 @@ import (
 
 // AppInfo describes the app.
 type AppInfo struct {
-	Name          string `json:"name"`
-	Version       string `json:"version"`
-	CoreVersion   string `json:"coreVersion"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	CoreVersion string `json:"coreVersion"`
+	// MyGoVersion is the version of the framework the app is built with.
+	MyGoVersion   string `json:"mygoVersion"`
 	OS            string `json:"os"`
 	Arch          string `json:"arch"`
 	DataDir       string `json:"dataDir"`
@@ -56,7 +58,8 @@ func (s AppService) Info(ctx context.Context) (AppInfo, error) {
 	host, _ := os.Hostname()
 	return AppInfo{
 		Name: s.a.name, Version: Version, CoreVersion: corehost.MihomoVersion(), OS: runtime.GOOS, Arch: runtime.GOARCH,
-		DataDir: s.a.dirs.Data, CoreDir: s.a.dirs.Core, LogsDir: s.a.dirs.Logs, Hostname: host, Locale: mygo.App.Locale(),
+		MyGoVersion: mygo.Version,
+		DataDir:     s.a.dirs.Data, CoreDir: s.a.dirs.Core, LogsDir: s.a.dirs.Logs, Hostname: host, Locale: mygo.App.Locale(),
 		IsDev: mygo.IsDev(), Keyring: s.a.sealer.Keyring().Name(), KeyringSecure: s.a.sealer.Keyring().Secure(),
 		StartedAt: startedAt.Format(time.RFC3339),
 	}, nil
@@ -214,8 +217,8 @@ func (s AppService) Diagnostics(ctx context.Context) (string, error) {
 	for _, l := range logs[max(0, len(logs)-60):] {
 		lines = append(lines, fmt.Sprintf("%s [%s] %s", l.Time.Format("15:04:05"), l.Type, l.Payload))
 	}
-	report := fmt.Sprintf("# MyGO-Clash diagnostics\n\nVersion: %s (mihomo %s)\nOS: %s/%s\nKeyring: %s (secure: %v)\n\n## State\n%s\n\n## Settings\n%s\n\n## Recent core logs\n%s\n",
-		info.Version, info.CoreVersion, info.OS, info.Arch, info.Keyring, info.KeyringSecure, state, settings, strings.Join(lines, "\n"))
+	report := fmt.Sprintf("# MyGO-Clash diagnostics\n\nVersion: %s (mihomo %s, MyGo %s)\nOS: %s/%s\nKeyring: %s (secure: %v)\n\n## State\n%s\n\n## Settings\n%s\n\n## Recent core logs\n%s\n",
+		info.Version, info.CoreVersion, info.MyGoVersion, info.OS, info.Arch, info.Keyring, info.KeyringSecure, state, settings, strings.Join(lines, "\n"))
 	mygo.Clipboard.WriteText(report)
 	return report, nil
 }

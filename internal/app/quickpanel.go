@@ -308,6 +308,10 @@ func panelTheme(dark, oled bool) *ui.Theme {
 		t.Selection, t.Focus = ui.RGBA(11, 136, 187, 0.16), ui.RGBA(11, 136, 187, 0.5)
 	}
 	t.Radius = 7
+	// The panel and the speed overlay float above every app, so they are
+	// rarely the key window: keep Tomori's blue as their accent rather
+	// than ui's gray for a window that is not active.
+	t.InactiveAccent = t.Accent
 	panelThemes[i] = t
 	return t
 }
