@@ -2,7 +2,6 @@ package app
 
 import (
 	"os/exec"
-	"strings"
 )
 
 // wifiSSID returns the name of the Wi-Fi network the computer is on, or ""
