@@ -87,6 +87,25 @@ func (p *quickPanel) toggle() {
 }
 
 func (p *quickPanel) show() {
+	win := p.make()
+	p.load(win)
+	p.place(win)
+	win.Show()
+	win.Focus()
+	p.live(win)
+}
+
+// prepare makes the panel's window, hidden, ahead of the first click,
+// which then only shows it.
+func (p *quickPanel) prepare() {
+	if p.window() == nil {
+		p.load(p.make())
+	}
+}
+
+// make returns the panel's window, made hidden the first time. Main
+// thread only.
+func (p *quickPanel) make() *mygo.Window {
 	win := p.window()
 	if win == nil {
 		opts := mygo.WindowOptions{
@@ -104,11 +123,7 @@ func (p *quickPanel) show() {
 		p.win = win
 		p.mu.Unlock()
 	}
-	p.load(win)
-	p.place(win)
-	win.Show()
-	win.Focus()
-	p.live(win)
+	return win
 }
 
 func (p *quickPanel) hide() {
@@ -394,6 +409,7 @@ func (p *quickPanel) view(c *ui.Context) {
 		if b.Hovered() {
 			b.Background(t.SurfaceHover)
 		}
+		pressable(b)
 		b.Children(func() { ui.Icon(c, icon).FontSize(15).TextColor(t.TextMuted) })
 		b.Tooltip(tip)
 		return b.Clicked()
@@ -410,12 +426,18 @@ func (p *quickPanel) view(c *ui.Context) {
 		case b.Hovered():
 			bg = t.SurfaceHover
 		}
-		b.Background(bg)
+		pressable(b.Background(bg))
+		// The icon and the words fade to their colors with the tile, and
+		// the state under the name crossfades.
+		fade := ui.Animation{Duration: 160 * time.Millisecond}
 		b.Children(func() {
-			ui.Icon(c, icon).FontSize(17).TextColor(fg)
+			ic := ui.Icon(c, icon).FontSize(17)
+			ic.TextColor(ic.AnimateColor("fg", fg, fade))
 			ui.Column(c).Grow(1).Gap(1).Children(func() {
-				ui.Text(c, label).FontSize(12.5).Bold().TextColor(fg).SingleLine()
-				ui.Text(c, sub).FontSize(11).TextColor(muted).SingleLine()
+				l := ui.Text(c, label).FontSize(12.5).Bold().SingleLine()
+				l.TextColor(l.AnimateColor("fg", fg, fade))
+				st := ui.Text(c, sub).FontSize(11).SingleLine().ContentTransition(ui.ContentTransition{})
+				st.TextColor(st.AnimateColor("fg", muted, fade))
 			})
 		})
 		return b.Clicked()
@@ -440,9 +462,10 @@ func (p *quickPanel) view(c *ui.Context) {
 			case coremgr.StatusStarting:
 				dot = t.Warning
 			}
-			ui.Box(c).Size(8, 8).Radius(4).Background(dot)
+			d := ui.Box(c).Size(8, 8).Radius(4)
+			d.Background(d.AnimateColor("dot", dot, ui.Animation{Duration: 240 * time.Millisecond}))
 			ui.Text(c, a.name).Bold().FontSize(14).SingleLine()
-			ui.Text(c, statusLabel(a, p.state.Core)).TextColor(t.TextMuted).FontSize(12).SingleLine()
+			ui.Text(c, statusLabel(a, p.state.Core)).TextColor(t.TextMuted).FontSize(12).SingleLine().ContentTransition(ui.ContentTransition{})
 			ui.Spacer(c)
 			if iconButton("settings", iconSettings, tr(a, "settings")) {
 				p.hide()
@@ -481,17 +504,22 @@ func (p *quickPanel) view(c *ui.Context) {
 		})
 
 		// Mode: three segments of one width, across the panel.
-		ui.Row(c).Gap(2).Padding(2).Radius(9).Background(t.Surface).Label(tr(a, "mode")).Children(func() {
+		modes := ui.Row(c.Key("modes")).Gap(2).Padding(2).Radius(9).Background(t.Surface).Label(tr(a, "mode"))
+		thumb := segThumb{modes.ID()}
+		modes.Children(func() {
 			for i, m := range []string{"rule", "global", "direct"} {
 				seg := ui.ButtonBase(c.Key(m)).Grow(1).Basis(0).Height(28).Radius(7).AlignItems(ui.Center).Justify(ui.Center)
-				switch {
-				case p.selected == i:
-					seg.Background(t.Background).Border(1, t.Border)
-				case seg.Hovered():
+				if p.selected != i && seg.Hovered() {
 					seg.Background(t.SurfaceHover)
 				}
+				seg.Transition(hoverFade)
 				seg.Children(func() {
-					txt := ui.Text(c, tr(a, m)).FontSize(13).SingleLine()
+					// The selected one's card slides from the one before.
+					if p.selected == i {
+						ui.Box(c.Key("thumb")).Absolute().Left(0).Top(0).Right(0).Bottom(0).Radius(7).
+							Background(t.Background).Border(1, t.Border).Transition(ui.ElementTransition{Match: thumb, Animation: &segSlide})
+					}
+					txt := ui.Text(c, tr(a, m)).FontSize(13).SingleLine().ZIndex(1)
 					if p.selected == i {
 						txt.Bold()
 					} else {
@@ -545,12 +573,18 @@ func (p *quickPanel) view(c *ui.Context) {
 				if b.Hovered() && !testing {
 					b.Background(t.SurfaceHover)
 				}
+				pressable(b)
+				// The bolt and the spinner turn into each other in place.
 				b.Children(func() {
-					if testing {
-						ui.Spinner(c)
-					} else {
-						ui.Icon(c, iconZap).FontSize(15).TextColor(t.Text)
-					}
+					ui.Box(c.Key(testing)).Absolute().Left(0).Top(0).Right(0).Bottom(0).AlignItems(ui.Center).Justify(ui.Center).
+						Transition(ui.ElementTransition{Enter: &ui.Motion{Scale: 0.5}, Exit: &ui.Motion{Scale: 0.5}, Duration: 180 * time.Millisecond, Ease: easeOut}).
+						Children(func() {
+							if testing {
+								ui.Spinner(c)
+							} else {
+								ui.Icon(c, iconZap).FontSize(15).TextColor(t.Text)
+							}
+						})
 				})
 				b.Tooltip(tr(a, "testDelay"))
 				if b.Clicked() {
@@ -578,38 +612,43 @@ func (p *quickPanel) view(c *ui.Context) {
 			if cur == nil {
 				return
 			}
-			selectable := cur.Type == "Selector"
-			for _, m := range p.members(cur) {
-				member := m
-				row := ui.ButtonBase(c.Key(m.Name)).Row().Gap(8).Padding(0, 10).Height(panelRowH).AlignItems(ui.Center).Disabled(!selectable)
-				if m.Name == cur.Now {
-					row.Background(t.Selection)
-				} else if row.Hovered() && selectable {
-					row.Background(t.SurfaceHover)
-				}
-				row.Tooltip(member.Type)
-				row.Children(func() {
-					box := ui.Box(c).Size(14, 14)
-					if member.Name == cur.Now {
-						ui.Icon(c, iconCheck).FontSize(14).TextColor(t.Accent)
-					} else {
-						box.Size(14, 14)
+			// Another group's members come in anew, rising a little.
+			ui.Column(c.Key("g-" + cur.Name)).Transition(ui.ElementTransition{Enter: &ui.Motion{Y: 6}, Duration: 220 * time.Millisecond, Ease: easeOut}).Children(func() {
+				selectable := cur.Type == "Selector"
+				for _, m := range p.members(cur) {
+					member := m
+					row := ui.ButtonBase(c.Key(m.Name)).Row().Gap(8).Padding(0, 10).Height(panelRowH).AlignItems(ui.Center).Disabled(!selectable)
+					if m.Name == cur.Now {
+						row.Background(t.Selection)
+					} else if row.Hovered() && selectable {
+						row.Background(t.SurfaceHover)
 					}
-					ui.Text(c, member.Name).SingleLine().FontSize(13).Grow(1)
-					delay := "—"
-					if member.Delay > 0 {
-						delay = fmt.Sprintf("%d ms", member.Delay)
-					} else if member.Delay == 0 {
-						delay = tr(a, "timeout")
+					row.Transition(hoverFade)
+					row.Tooltip(member.Type)
+					row.Children(func() {
+						box := ui.Box(c).Size(14, 14)
+						if member.Name == cur.Now {
+							ui.Icon(c, iconCheck).FontSize(14).TextColor(t.Accent).Transition(checkIn)
+						} else {
+							box.Size(14, 14)
+						}
+						ui.Text(c, member.Name).SingleLine().FontSize(13).Grow(1)
+						delay := "—"
+						if member.Delay > 0 {
+							delay = fmt.Sprintf("%d ms", member.Delay)
+						} else if member.Delay == 0 {
+							delay = tr(a, "timeout")
+						}
+						dt := ui.Text(c, delay).FontSize(12).FontFeatures("tnum").ContentTransition(numRoll)
+						dt.TextColor(dt.AnimateColor("fg", delayColor(t, member.Delay), ui.Animation{Duration: 200 * time.Millisecond}))
+					})
+					if row.Clicked() && selectable && member.Name != cur.Now {
+						group := cur.Name
+						cur.Now = member.Name // at once; the core confirms
+						go func() { a.notifyErr("proxies", group, a.selectProxy(context.Background(), group, member.Name)) }()
 					}
-					ui.Text(c, delay).FontSize(12).FontFeatures("tnum").TextColor(delayColor(t, member.Delay))
-				})
-				if row.Clicked() && selectable && member.Name != cur.Now {
-					group := cur.Name
-					cur.Now = member.Name // at once; the core confirms
-					go func() { a.notifyErr("proxies", group, a.selectProxy(context.Background(), group, member.Name)) }()
 				}
-			}
+			})
 		})
 
 		// Footer: the tailnet, the profile, and the way out.
@@ -624,7 +663,7 @@ func (p *quickPanel) view(c *ui.Context) {
 				} else if p.ts.BackendState == "NeedsLogin" {
 					line = tr(a, "tailscale") + ": " + tr(a, "tsNeedsLogin")
 				}
-				ui.Text(c, line).FontSize(12).TextColor(t.TextMuted).SingleLine()
+				ui.Text(c, line).FontSize(12).TextColor(t.TextMuted).SingleLine().ContentTransition(ui.ContentTransition{})
 			}
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				var pnames []string

@@ -5,7 +5,11 @@ import "github.com/egoist/mygo/ui"
 // The icons of the quick panel (Lucide, ISC), drawn in the color of their
 // text.
 func panelIcon(paths string) *ui.SVG {
-	return ui.MustParseSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` + paths + `</svg>`))
+	svg := ui.MustParseSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` + paths + `</svg>`))
+	iconSourcesMu.Lock()
+	iconSources[svg] = paths // for the icons that move part by part (ui_animicon.go)
+	iconSourcesMu.Unlock()
+	return svg
 }
 
 var (

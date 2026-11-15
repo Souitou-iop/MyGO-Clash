@@ -44,12 +44,21 @@ func (a *App) updateSettings(ctx context.Context, fn func(*config.Settings)) (co
 // as needed, a mode switch never reloads the configuration.
 func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) error {
 	_ = SettingsEvent.Broadcast(cur)
+	a.main.refresh()
 	logSwitches(ctx, old, cur)
 	changed := func(f func(config.Settings) any) bool { return !reflect.DeepEqual(f(old), f(cur)) }
 	var errs []error
 
 	if old.Theme != cur.Theme {
 		a.applyTheme(cur)
+	}
+	// The icon turns as the switch does; the state corrects it if the
+	// system proxy or TUN fails to follow.
+	if old.SystemProxy.Enabled != cur.SystemProxy.Enabled || old.Tun.Enabled != cur.Tun.Enabled {
+		a.tray.expect(cur)
+	}
+	if old.Language != cur.Language {
+		a.applyLocale(cur)
 	}
 	if old.OLED != cur.OLED && a.panel != nil {
 		a.panel.invalidate()
@@ -66,7 +75,6 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 	if a.tray != nil {
 		a.tray.speed(cur.Tray.ShowSpeed)
 	}
-	a.speed.apply(cur.SpeedWindow)
 
 	// The core: how it runs, then what it runs.
 	needRestart := old.CoreMode != cur.CoreMode
@@ -77,6 +85,7 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 			// pages, the tray and the hotkey install it first instead.
 			_, _, _ = a.settings.Update(func(s *config.Settings) { s.Tun.Enabled = false })
 			_ = SettingsEvent.Broadcast(a.settings.Get())
+			a.main.refresh()
 			log.Printf("switch: TUN off again: the service is not usable")
 			if svc.Installed && svc.Outdated {
 				a.notify(Notice{Level: "warning", Message: tr(a, "serviceOutdated"), Action: "repair-service", Page: "settings/network"})
@@ -137,6 +146,9 @@ func (a *App) settingsChanged(ctx context.Context, old, cur config.Settings) err
 	}
 	if changed(func(s config.Settings) any { return s.Tailscale }) {
 		a.ts.settingsChanged(old.Tailscale, cur.Tailscale)
+	}
+	if old.Agent != cur.Agent {
+		a.applyControl(cur)
 	}
 	if !reflect.DeepEqual(syncable(old), syncable(cur)) {
 		a.syncer.changed()
@@ -452,4 +464,4 @@ func syncable(s config.Settings) map[string]any {
 }
 
 // deviceKeys are settings of one device, which never sync.
-var deviceKeys = []string{"sync", "coreMode", "silentStart", "hotkeys", "lightweight", "logs", "backup", "dns", "updates", "speedWindow"}
+var deviceKeys = []string{"sync", "coreMode", "silentStart", "hotkeys", "lightweight", "logs", "backup", "dns", "updates", "agent"}

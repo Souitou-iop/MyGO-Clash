@@ -13,27 +13,43 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
+	"slices"
+	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // Client makes requests through a proxy.
 func Client(proxy string, timeout time.Duration, follow bool) *http.Client {
+	return clientOf(transport(proxy, timeout, false), nil, timeout, follow)
+}
+
+// transport goes through a proxy; keep holds its connections open once
+// done with, for the next request or for the core to see.
+func transport(proxy string, timeout time.Duration, keep bool) *http.Transport {
 	tr := &http.Transport{
 		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12},
 		ForceAttemptHTTP2:     true,
 		TLSHandshakeTimeout:   timeout,
 		ResponseHeaderTimeout: timeout,
-		DisableKeepAlives:     true,
+		DisableKeepAlives:     !keep,
 	}
 	if proxy != "" {
 		if u, err := url.Parse(proxy); err == nil {
 			tr.Proxy = http.ProxyURL(u)
 		}
 	}
-	c := &http.Client{Transport: tr, Timeout: timeout}
+	return tr
+}
+
+// clientOf makes requests over tr, following redirects if follow, and
+// noting the hosts in log if given.
+func clientOf(tr *http.Transport, log *hostLog, timeout time.Duration, follow bool) *http.Client {
+	var rt http.RoundTripper = tr
+	if log != nil {
+		rt = logged{tr, log}
+	}
+	c := &http.Client{Transport: rt, Timeout: timeout}
 	if !follow {
 		c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	}
@@ -47,6 +63,11 @@ func get(ctx context.Context, c *http.Client, rawURL string, hdr map[string]stri
 	if err != nil {
 		return nil, "", err
 	}
+	return send(c, req, hdr)
+}
+
+// send sends req as a browser would, with hdr, and reads the answer.
+func send(c *http.Client, req *http.Request, hdr map[string]string) (*http.Response, string, error) {
 	req.Header.Set("User-Agent", browserUA)
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	for k, v := range hdr {
@@ -272,26 +293,14 @@ var DefaultSites = []Site{
 	{"bilibili", "Bilibili", "https://www.bilibili.com", "domestic"},
 }
 
-// ConnectivitySites are the sites of the connectivity page: sites abroad,
-// then sites in mainland China, each tested at a small file, as in MyIP.
-var ConnectivitySites = []Site{
-	{"google", "Google", "https://www.google.com/generate_204", "global"},
-	{"youtube", "YouTube", "https://www.youtube.com/favicon.ico", "global"},
-	{"github", "GitHub", "https://github.com/favicon.ico", "global"},
-	{"cloudflare", "Cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", "global"},
-	{"chatgpt", "ChatGPT", "https://chatgpt.com/favicon.ico", "global"},
-	{"claude", "Claude", "https://claude.ai/favicon.ico", "global"},
-	{"telegram", "Telegram", "https://telegram.org/favicon.ico", "global"},
-	{"x", "X", "https://x.com/favicon.ico", "global"},
-	{"baidu", "Baidu", "https://www.baidu.com/favicon.ico", "domestic"},
-	{"bilibili", "Bilibili", "https://www.bilibili.com/favicon.ico", "domestic"},
-	{"wechat", "WeChat", "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico", "domestic"},
-	{"taobao", "Taobao", "https://www.taobao.com/favicon.ico", "domestic"},
-}
+// ConnectivitySites are the sites of the connectivity page unless the user
+// changed the list: every site of the preset groups, each tested at a small
+// file, as in MyIP. The page shows them by category.
+var ConnectivitySites = defaultSites()
 
-// MaxConnectivitySites caps the site list the page keeps: it tests every
-// site at once, five rounds in a row.
-const MaxConnectivitySites = 120
+// MaxConnectivitySites caps the site list the page keeps: the defaults
+// and room for the user's own.
+const MaxConnectivitySites = 600
 
 // NormalizeSites prepares a site list to keep: valid http(s) addresses
 // only, one per host, unique ids, at most MaxConnectivitySites.
@@ -315,6 +324,16 @@ func NormalizeSites(sites []Site) []Site {
 		id := strings.TrimSpace(s.ID)
 		if id == "" {
 			id = host
+		}
+		// A known site is kept once, whatever address it came in at: two
+		// preset groups may test it at different ones. Lists saved before
+		// held such a second copy as "id-2".
+		if known := knownSiteID(id); known != "" {
+			if ids[known] {
+				delete(hosts, host)
+				continue
+			}
+			id = known
 		}
 		for base, n := id, 2; ids[id]; n++ {
 			id = fmt.Sprintf("%s-%d", base, n)
@@ -368,228 +387,50 @@ func shortError(err error) string {
 	return err.Error()
 }
 
-// Unlock is the availability of a service.
-type Unlock struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"` // yes, no, partial, failed, pending
-	Region string `json:"region,omitempty"`
-	Detail string `json:"detail,omitempty"`
-	At     string `json:"at,omitempty"`
-}
-
-type checker struct {
-	id, name string
-	check    func(ctx context.Context, c, follow *http.Client) Unlock
-}
-
-var traceLoc = regexp.MustCompile(`(?m)^loc=([A-Z]{2})$`)
-
-// trace reads the country Cloudflare sees at a site's /cdn-cgi/trace.
-func trace(ctx context.Context, c *http.Client, host string) string {
-	_, body, err := get(ctx, c, "https://"+host+"/cdn-cgi/trace", nil)
-	if err != nil {
-		return ""
+// knownSiteID is the id of a site the app knows, from presets or the
+// defaults, of id or of the "id-2" a duplicate of it was once renamed to;
+// "" for sites of the user's own.
+func knownSiteID(id string) string {
+	if isKnownSite(id) {
+		return id
 	}
-	if m := traceLoc.FindStringSubmatch(body); m != nil {
-		return m[1]
-	}
-	return ""
-}
-
-var checkers = []checker{
-	{"netflix", "Netflix", func(ctx context.Context, c, f *http.Client) Unlock {
-		// A Netflix original and a licensed title.
-		r1, _, err1 := get(ctx, c, "https://www.netflix.com/title/81280792", nil)
-		r2, _, err2 := get(ctx, c, "https://www.netflix.com/title/70143836", nil)
-		if err1 != nil || err2 != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		region := ""
-		if loc := r1.Header.Get("X-Originating-Url"); loc != "" {
-			region = regionFromPath(loc)
-		}
-		if l, err := r1.Location(); err == nil {
-			region = regionFromPath(l.Path)
-		}
-		switch {
-		case r1.StatusCode == 403 || r2.StatusCode == 403:
-			return Unlock{Status: "no"}
-		case (r1.StatusCode < 400) && (r2.StatusCode < 400):
-			return Unlock{Status: "yes", Region: orUS(region)}
-		case r1.StatusCode < 400:
-			return Unlock{Status: "partial", Region: orUS(region), Detail: "originals only"}
-		}
-		return Unlock{Status: "no"}
-	}},
-	{"disney", "Disney+", func(ctx context.Context, c, f *http.Client) Unlock {
-		resp, _, err := get(ctx, f, "https://www.disneyplus.com/", nil)
-		if err != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		if strings.Contains(resp.Request.URL.Path, "unavailable") || resp.StatusCode == 403 {
-			return Unlock{Status: "no"}
-		}
-		return Unlock{Status: "yes", Region: regionFromPath(resp.Request.URL.Path)}
-	}},
-	{"youtube", "YouTube Premium", func(ctx context.Context, c, f *http.Client) Unlock {
-		_, body, err := get(ctx, f, "https://www.youtube.com/premium", map[string]string{"Cookie": "CONSENT=YES+cb"})
-		if err != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		region := ""
-		if m := regexp.MustCompile(`"INNERTUBE_CONTEXT_GL":"([A-Z]{2})"`).FindStringSubmatch(body); m != nil {
-			region = m[1]
-		}
-		if strings.Contains(body, "www.google.cn") || region == "CN" {
-			return Unlock{Status: "no", Region: "CN"}
-		}
-		if strings.Contains(body, "Premium is not available in your country") {
-			return Unlock{Status: "no", Region: region}
-		}
-		if strings.Contains(body, "ad-free") || strings.Contains(body, "Premium") {
-			return Unlock{Status: "yes", Region: region}
-		}
-		return Unlock{Status: "failed", Detail: "unrecognized page"}
-	}},
-	{"chatgpt", "ChatGPT", func(ctx context.Context, c, f *http.Client) Unlock {
-		_, body, err := get(ctx, f, "https://api.openai.com/compliance/cookie_requirements", map[string]string{"Authorization": "Bearer null"})
-		resp2, body2, err2 := get(ctx, f, "https://ios.chat.openai.com/", nil)
-		if err != nil && err2 != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		region := trace(ctx, f, "chatgpt.com")
-		blockedWeb := strings.Contains(body, "unsupported_country")
-		blockedApp := err2 == nil && (resp2.StatusCode == 403 || strings.Contains(body2, "VPN") || strings.Contains(body2, "unsupported_country"))
-		switch {
-		case !blockedWeb && !blockedApp:
-			return Unlock{Status: "yes", Region: region}
-		case blockedWeb && blockedApp:
-			return Unlock{Status: "no", Region: region}
-		case blockedApp:
-			return Unlock{Status: "partial", Region: region, Detail: "web only"}
-		}
-		return Unlock{Status: "partial", Region: region, Detail: "app only"}
-	}},
-	{"claude", "Claude", func(ctx context.Context, c, f *http.Client) Unlock {
-		resp, _, err := get(ctx, f, "https://claude.ai/", nil)
-		if err != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		region := trace(ctx, f, "claude.ai")
-		if strings.Contains(resp.Request.URL.Path, "unavailable") {
-			return Unlock{Status: "no", Region: region}
-		}
-		return Unlock{Status: "yes", Region: region}
-	}},
-	{"gemini", "Gemini", func(ctx context.Context, c, f *http.Client) Unlock {
-		_, body, err := get(ctx, f, "https://gemini.google.com/", nil)
-		if err != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		region := ""
-		if m := regexp.MustCompile(`,2,1,200,"([A-Z]{3})"`).FindStringSubmatch(body); m != nil {
-			region = m[1]
-		}
-		if strings.Contains(body, "45631641,null,true") {
-			return Unlock{Status: "yes", Region: region}
-		}
-		return Unlock{Status: "no", Region: region}
-	}},
-	{"spotify", "Spotify", func(ctx context.Context, c, f *http.Client) Unlock {
-		resp, body, err := get(ctx, f, "https://spclient.wg.spotify.com/signup/public/v1/account?validate=1&key=4c7a36d5260abca4af282779720cf631", nil)
-		if err != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		var m struct {
-			Status   int    `json:"status"`
-			Country  string `json:"country"`
-			Launched bool   `json:"is_country_launched"`
-		}
-		_ = json.Unmarshal([]byte(body), &m)
-		if resp.StatusCode == 200 && m.Status == 311 && m.Launched {
-			return Unlock{Status: "yes", Region: m.Country}
-		}
-		return Unlock{Status: "no", Region: m.Country}
-	}},
-	{"tiktok", "TikTok", func(ctx context.Context, c, f *http.Client) Unlock {
-		_, body, err := get(ctx, f, "https://www.tiktok.com/", nil)
-		if err != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		if m := regexp.MustCompile(`"region":"([A-Z]{2})"`).FindStringSubmatch(body); m != nil {
-			return Unlock{Status: "yes", Region: m[1]}
-		}
-		return Unlock{Status: "no"}
-	}},
-	{"steam", "Steam currency", func(ctx context.Context, c, f *http.Client) Unlock {
-		_, body, err := get(ctx, f, "https://store.steampowered.com/app/761830", nil)
-		if err != nil {
-			return Unlock{Status: "failed", Detail: "network error"}
-		}
-		if m := regexp.MustCompile(`"priceCurrency" content="([A-Z]{3})"`).FindStringSubmatch(body); m != nil {
-			return Unlock{Status: "yes", Region: m[1]}
-		}
-		return Unlock{Status: "failed", Detail: "unrecognized page"}
-	}},
-}
-
-func regionFromPath(p string) string {
-	parts := strings.Split(strings.Trim(p, "/"), "/")
-	if len(parts) > 0 && len(parts[0]) >= 2 {
-		code := strings.ToUpper(parts[0][:2])
-		if len(parts[0]) == 2 || parts[0][2] == '-' {
-			return code
+	if i := strings.LastIndexByte(id, '-'); i > 0 {
+		if _, err := strconv.Atoi(id[i+1:]); err == nil && isKnownSite(id[:i]) {
+			return id[:i]
 		}
 	}
 	return ""
 }
 
-func orUS(r string) string {
-	if r == "" {
-		return "US"
-	}
-	return r
-}
+// IsKnownSite reports whether a site is one the app knows, from a preset
+// group or the defaults, rather than one of the user's own.
+func IsKnownSite(id string) bool { return knownSiteID(id) != "" }
 
-// UnlockList returns the services that can be checked, all pending.
-func UnlockList() []Unlock {
-	out := make([]Unlock, len(checkers))
-	for i, c := range checkers {
-		out[i] = Unlock{ID: c.id, Name: c.name, Status: "pending"}
-	}
-	return out
-}
+// KnownSiteID is the id of the preset site id names, as a renamed
+// duplicate ("id-2") of it once did; "" for sites of the user's own.
+func KnownSiteID(id string) string { return knownSiteID(id) }
 
-// CheckUnlock checks the services named by ids (all when empty) through
-// the proxy, calling report as each result arrives.
-func CheckUnlock(ctx context.Context, proxy string, ids []string, report func(Unlock)) {
-	plain := Client(proxy, 12*time.Second, false)
-	follow := Client(proxy, 12*time.Second, true)
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, 4)
-	for _, ch := range checkers {
-		if len(ids) > 0 && !contains(ids, ch.id) {
-			continue
-		}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			res := ch.check(ctx, plain, follow)
-			res.ID, res.Name, res.At = ch.id, ch.name, time.Now().Format(time.RFC3339)
-			report(res)
-		}()
-	}
-	wg.Wait()
-}
-
-func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
+// EffectiveSites are the sites the connectivity page tests: every preset
+// site but those hidden, then the user's own. Presets a later version adds
+// show up by themselves, since only what is hidden is kept.
+func EffectiveSites(hidden []string, custom []Site) []Site {
+	out := make([]Site, 0, len(ConnectivitySites)+len(custom))
+	for _, s := range ConnectivitySites {
+		if !slices.Contains(hidden, s.ID) {
+			out = append(out, s)
 		}
 	}
-	return false
+	for _, s := range custom {
+		if !IsKnownSite(s.ID) {
+			out = append(out, s)
+		}
+	}
+	return NormalizeSites(out)
+}
+
+func isKnownSite(id string) bool {
+	if _, ok := categoryOf[id]; ok {
+		return true
+	}
+	return slices.ContainsFunc(ConnectivitySites, func(s Site) bool { return s.ID == id })
 }

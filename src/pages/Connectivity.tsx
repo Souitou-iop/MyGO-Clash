@@ -188,9 +188,18 @@ function useSites() {
   useEffect(() => {
     if (!useApp.getState().preview) void list().catch(() => {});
   }, []);
+  // The app keeps what differs from the presets: a list saved here becomes
+  // the sites added and taken off it (an empty one, the defaults again).
   const save = async (next: Site[]) => {
-    const kept = await Tools.saveConnectivitySites(next);
-    const shown = kept.length ? kept : await Tools.connectivitySites();
+    const before = new Set(sites.map((s) => s.id));
+    const after = new Set(next.map((s) => s.id));
+    let shown = sites;
+    if (next.length === 0) {
+      shown = await Tools.resetSites();
+    } else {
+      for (const s of sites) if (!after.has(s.id)) shown = await Tools.removeSite(s.id);
+      for (const s of next) if (!before.has(s.id)) shown = await Tools.addSite(s);
+    }
     setSites(shown);
     return shown;
   };

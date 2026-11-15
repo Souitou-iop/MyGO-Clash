@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/ui"
 	// The Chinese MyGo itself speaks, for its own controls, menus and
 	// dialogs: the app ships Chinese, so it carries the packages.
 	_ "github.com/egoist/mygo/locales/zh-Hans"
@@ -74,13 +75,15 @@ type App struct {
 	geo        *geoCache
 	logs       *logRing
 
-	ts      *tailscaleManager
-	syncer  *syncer
-	nudge   *nudger
-	tray    *trayUI
-	panel   *quickPanel
-	speed   *speedWindow
-	updates *updateChecker
+	ts     *tailscaleManager
+	syncer *syncer
+	nudge  *nudger
+	tray   *trayUI
+	panel  *quickPanel
+	main   *mainUI
+	// keepRunning ends what keeps App Nap off.
+	keepRunning func()
+	updates     *updateChecker
 
 	outdatedTold  atomic.Bool  // the user heard that the service needs updating
 	serviceUpdate atomic.Bool  // the service was updated quietly, or tried
@@ -107,7 +110,6 @@ func Main() {
 	a := &App{ready: make(chan struct{})}
 	a.ctx, a.stop = context.WithCancel(context.Background())
 	a.bind()
-	mygo.App.SetLanguages(systemLanguages...)
 	if !mygo.App.RequestSingleInstanceLock() {
 		return // the running instance takes over
 	}
@@ -142,6 +144,11 @@ func Main() {
 	mygo.App.OnBeforeQuit(a.beforeQuit)
 	mygo.App.OnQuit(a.cleanup)
 	useUpdater()
+	// A silent start stays out of the Dock from the first moment: set
+	// after Run, the policy lets its icon bounce in first.
+	if runtime.GOOS == "darwin" && launchSilent() {
+		mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
+	}
 	mygo.App.WhenReady(a.start)
 	useAppMenu()
 	if err := mygo.App.Run(); err != nil {
@@ -175,13 +182,20 @@ func (a *App) start() {
 		return
 	}
 	close(a.ready)
+	// The proxy serves the whole system from the tray: macOS's App Nap
+	// would slow it as soon as no window shows.
+	a.keepRunning = mygo.Power.KeepRunning("Serving the proxy")
 	st := a.settings.Get()
 	a.applyTheme(st)
+	a.applyLocale(st)
 	log.Printf("switch: at start, system proxy %s, TUN %s, mode %s", onOff(st.SystemProxy.Enabled), onOff(st.Tun.Enabled), st.Clash.Mode)
 	a.tray = newTrayUI(a)
 	a.panel = newQuickPanel(a)
-	a.speed = newSpeedWindow(a)
-	a.speed.apply(a.settings.Get().SpeedWindow)
+	if st.TrayClick == "panel" {
+		// Once the app has settled, so as not to slow its start.
+		time.AfterFunc(2*time.Second, func() { mygo.RunOnMain(a.panel.prepare) })
+	}
+	a.main = newMainUI(a)
 	a.updates = newUpdateChecker(a)
 	if !st.SilentStart && !mygo.App.WasOpenedAtLogin() {
 		a.showMain()
@@ -199,6 +213,7 @@ func (a *App) start() {
 	go a.background()
 	a.syncer.start()
 	a.startDebug()
+	a.applyControl(st)
 	a.mu.Lock()
 	urls := a.pendingURLs
 	a.pendingURLs = nil
@@ -319,6 +334,7 @@ func (a *App) updateState(fn func(*AppState)) {
 	if a.panel != nil {
 		a.panel.invalidate()
 	}
+	a.main.refresh()
 }
 
 func (a *App) snapshot() AppState {
@@ -347,11 +363,13 @@ func (a *App) notify(n Notice) {
 			if err := nt.Show(); err != nil {
 				log.Printf("notification: %v", err)
 				_ = NoticeEvent.Broadcast(n)
+				a.main.notice(n)
 			}
 		}()
 		return
 	}
 	_ = NoticeEvent.Broadcast(n)
+	a.main.notice(n)
 }
 
 // inFront reports whether the main window is visible and focused.
@@ -399,7 +417,7 @@ func (a *App) showMain() {
 		mygo.App.Focus()
 		return
 	}
-	win = mygo.NewWindow(mygo.WindowOptions{
+	opts := mygo.WindowOptions{
 		Title:           a.name,
 		URL:             "/",
 		Width:           1120,
@@ -411,7 +429,13 @@ func (a *App) showMain() {
 		TitleBarStyle:   mygo.TitleBarHidden,
 		TitleBarHeight:  44,
 		BackgroundColor: windowBackground(a.settings.Get()),
-	})
+	}
+	if nativeMain() {
+		opts.URL, opts.Content = "", ui.View(a.main.view)
+		// A swipe between pages goes back, as a mouse's back button does.
+		opts.Page.SwipeNavigation = true
+	}
+	win = mygo.NewWindow(opts)
 	win.OnReadyToShow(func() {
 		win.Show()
 		win.Focus()
@@ -428,12 +452,16 @@ func (a *App) showMain() {
 		win.Hide()
 		a.afterHide()
 	})
-	win.Page().OnWillNavigate(func(e *mygo.NavigateEvent) {
-		if u, err := url.Parse(e.URL); err == nil && (u.Scheme == "http" || u.Scheme == "https") && !mygo.IsDev() && e.UserInitiated {
-			e.PreventDefault()
-			go mygo.Shell.OpenExternal(e.URL)
-		}
-	})
+	if page := win.Page(); page != nil {
+		page.OnWillNavigate(func(e *mygo.NavigateEvent) {
+			if u, err := url.Parse(e.URL); err == nil && (u.Scheme == "http" || u.Scheme == "https") && !mygo.IsDev() && e.UserInitiated {
+				e.PreventDefault()
+				go mygo.Shell.OpenExternal(e.URL)
+			}
+		})
+	} else {
+		a.main.attach(win)
+	}
 	a.mu.Lock()
 	a.win = win
 	a.mu.Unlock()
@@ -500,6 +528,11 @@ func (a *App) navigate(page string) {
 		win = nil
 	}
 	a.mu.Unlock()
+	if nativeMain() {
+		a.main.navigate(page)
+		a.showMain()
+		return
+	}
 	a.showMain()
 	if win != nil {
 		_ = NavigateEvent.Emit(win, page)
@@ -622,6 +655,9 @@ func (a *App) cleanup() {
 	default:
 		return
 	}
+	if a.keepRunning != nil {
+		a.keepRunning()
+	}
 	a.mu.Lock()
 	done := a.cleaned
 	a.cleaned, a.quitting = true, true
@@ -629,6 +665,7 @@ func (a *App) cleanup() {
 	if done {
 		return
 	}
+	control.stop()
 	a.releaseSystem()
 	a.stop()
 	if err := a.usage.Flush(); err != nil {

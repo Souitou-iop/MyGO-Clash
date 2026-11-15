@@ -22,6 +22,7 @@ import (
 //	GET  /tray              the tray's status line
 //	POST /eval              runs the body as JavaScript in the page
 //	POST /navigate?page=p   shows a page
+//	POST /patch             changes settings by the JSON in the body
 //	POST /panel             toggles the quick panel
 //	POST /notify            tells the user the Notice in the body
 func (a *App) startDebug() {
@@ -39,10 +40,6 @@ func (a *App) startDebug() {
 		switch r.URL.Query().Get("w") {
 		case "panel":
 			win = a.panel.window()
-		case "speed":
-			a.speed.mu.Lock()
-			win = a.speed.win
-			a.speed.mu.Unlock()
 		default:
 			a.mu.Lock()
 			win = a.win
@@ -78,6 +75,18 @@ func (a *App) startDebug() {
 	})
 	mux.HandleFunc("POST /navigate", func(w http.ResponseWriter, r *http.Request) {
 		a.navigate(r.URL.Query().Get("page"))
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("POST /patch", func(w http.ResponseWriter, r *http.Request) {
+		var patch map[string]any
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&patch); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if _, err := (SettingsService{a}).Patch(r.Context(), patch); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("GET /tray", func(w http.ResponseWriter, r *http.Request) {

@@ -4,6 +4,14 @@ import { call, event, type Channel } from "mygo-runtime";
 
 // ---- Types ----
 
+/**
+ * Agent is the local control of the app by scripts and AI agents
+ * (mygo-clash ctl, mygo-clash mcp): a socket only the user can reach.
+ */
+export interface Agent {
+  enabled: boolean;
+}
+
 /** AppInfo describes the app. */
 export interface AppInfo {
   name: string;
@@ -852,7 +860,6 @@ export interface Settings {
   latency: Latency;
   hotkeys: Hotkeys;
   tray: Tray;
-  speedWindow: SpeedWindow;
   lightweight: Lightweight;
   logs: Logs;
   tailscale: Tailscale;
@@ -863,10 +870,39 @@ export interface Settings {
   /** Subscriptions is how the app watches remote profiles. */
   subscriptions: Subscriptions;
   /**
-   * ConnectivitySites is the site list of the connectivity page; empty
-   * means the built-in defaults.
+   * The connectivity page tests every preset site but those the user
+   * hid, then the user's own: what is kept is what differs from the
+   * presets, so that presets a later version adds show up by themselves.
+   */
+  connectivityCustom?: Site[];
+  connectivityHidden?: string[];
+  /**
+   * ConnectivityFavorites are the sites of 常用, in order: shortcuts to
+   * sites of any category. nil is the defaults; empty, none.
+   */
+  connectivityFavorites: string[];
+  /**
+   * ConnectivityModel is the version of the fields above the settings
+   * were last brought to.
+   */
+  connectivityModel?: number;
+  /**
+   * ConnectivitySites and ConnectivitySitesAll are the whole list an
+   * older version kept, which normalization turns into the fields above.
    */
   connectivitySites?: Site[];
+  connectivitySitesAll?: boolean;
+  /**
+   * UnlockHidden are the default unlock checks the user turned off, and
+   * UnlockEnabled the optional ones turned on.
+   */
+  unlockHidden?: string[];
+  unlockEnabled?: string[];
+  /**
+   * Agent is the control socket that the command line and the MCP
+   * server drive the app through.
+   */
+  agent: Agent;
 }
 
 /** Site is a site whose delay is tested. */
@@ -915,24 +951,6 @@ export interface SpeedSample {
    */
   colo?: string;
   country?: string;
-}
-
-/**
- * SpeedWindow is a small window of the traffic that floats over the
- * others. It belongs to the device: it never syncs.
- */
-export interface SpeedWindow {
-  enabled: boolean;
-  /** Style is "standard", two lines with a graph, or "mini", one line. */
-  style: string;
-  /** Opacity is in percent, 30 to 100. */
-  opacity: number;
-  /** Locked lets the pointer through to what is under the window. */
-  locked: boolean;
-  /** X and Y are where it was left on the screen, when Placed. */
-  x: number;
-  y: number;
-  placed: boolean;
 }
 
 /** State describes the core. */
@@ -1418,6 +1436,11 @@ export interface Tun {
 /** UI is how the interface looks. */
 export interface UI {
   collapseNav: boolean;
+  /**
+   * RevealPrivate shows the addresses, places and providers the app
+   * otherwise hides behind dots (the eye in the navigation).
+   */
+  revealPrivate?: boolean;
   trafficGraph: boolean;
   memoryUsage: boolean;
   groupIcons: boolean;
@@ -1445,6 +1468,17 @@ export interface UI {
    * in an update shows up once, while one the user hid stays hidden.
    */
   navKnown?: string[];
+  /**
+   * OnboardingSeen is set once the first-run guide of the main window
+   * was finished or skipped. Settings saved before the guide existed
+   * read as seen (Load): those who upgrade know the app already.
+   */
+  onboardingSeen: boolean;
+  /**
+   * ConnectivityRegionOrder is the user's order for the country groups
+   * in the connectivity page. Missing entries use the built-in order.
+   */
+  connectivityRegionOrder?: string[];
 }
 
 /** Unlock is the availability of a service. */
@@ -1456,6 +1490,20 @@ export interface Unlock {
   region?: string;
   detail?: string;
   at?: string;
+  /**
+   * Via is the proxy the check went out through, as the core's rules
+   * chose it for the service's own addresses.
+   */
+  via?: string;
+  /** Group is the kind of service: media, social, ai, platform, region. */
+  group?: string;
+  /**
+   * Site is the connectivity page's site of the same service, whose
+   * card shows the result too; "" for checks with no site of their own.
+   */
+  site?: string;
+  /** Optional checks run only once turned on. */
+  optional?: boolean;
 }
 
 /** UpdateState tells the page about updates of the app. */
@@ -2219,6 +2267,13 @@ export const Sync = {
 /** Tools tests the network through the proxy. */
 export const Tools = {
   /**
+   * AddSite adds a site of the user's own, and answers with the page's
+   * sites as they are then.
+   */
+  addSite(site: Site): Promise<Site[]> {
+    return call("Tools.AddSite", site);
+  },
+  /**
    * CheckUnlock checks services through the proxy, sending each result as it
    * arrives.
    */
@@ -2226,8 +2281,8 @@ export const Tools = {
     return call("Tools.CheckUnlock", ids, ch);
   },
   /**
-   * ConnectivitySites returns the sites the connectivity page tests: the
-   * user's choice, or the defaults while they have none.
+   * ConnectivitySites returns the sites the connectivity page tests: every
+   * preset site but those hidden, then the user's own.
    */
   connectivitySites(): Promise<Site[]> {
     return call("Tools.ConnectivitySites");
@@ -2259,11 +2314,23 @@ export const Tools = {
     return call("Tools.IPQuality", ip);
   },
   /**
-   * SaveConnectivitySites stores the sites the connectivity page tests, and
-   * answers with the list as it was kept.
+   * RemoveSite takes a site off the page: a preset is hidden, to be
+   * restored at will, and one of the user's own is deleted. Either leaves
+   * 常用.
    */
-  saveConnectivitySites(sites: Site[]): Promise<Site[]> {
-    return call("Tools.SaveConnectivitySites", sites);
+  removeSite(id: string): Promise<Site[]> {
+    return call("Tools.RemoveSite", id);
+  },
+  /**
+   * ResetSites brings back every preset and the default 常用; the user's own
+   * sites stay.
+   */
+  resetSites(): Promise<Site[]> {
+    return call("Tools.ResetSites");
+  },
+  /** RestoreSites shows hidden presets again: those of ids, or all of them. */
+  restoreSites(ids: string[]): Promise<Site[]> {
+    return call("Tools.RestoreSites", ids);
   },
   /** SitePresets are the groups the connectivity page may import at once. */
   sitePresets(): Promise<SitePreset[]> {
@@ -2287,9 +2354,13 @@ export const Tools = {
   testSites(sites: Site[], ch: Channel<SiteResult>): Promise<void> {
     return call("Tools.TestSites", sites, ch);
   },
+  /** UnlockCatalog returns every check there is, for the page to choose from. */
+  unlockCatalog(): Promise<Unlock[]> {
+    return call("Tools.UnlockCatalog");
+  },
   /**
-   * UnlockList returns the streaming and AI services the connectivity page
-   * checks.
+   * UnlockList returns the services the connectivity page checks: the
+   * default ones but those turned off, and the optional ones turned on.
    */
   unlockList(): Promise<Unlock[]> {
     return call("Tools.UnlockList");

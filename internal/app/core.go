@@ -234,6 +234,7 @@ func (a *App) applyConfig(ctx context.Context) error {
 		notes[uid] = len(l)
 	}
 	_ = RuntimeEvent.Broadcast(RuntimeInfo{ProfileUID: rt.ProfileUID, AppliedAt: now, Notes: notes})
+	a.main.applied()
 	for _, w := range res.Warnings {
 		a.notify(Notice{Level: "warning", Message: w, Page: "profiles"})
 	}
@@ -472,6 +473,7 @@ func (a *App) onProfileUpdated(uid string, err error) {
 // runtime configuration when the current profile changed, and sync.
 func (a *App) onProfilesChanged(uid string, content bool) {
 	_ = ProfilesEvent.Broadcast(a.profilesView())
+	a.main.refresh()
 	if content && a.affectsRuntime(uid) {
 		a.scheduleApply()
 	}

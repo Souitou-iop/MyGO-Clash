@@ -82,6 +82,63 @@
 - macOS 26 及以上，应用图标跟随系统的浅色、深色、透明和着色外观
 - 应用自动更新：可设置是否自动检查、检查频率（每小时到每月）和是否自动下载安装；更新包经过签名校验，并支持只下载变化部分的增量更新
 
+## 命令行与 MCP（给脚本和 AI Agent 用）
+
+应用运行时会在数据目录里开一个本机控制 socket，同一个可执行文件既是命令行（`ctl`），也是 MCP 服务器（`mcp`）。脚本、Claude Code 之类的 Agent 都能查状态、切节点、开关代理，不用点界面。
+
+可执行文件位置：
+
+| 系统 | 路径 |
+|---|---|
+| macOS | `/Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash` |
+| Windows | `%LOCALAPPDATA%\Programs\MyGO-Clash\MyGO-Clash.exe` |
+| Linux（deb / rpm / Arch） | `mygo-clash` |
+
+下文用 `mygo-clash` 指代它（macOS 可以 `alias mygo-clash=/Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash`）。
+
+```bash
+mygo-clash ctl status                      # 内核、系统代理、TUN、模式、订阅、当前出口
+mygo-clash ctl groups                      # 策略组；ctl groups Proxy 列出组内节点和延迟
+mygo-clash ctl select Proxy "🇭🇰 HK 01"     # 选节点
+mygo-clash ctl delay --group Auto          # 测整组延迟；ctl delay <节点> 测单个
+mygo-clash ctl proxy on                    # 系统代理；ctl tun on|off、ctl mode rule|global|direct
+mygo-clash ctl conns github --limit 10     # 连接；ctl close <id>… 或 ctl close --all
+mygo-clash ctl traffic                     # 实时速率与总量；ctl stats 7d 看统计
+mygo-clash ctl profiles                    # 订阅列表（地址已掩码）；import <url>、update --all、use <名称>
+mygo-clash ctl settings clash.mixedPort    # 读设置；ctl set clash.allowLan=true 改设置
+mygo-clash ctl logs -n 50 --level warning  # 日志尾部
+mygo-clash ctl tailscale                   # Tailscale 状态和设备
+mygo-clash ctl --json status               # 任何命令加 --json 输出 JSON
+```
+
+退出码：0 成功，1 出错，2 用法错误，3 应用未运行（`ctl launch` 可在后台启动它）。`ctl methods` 列出全部方法，`ctl call <方法> '<JSON>'` 直接调用。
+
+**MCP**：`mygo-clash mcp` 通过 stdio 提供 23 个工具（状态、节点、测速、连接、订阅、设置、日志、Tailscale 等），每个工具都带说明和输入 schema。删除订阅、改设置这类危险操作在描述里标了 DANGEROUS，并带 `destructiveHint` 标注。应用没在运行时，可调用 `app_launch` 启动。Claude Code 配置示例：
+
+```bash
+claude mcp add mygo-clash -- /Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash mcp
+```
+
+Claude Desktop、Cursor 等客户端用 JSON 配置：
+
+```json
+{
+  "mcpServers": {
+    "mygo-clash": {
+      "command": "/Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+安全：
+
+- 不监听任何网络端口。socket 放在只有当前用户能进入的数据目录里（权限 0600）；每次启动生成新的随机令牌，写进同目录的 `control.token`（0600），每次调用都要带上它
+- 控制器密钥、局域网认证密码、WebDAV 地址与用户名、Tailscale 控制服务器地址一律显示为 `[redacted]`；订阅地址只保留协议和域名，错误信息和日志里出现的网址同样掩码。带 `[redacted]` 的补丁会被拒绝，避免把掩码写回去
+- 默认开启，可随时关闭：`mygo-clash ctl set agent.enabled=false`，或在 `settings.json` 里把 `agent.enabled` 设为 `false`。这个开关只作用于本机，不参与同步
+- 开发版加 `--dev`（`ctl --dev …`、`mcp --dev`）连接开发构建
+
 ## 下载
 
 可以从 [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) 页面下载最新版本（目前是 beta），也可以从源码构建（见下文）：

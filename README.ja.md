@@ -82,6 +82,20 @@
 - macOS 26 以降では、アプリアイコンがシステムのライト・ダーク・クリア・色合いの外観に合わせて変わります
 - アプリの自動アップデート：自動確認の有無、確認の間隔（1 時間ごと〜毎月）、確認なしでのインストールを選べます。署名を検証し、変わった部分だけを取得する差分アップデートにも対応
 
+## コマンドラインと MCP（スクリプト・AI エージェント向け）
+
+起動中のアプリはデータディレクトリにローカルの制御ソケットを開きます。同じ実行ファイルがコマンドライン（`ctl`）と MCP サーバー（`mcp`）を兼ねます。
+
+```bash
+mygo-clash ctl status                   # 状態と現在の出口
+mygo-clash ctl select Proxy "🇭🇰 HK 01"  # ノードを選択
+mygo-clash ctl proxy on                 # システムプロキシ。tun / mode も同様
+mygo-clash ctl --json profiles          # --json で JSON 出力
+claude mcp add mygo-clash -- /Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash mcp
+```
+
+ネットワークのポートは開きません。ソケットはユーザーだけが入れるディレクトリに置かれ、起動ごとのトークンで認証します。秘密情報と購読 URL はマスクされます。`ctl set agent.enabled=false` で無効化できます。詳しくは [English README](README.en.md#command-line-and-mcp-for-scripts-and-ai-agents) を参照してください。
+
 ## ダウンロード
 
 最新版（現在はベータ）は [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) ページからダウンロードできます。ソースからビルドすることもできます（下記）：

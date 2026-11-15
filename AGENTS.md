@@ -7,6 +7,12 @@
 - go.mod 要求 go 1.27.3；go test ./... 与 tsc --noEmit 必须全过再交付
 - dev 调试：MYGO_CLASH_KEYRING=file MYGO_CLASH_DEBUG=127.0.0.1:47391 bun run dev；调试端口 /capture 截图、/eval 执行 JS；代理页测试节点显示"超时"是正常的（假节点）
 
+## 临时文件与缓存
+- README 预览图、调试截图和渲染中间文件放在 `/Volumes/SanDisk/Developer/tmp/MyGo-Clash/<任务名>/`，不要在 `/Volumes/SanDisk` 根目录新建 `tmp`。
+- 任务结束后删除该任务的临时目录；用户要求保留或交付的文件移到项目约定位置，例如 README 展示素材放 `docs/showcase/`。
+- npm 临时安装缓存使用 `/Volumes/SanDisk/Developer/Caches/npm`，通过单次命令的 `npm_config_cache` 指定；不要把缓存放进项目，也不要改全局 npm 配置。
+- 构建产物沿用 `build/`、`dist/` 等项目既有目录；不要把临时预览或调试数据混入发布素材。
+
 ## 发布流程
 - 版本号在 mygo.json，发版时与 tag 保持一致；发布 = workflow_dispatch（输入 tag；notes_only=true 则只重渲染已有版本的说明，不构建）
 - 发布说明 = CHANGELOG.md 对应版本小节 + release-notes.sh（按发布页实际上传文件生成下载链接）+ release-template.md 的 FAQ；这段小节同时是应用内更新窗口的文案

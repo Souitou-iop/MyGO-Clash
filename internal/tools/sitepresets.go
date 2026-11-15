@@ -6,6 +6,8 @@
 // "connectivity.preset.". The data is MyIP's, slightly trimmed.
 package tools
 
+import "slices"
+
 // SitePreset is a named group of sites the connectivity page may import.
 type SitePreset struct {
 	ID    string `json:"id"`
@@ -13,11 +15,10 @@ type SitePreset struct {
 	Sites []Site `json:"sites"`
 }
 
-// SitePresets are the importable groups: the app's own defaults first (the
-// way back after clearing the list), then country sets, then theme sets.
+// SitePresets are the curated groups: country sets, then theme sets. All
+// their sites are the page's defaults (ConnectivitySites), shown by
+// category.
 var SitePresets = []SitePreset{
-	{ID: "defaults", Emoji: "🚦", Sites: ConnectivitySites},
-
 	{
 		ID: "iran", Emoji: "🇮🇷",
 		Sites: []Site{
@@ -215,6 +216,17 @@ var SitePresets = []SitePreset{
 			{"milenio", "Milenio", "https://www.milenio.com/favicon.ico", "global"},
 			{"liverpool-mx", "Liverpool", "https://www.liverpool.com.mx/favicon.ico", "global"},
 			{"unam", "UNAM", "https://www.unam.mx/favicon.ico", "global"},
+		},
+	},
+	{
+		// The web's front doors, each at the address its maker's own
+		// devices check the connection with, where it has one.
+		ID: "web", Emoji: "🌐",
+		Sites: []Site{
+			{"google", "Google", "https://www.google.com/generate_204", "global"},
+			{"apple", "Apple", "https://www.apple.com/library/test/success.html", "global"},
+			{"microsoft", "Microsoft", "https://www.msftconnecttest.com/connecttest.txt", "global"},
+			{"duckduckgo", "DuckDuckGo", "https://duckduckgo.com/favicon.ico", "global"},
 		},
 	},
 	{
@@ -473,4 +485,174 @@ var SitePresets = []SitePreset{
 			{"wikipedia", "Wikipedia", "https://www.wikipedia.org/favicon.ico", "global"},
 		},
 	},
+}
+
+// Site categories, as the page shows them: a few broad kinds of site, the
+// themes of the preset groups folded into them; mainland China's sites;
+// the country groups under one "region" category, each a region of it;
+// and the sites of no group.
+const (
+	// CategoryGeneral is the user's favorites (常用), which the page shows
+	// before the categories: a list of sites of any category, never the
+	// category of a site.
+	CategoryGeneral  = "general"
+	CategoryDomestic = "domestic" // sites in mainland China
+	CategoryRegion   = "region"   // what each country reaches at home
+	CategoryOther    = "other"    // sites of no preset group
+)
+
+// categoryThemes are the categories and the preset themes each holds, in
+// the order the page shows them: what most people test first leads.
+var categoryThemes = []struct {
+	id     string
+	themes []string
+}{
+	{"web", []string{"web"}},
+	{"ai", []string{"ai"}},
+	{"media", []string{"streaming", "music"}},
+	{"social", []string{"social"}},
+	{"cloud", []string{"cloud"}},
+	{"games", []string{"gaming"}},
+	{"dev", []string{"developer"}},
+	{"work", []string{"productivity", "education"}},
+	{"money", []string{"finance", "crypto"}},
+	{"shop", []string{"ecommerce"}},
+	{"news", []string{"news"}},
+	{"travel", []string{"travel"}},
+	{"sports", []string{"sports"}},
+}
+
+// categoryOrder is every category, in the order the page shows them.
+var categoryOrder = func() []string {
+	var out []string
+	for _, c := range categoryThemes {
+		out = append(out, c.id)
+	}
+	return append(out, CategoryRegion, CategoryOther)
+}()
+
+// regionCodes are the country groups' countries, for their flags and names.
+var regionCodes = map[string]string{
+	"iran": "IR", "russia": "RU", "brazil": "BR", "india": "IN", "nigeria": "NG", "germany": "DE",
+	"albania": "AL", "kosovo": "XK", "thailand": "TH", "mexico": "MX", "china": "CN",
+}
+
+// DefaultFavoriteSiteIDs are the favorites (常用) of a new installation:
+// a start, which the user may change as any other.
+var DefaultFavoriteSiteIDs = []string{"google", "apple", "github", "cloudflare", "wikipedia"}
+
+// categoryOf and regionOf are the category and, under region, the country
+// group of every site of the preset groups; a site in several takes the
+// first category in categoryOrder.
+var categoryOf, regionOf = func() (map[string]string, map[string]string) {
+	cats, regions := map[string]string{}, map[string]string{}
+	byID := map[string]SitePreset{}
+	for _, p := range SitePresets {
+		byID[p.ID] = p
+	}
+	for _, c := range categoryThemes {
+		for _, t := range c.themes {
+			for _, s := range byID[t].Sites {
+				if _, ok := cats[s.ID]; !ok {
+					cats[s.ID] = c.id
+				}
+			}
+		}
+	}
+	for _, p := range SitePresets {
+		for _, s := range p.Sites {
+			if s.Group == "domestic" {
+				cats[s.ID], regions[s.ID] = CategoryRegion, "china"
+			}
+		}
+	}
+	for _, p := range SitePresets {
+		if _, ok := regionCodes[p.ID]; !ok {
+			continue
+		}
+		for _, s := range p.Sites {
+			if _, ok := cats[s.ID]; !ok {
+				cats[s.ID], regions[s.ID] = CategoryRegion, p.ID
+			}
+		}
+	}
+	return cats, regions
+}()
+
+// SiteCategory is the category the connectivity page shows a site under:
+// the kind of site, else the country region, else other. Mainland China's
+// sites use the china region.
+func SiteCategory(s Site) string {
+	if c, ok := categoryOf[s.ID]; ok {
+		return c
+	}
+	return CategoryOther
+}
+
+// SiteRegion is the country group of a site of the region category, ""
+// for any other.
+func SiteRegion(s Site) string {
+	if SiteCategory(s) != CategoryRegion {
+		return ""
+	}
+	return regionOf[s.ID]
+}
+
+// RegionCode is the country of a country group, as ISO 3166 letters.
+func RegionCode(region string) string { return regionCodes[region] }
+
+// SiteCategories are the categories of sites, in the order the page shows
+// them.
+func SiteCategories(sites []Site) []string {
+	var out []string
+	for _, c := range categoryOrder {
+		if slices.ContainsFunc(sites, func(s Site) bool { return SiteCategory(s) == c }) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// SiteRegions are the country groups the sites of the region category
+// come from, in the order of the preset groups.
+func SiteRegions(sites []Site) []string {
+	var out []string
+	for _, p := range SitePresets {
+		if _, ok := regionCodes[p.ID]; ok && slices.ContainsFunc(sites, func(s Site) bool { return SiteRegion(s) == p.ID }) {
+			out = append(out, p.ID)
+		}
+	}
+	return out
+}
+
+// defaultSites are every site of the preset groups, by category, each
+// once, at the address that tests it best.
+func defaultSites() []Site {
+	better := map[string]Site{
+		"cloudflare": {"cloudflare", "Cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", "global"},
+	}
+	var all []Site
+	seen := map[string]bool{}
+	add := func(s Site) {
+		if seen[s.ID] {
+			return
+		}
+		seen[s.ID] = true
+		if b, ok := better[s.ID]; ok {
+			s = b
+		}
+		all = append(all, s)
+	}
+	var pool []Site
+	for _, p := range SitePresets {
+		pool = append(pool, p.Sites...)
+	}
+	for _, c := range categoryOrder {
+		for _, s := range pool {
+			if SiteCategory(s) == c {
+				add(s)
+			}
+		}
+	}
+	return all
 }

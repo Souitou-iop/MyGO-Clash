@@ -13,6 +13,8 @@ import (
 	"github.com/egoist/mygo/plugins/updater"
 
 	"github.com/mygo-clash/mygo-clash/internal/art"
+	"github.com/mygo-clash/mygo-clash/internal/config"
+	"github.com/mygo-clash/mygo-clash/internal/coreapi"
 	"github.com/mygo-clash/mygo-clash/internal/coremgr"
 )
 
@@ -28,6 +30,11 @@ type trayUI struct {
 	menu      *mygo.Menu
 	timer     *time.Timer
 	speedStop func()
+	speedOn   bool            // the traffic shows beside the icon
+	up, down  int64           // the traffic it shows
+	core      coreapi.Traffic // the core's last traffic, and when it came
+	coreAt    time.Time
+	sys       struct{ up, down int64 } // the machine's, from the interface counters
 	lastClick time.Time
 }
 
@@ -130,7 +137,7 @@ func (t *trayUI) refresh() {
 		t.rebuild()
 	}
 	if changed {
-		_ = t.tray.SetIcon(art.Tray(trayPx(), v, template), template)
+		t.paint()
 	}
 	t.mu.Lock()
 	node := t.node
@@ -401,6 +408,15 @@ func (t *trayUI) exitNode(id string) {
 }
 
 // speed shows the traffic next to the icon (macOS), or stops showing it.
+//
+// Which traffic it is: while the app takes traffic over (the system proxy or
+// TUN is on and the core is streaming) the core's, what goes through the
+// proxy; otherwise the machine's, from the interface counters, so that the
+// rate does not sit at 0 B/s with the proxy off. Showing the machine's
+// always would be simpler, but with the proxy on it would add the direct
+// traffic and the tunnel's overhead to what the user turned the proxy on to
+// watch. Both sources are kept current all the while and the choice is made
+// at every reading, so that a switch never passes through zero.
 func (t *trayUI) speed(on bool) {
 	if t == nil || t.tray == nil || runtime.GOOS != "darwin" {
 		return
@@ -410,21 +426,110 @@ func (t *trayUI) speed(on bool) {
 	if !on {
 		if t.speedStop != nil {
 			t.speedStop()
-			t.speedStop = nil
-			t.tray.SetTitle("")
+			t.speedStop, t.speedOn = nil, false
+			go t.paint()
 		}
 		return
 	}
 	if t.speedStop != nil {
 		return
 	}
-	ch, stop := t.a.traffic.Subscribe()
-	t.speedStop = stop
+	ch, unsub := t.a.traffic.Subscribe()
+	done := make(chan struct{})
+	var once sync.Once
+	t.speedStop = func() { once.Do(func() { close(done); unsub() }) }
+	t.speedOn = true
+	t.core, t.coreAt = coreapi.Traffic{}, time.Time{}
+	go t.paint()
 	go func() {
 		for tr := range ch {
-			t.tray.SetTitle(fmt.Sprintf("↑%s ↓%s", shortRate(tr.Up), shortRate(tr.Down)))
+			t.mu.Lock()
+			t.core, t.coreAt = tr, time.Now()
+			t.mu.Unlock()
+			t.refreshSpeed()
 		}
 	}()
+	go func() {
+		var meter netRate
+		tick := time.NewTicker(time.Second)
+		defer tick.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case now := <-tick.C:
+				cur, err := ifCounters()
+				if err != nil {
+					continue
+				}
+				up, down := meter.Update(now, cur)
+				t.mu.Lock()
+				t.sys.up, t.sys.down = up, down
+				t.mu.Unlock()
+				t.refreshSpeed()
+			}
+		}
+	}()
+}
+
+// refreshSpeed picks the source of the rate and repaints if the text
+// changed.
+func (t *trayUI) refreshSpeed() {
+	st := t.a.settings.Get()
+	takeover := st.SystemProxy.Enabled || st.Tun.Enabled
+	t.mu.Lock()
+	if !t.speedOn {
+		t.mu.Unlock()
+		return
+	}
+	up, down := t.sys.up, t.sys.down
+	if takeover && time.Since(t.coreAt) < 3*time.Second {
+		up, down = t.core.Up, t.core.Down
+	}
+	same := trayRate(up) == trayRate(t.up) && trayRate(down) == trayRate(t.down)
+	t.up, t.down = up, down
+	t.mu.Unlock()
+	if !same {
+		t.paint()
+	}
+}
+
+// expect shows the icon of what the settings just turned on or off,
+// before the system proxy or the core has followed.
+func (t *trayUI) expect(st config.Settings) {
+	if t == nil || t.tray == nil {
+		return
+	}
+	v := art.Off
+	switch {
+	case st.Tun.Enabled:
+		v = art.Tun
+	case st.SystemProxy.Enabled:
+		v = art.SystemProxy
+	}
+	t.mu.Lock()
+	changed := v != t.variant
+	t.variant = v
+	t.mu.Unlock()
+	if changed {
+		go t.paint()
+	}
+}
+
+// paint draws the icon of the state, with the traffic beside it when it
+// shows.
+func (t *trayUI) paint() {
+	t.mu.Lock()
+	v, on, up, down := t.variant, t.speedOn, t.up, t.down
+	t.mu.Unlock()
+	if v < 0 {
+		v = art.Off
+	}
+	icon := art.Tray(trayPx(), v, template)
+	if on {
+		icon = speedIcon(icon, up, down)
+	}
+	_ = t.tray.SetIcon(icon, template)
 }
 
 // shortRate formats bytes per second in at most 5 characters.

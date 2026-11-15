@@ -1,7 +1,9 @@
 // MyGO-Clash is a desktop proxy client built on mihomo with MyGo.
 //
-// The executable runs as the app, as its core (mygo-clash core) or as its
-// privileged service (mygo-clash service run|install|uninstall).
+// The executable runs as the app, as its core (mygo-clash core), as its
+// privileged service (mygo-clash service run|install|uninstall), as the
+// command line of the running app (mygo-clash ctl …) or as an MCP server
+// for AI agents (mygo-clash mcp).
 package main
 
 import (
@@ -10,9 +12,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 
 	"github.com/egoist/mygo"
 
+	"github.com/mygo-clash/mygo-clash/internal/agent"
 	"github.com/mygo-clash/mygo-clash/internal/app"
 	"github.com/mygo-clash/mygo-clash/internal/corehost"
 	"github.com/mygo-clash/mygo-clash/internal/service"
@@ -50,6 +55,16 @@ func main() {
 			fmt.Println(version)
 		case "service":
 			err = service.Main(os.Args[2:])
+		case "ctl": // the command line of the running app
+			stdout, stderr := agent.Stdout()
+			os.Exit(agent.RunCLI(os.Args[2:], stdout, stderr, filepath.Base(os.Args[0])))
+		case "mcp": // an MCP server over stdio, for AI agents
+			if slices.Contains(os.Args[2:], "--help") || slices.Contains(os.Args[2:], "-h") {
+				stdout, _ := agent.Stdout()
+				agent.MCPUsage(stdout, filepath.Base(os.Args[0]))
+				return
+			}
+			err = agent.RunMCP(os.Stdin, os.Stdout, version, slices.Contains(os.Args[2:], "--dev"))
 		case "uwp-loopback": // elevated by the app, with the file of SIDs to exempt
 			var sids []string
 			if len(os.Args) < 3 {

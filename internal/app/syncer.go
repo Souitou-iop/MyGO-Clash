@@ -169,7 +169,10 @@ func (s *syncer) label(path string) string {
 	return path
 }
 
-func (s *syncer) broadcast() { _ = SyncEvent.Broadcast(s.statusSnapshot()) }
+func (s *syncer) broadcast() {
+	_ = SyncEvent.Broadcast(s.statusSnapshot())
+	s.a.main.refresh()
+}
 
 // start runs the scheduler.
 func (s *syncer) start() {

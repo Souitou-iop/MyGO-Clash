@@ -187,6 +187,7 @@ func (a *App) selectProxy(ctx context.Context, group, name string) error {
 		}
 	}
 	_ = SelectionEvent.Broadcast(Selection{Group: group, Now: name})
+	a.main.selected()
 	if a.tray != nil {
 		go a.tray.rebuild()
 	}

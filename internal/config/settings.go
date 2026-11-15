@@ -76,7 +76,6 @@ type Settings struct {
 	Latency     Latency     `json:"latency"`
 	Hotkeys     Hotkeys     `json:"hotkeys"`
 	Tray        Tray        `json:"tray"`
-	SpeedWindow SpeedWindow `json:"speedWindow"`
 	Lightweight Lightweight `json:"lightweight"`
 	Logs        Logs        `json:"logs"`
 	Tailscale   Tailscale   `json:"tailscale"`
@@ -86,9 +85,34 @@ type Settings struct {
 	Stats       Stats       `json:"stats"`
 	// Subscriptions is how the app watches remote profiles.
 	Subscriptions Subscriptions `json:"subscriptions"`
-	// ConnectivitySites is the site list of the connectivity page; empty
-	// means the built-in defaults.
-	ConnectivitySites []tools.Site `json:"connectivitySites,omitempty"`
+	// The connectivity page tests every preset site but those the user
+	// hid, then the user's own: what is kept is what differs from the
+	// presets, so that presets a later version adds show up by themselves.
+	ConnectivityCustom []tools.Site `json:"connectivityCustom,omitempty"`
+	ConnectivityHidden []string     `json:"connectivityHidden,omitempty"`
+	// ConnectivityFavorites are the sites of 常用, in order: shortcuts to
+	// sites of any category. nil is the defaults; empty, none.
+	ConnectivityFavorites []string `json:"connectivityFavorites"`
+	// ConnectivityModel is the version of the fields above the settings
+	// were last brought to.
+	ConnectivityModel int `json:"connectivityModel,omitempty"`
+	// ConnectivitySites and ConnectivitySitesAll are the whole list an
+	// older version kept, which normalization turns into the fields above.
+	ConnectivitySites    []tools.Site `json:"connectivitySites,omitempty"`
+	ConnectivitySitesAll bool         `json:"connectivitySitesAll,omitempty"`
+	// UnlockHidden are the default unlock checks the user turned off, and
+	// UnlockEnabled the optional ones turned on.
+	UnlockHidden  []string `json:"unlockHidden,omitempty"`
+	UnlockEnabled []string `json:"unlockEnabled,omitempty"`
+	// Agent is the control socket that the command line and the MCP
+	// server drive the app through.
+	Agent Agent `json:"agent"`
+}
+
+// Agent is the local control of the app by scripts and AI agents
+// (mygo-clash ctl, mygo-clash mcp): a socket only the user can reach.
+type Agent struct {
+	Enabled bool `json:"enabled"`
 }
 
 // Updates is how the app looks for new versions of itself. Whether it
@@ -106,7 +130,10 @@ var UpdateIntervals = []string{"hourly", "daily", "weekly", "monthly"}
 
 // UI is how the interface looks.
 type UI struct {
-	CollapseNav   bool   `json:"collapseNav"`
+	CollapseNav bool `json:"collapseNav"`
+	// RevealPrivate shows the addresses, places and providers the app
+	// otherwise hides behind dots (the eye in the navigation).
+	RevealPrivate bool   `json:"revealPrivate,omitempty"`
 	TrafficGraph  bool   `json:"trafficGraph"`
 	MemoryUsage   bool   `json:"memoryUsage"`
 	GroupIcons    bool   `json:"groupIcons"`
@@ -125,6 +152,13 @@ type UI struct {
 	// NavKnown lists the pages the sidebar has offered, so a page added
 	// in an update shows up once, while one the user hid stays hidden.
 	NavKnown []string `json:"navKnown,omitempty"`
+	// OnboardingSeen is set once the first-run guide of the main window
+	// was finished or skipped. Settings saved before the guide existed
+	// read as seen (Load): those who upgrade know the app already.
+	OnboardingSeen bool `json:"onboardingSeen"`
+	// ConnectivityRegionOrder is the user's order for the country groups
+	// in the connectivity page. Missing entries use the built-in order.
+	ConnectivityRegionOrder []string `json:"connectivityRegionOrder,omitempty"`
 }
 
 // navBefore02 are the pages of the sidebar before 0.2.0, which settings
@@ -364,22 +398,6 @@ type Tray struct {
 	InlineModes bool   `json:"inlineModes"`
 }
 
-// SpeedWindow is a small window of the traffic that floats over the
-// others. It belongs to the device: it never syncs.
-type SpeedWindow struct {
-	Enabled bool `json:"enabled"`
-	// Style is "standard", two lines with a graph, or "mini", one line.
-	Style string `json:"style"`
-	// Opacity is in percent, 30 to 100.
-	Opacity int `json:"opacity"`
-	// Locked lets the pointer through to what is under the window.
-	Locked bool `json:"locked"`
-	// X and Y are where it was left on the screen, when Placed.
-	X      int  `json:"x"`
-	Y      int  `json:"y"`
-	Placed bool `json:"placed"`
-}
-
 // Lightweight mode closes the window to save memory, keeping the core,
 // the tray and the quick panel.
 type Lightweight struct {
@@ -519,6 +537,7 @@ func Defaults() Settings {
 			"https://board.zash.run.place/#/setup?http=true&hostname=%host&port=%port&secret=%secret",
 		},
 		UI: UI{
+			CollapseNav:   true, // the navigation is a rail of icons
 			TrafficGraph:  true,
 			MemoryUsage:   true,
 			GroupIcons:    true,
@@ -572,9 +591,11 @@ func Defaults() Settings {
 			TimeoutMs:        5000,
 			AutoCheckMinutes: 10,
 		},
-		Hotkeys:     Hotkeys{Bindings: map[string]string{}},
-		Tray:        Tray{Groups: "submenu", ShowSpeed: false},
-		SpeedWindow: SpeedWindow{Style: "standard", Opacity: 100},
+		Hotkeys:               Hotkeys{Bindings: map[string]string{}},
+		Tray:                  Tray{Groups: "submenu", ShowSpeed: false},
+		Agent:                 Agent{Enabled: true},
+		ConnectivityFavorites: slices.Clone(tools.DefaultFavoriteSiteIDs),
+		ConnectivityModel:     connectivityModel,
 		Lightweight: Lightweight{
 			DelayMinutes: 10,
 		},
@@ -709,6 +730,7 @@ func (s *Settings) Normalize() error {
 		s.UI.Nav = append(s.UI.Nav, "settings") // settings cannot be hidden
 	}
 	s.UI.HomeCards = normalizeHomeCards(s.UI.HomeCards, d.UI.HomeCards)
+	normalizeConnectivity(s)
 
 	sp := &s.SystemProxy
 	sp.Host = strings.TrimSpace(sp.Host)
@@ -809,13 +831,6 @@ func (s *Settings) Normalize() error {
 			delete(s.Hotkeys.Bindings, action)
 		}
 	}
-	if !oneOf(s.SpeedWindow.Style, "standard", "mini") {
-		s.SpeedWindow.Style = d.SpeedWindow.Style
-	}
-	if s.SpeedWindow.Opacity == 0 {
-		s.SpeedWindow.Opacity = d.SpeedWindow.Opacity
-	}
-	s.SpeedWindow.Opacity = max(30, min(s.SpeedWindow.Opacity, 100))
 	if !oneOf(s.Tray.Groups, "submenu", "inline", "off") {
 		s.Tray.Groups = d.Tray.Groups
 	}
@@ -907,6 +922,20 @@ func (s *Settings) Normalize() error {
 	return errors.Join(errs...)
 }
 
+func uniqueStrings(in []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(in))
+	for _, v := range in {
+		v = strings.TrimSpace(v)
+		if v == "" || seen[v] {
+			continue
+		}
+		seen[v] = true
+		out = append(out, v)
+	}
+	return out
+}
+
 var hostnameRe = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$`)
 
 func validHostname(s string) bool { return hostnameRe.MatchString(s) }
@@ -950,6 +979,9 @@ func Load(path string) (*Store, error) {
 		return nil, err
 	}
 	cur := Defaults()
+	// A file from before the first-run guide has no word of it: its user
+	// is no newcomer, so the guide waits for Settings to replay it.
+	cur.UI.OnboardingSeen = true
 	if err := json.Unmarshal(data, &cur); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
@@ -1042,4 +1074,57 @@ func MergePatch(doc, patch any) any {
 		dm[k] = MergePatch(dm[k], v)
 	}
 	return dm
+}
+
+// connectivityModel is the version of the connectivity fields: 2 keeps
+// what differs from the presets (custom sites, hidden presets) rather than
+// the whole list.
+const connectivityModel = 2
+
+// normalizeConnectivity brings the connectivity page's fields to the
+// current model, and keeps them to what they may hold.
+func normalizeConnectivity(s *Settings) {
+	if s.ConnectivityModel < connectivityModel {
+		// A whole list from an older version: the user's own sites are
+		// those of no preset, and the presets missing from it the ones they
+		// removed, which are hidden now. A list from before the defaults
+		// were every preset held only the few presets imported, so none is
+		// taken as removed then.
+		if len(s.ConnectivitySites) > 0 {
+			kept := map[string]bool{}
+			for _, st := range s.ConnectivitySites {
+				if id := tools.KnownSiteID(st.ID); id != "" {
+					kept[id] = true
+				} else {
+					s.ConnectivityCustom = append(s.ConnectivityCustom, st)
+				}
+			}
+			if s.ConnectivitySitesAll {
+				for _, st := range tools.ConnectivitySites {
+					if !kept[st.ID] {
+						s.ConnectivityHidden = append(s.ConnectivityHidden, st.ID)
+					}
+				}
+			}
+		}
+		s.ConnectivitySites, s.ConnectivitySitesAll = nil, false
+		s.ConnectivityModel = connectivityModel
+	}
+	var custom []tools.Site
+	for _, st := range tools.NormalizeSites(s.ConnectivityCustom) {
+		if !tools.IsKnownSite(st.ID) {
+			custom = append(custom, st)
+		}
+	}
+	s.ConnectivityCustom = custom
+	s.ConnectivityHidden = slices.DeleteFunc(uniqueStrings(s.ConnectivityHidden), func(id string) bool { return !tools.IsKnownSite(id) })
+	if s.ConnectivityFavorites == nil {
+		s.ConnectivityFavorites = slices.Clone(tools.DefaultFavoriteSiteIDs)
+	}
+	s.ConnectivityFavorites = slices.DeleteFunc(uniqueStrings(s.ConnectivityFavorites), func(id string) bool {
+		return slices.Contains(s.ConnectivityHidden, id)
+	})
+	known := func(id string) bool { return !tools.IsUnlockID(id) }
+	s.UnlockHidden = slices.DeleteFunc(uniqueStrings(s.UnlockHidden), known)
+	s.UnlockEnabled = slices.DeleteFunc(uniqueStrings(s.UnlockEnabled), known)
 }

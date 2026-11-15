@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -10,6 +11,7 @@ import (
 	"net"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"rsc.io/qr"
 
 	"github.com/mygo-clash/mygo-clash/internal/config"
+	"github.com/mygo-clash/mygo-clash/internal/coreapi"
 	"github.com/mygo-clash/mygo-clash/internal/corehost"
 	"github.com/mygo-clash/mygo-clash/internal/secure"
 	"github.com/mygo-clash/mygo-clash/internal/service"
@@ -304,6 +307,7 @@ func (s System) UninstallService(ctx context.Context) error {
 	}
 	_, _, _ = s.a.settings.Update(func(st *config.Settings) { st.Tun.Enabled = false })
 	_ = SettingsEvent.Broadcast(s.a.settings.Get())
+	s.a.main.refresh()
 	log.Printf("switch: TUN off (service uninstalled)")
 	s.a.checkService(ctx)
 	go s.a.startCore(context.Background())
@@ -389,51 +393,147 @@ func (s Tools) Sites() []tools.Site { return tools.DefaultSites }
 // SitePresets are the groups the connectivity page may import at once.
 func (s Tools) SitePresets() []tools.SitePreset { return tools.SitePresets }
 
-// ConnectivitySites returns the sites the connectivity page tests: the
-// user's choice, or the defaults while they have none.
+// ConnectivitySites returns the sites the connectivity page tests: every
+// preset site but those hidden, then the user's own.
 func (s Tools) ConnectivitySites() []tools.Site {
-	if own := s.a.settings.Get().ConnectivitySites; len(own) > 0 {
-		return own
-	}
-	return tools.ConnectivitySites
+	cfg := s.a.settings.Get()
+	return tools.EffectiveSites(cfg.ConnectivityHidden, cfg.ConnectivityCustom)
 }
 
-// SaveConnectivitySites stores the sites the connectivity page tests, and
-// answers with the list as it was kept.
-func (s Tools) SaveConnectivitySites(ctx context.Context, sites []tools.Site) ([]tools.Site, error) {
-	kept := tools.NormalizeSites(sites)
-	_, err := s.a.updateSettings(ctx, func(cfg *config.Settings) { cfg.ConnectivitySites = kept })
-	return kept, err
+// AddSite adds a site of the user's own, and answers with the page's
+// sites as they are then.
+func (s Tools) AddSite(ctx context.Context, site tools.Site) ([]tools.Site, error) {
+	_, err := s.a.updateSettings(ctx, func(cfg *config.Settings) {
+		cfg.ConnectivityCustom = append(cfg.ConnectivityCustom, site)
+	})
+	return s.ConnectivitySites(), err
+}
+
+// RemoveSite takes a site off the page: a preset is hidden, to be
+// restored at will, and one of the user's own is deleted. Either leaves
+// 常用.
+func (s Tools) RemoveSite(ctx context.Context, id string) ([]tools.Site, error) {
+	_, err := s.a.updateSettings(ctx, func(cfg *config.Settings) {
+		if tools.IsKnownSite(id) {
+			cfg.ConnectivityHidden = append(cfg.ConnectivityHidden, id)
+		} else {
+			cfg.ConnectivityCustom = slices.DeleteFunc(cfg.ConnectivityCustom, func(st tools.Site) bool { return st.ID == id })
+		}
+		cfg.ConnectivityFavorites = slices.DeleteFunc(slices.Clone(cfg.ConnectivityFavorites), func(f string) bool { return f == id })
+	})
+	return s.ConnectivitySites(), err
+}
+
+// RestoreSites shows hidden presets again: those of ids, or all of them.
+func (s Tools) RestoreSites(ctx context.Context, ids []string) ([]tools.Site, error) {
+	_, err := s.a.updateSettings(ctx, func(cfg *config.Settings) {
+		if len(ids) == 0 {
+			cfg.ConnectivityHidden = nil
+			return
+		}
+		cfg.ConnectivityHidden = slices.DeleteFunc(slices.Clone(cfg.ConnectivityHidden), func(id string) bool { return slices.Contains(ids, id) })
+	})
+	return s.ConnectivitySites(), err
+}
+
+// ResetSites brings back every preset and the default 常用; the user's own
+// sites stay.
+func (s Tools) ResetSites(ctx context.Context) ([]tools.Site, error) {
+	_, err := s.a.updateSettings(ctx, func(cfg *config.Settings) {
+		cfg.ConnectivityHidden = nil
+		cfg.ConnectivityFavorites = slices.Clone(tools.DefaultFavoriteSiteIDs)
+	})
+	return s.ConnectivitySites(), err
 }
 
 // TestSites tests sites through the proxy, sending each result as it
 // arrives.
 func (s Tools) TestSites(ctx context.Context, sites []tools.Site, ch *mygo.Channel[tools.SiteResult]) error {
-	if len(sites) == 0 {
-		sites = tools.DefaultSites
-	}
-	proxy := s.a.proxyURL()
-	results := make(chan tools.SiteResult)
-	for _, site := range sites {
-		go func() { results <- tools.TestSite(ctx, proxy, site) }()
-	}
-	for range sites {
-		if err := ch.Send(<-results); err != nil {
-			return nil
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	s.a.testSites(ctx, sites, func(r tools.SiteResult) {
+		if ch.Send(r) != nil {
+			cancel() // the page stopped listening
 		}
-	}
+	})
 	return nil
 }
 
-// UnlockList returns the streaming and AI services the connectivity page
-// checks.
-func (s Tools) UnlockList() []tools.Unlock { return tools.UnlockList() }
+// siteTestSlots is how many sites are tested at once.
+const siteTestSlots = 24
+
+// testSites measures sites through the proxy, siteTestSlots at a time, and
+// calls emit with each result as it arrives; the default sites when none
+// are given.
+func (a *App) testSites(ctx context.Context, sites []tools.Site, emit func(tools.SiteResult)) {
+	if len(sites) == 0 {
+		sites = tools.DefaultSites
+	}
+	proxy := a.proxyURL()
+	results := make(chan tools.SiteResult, len(sites))
+	// A few dozen at a time: all at once, the requests would queue behind
+	// each other on the proxy and every delay would read longer.
+	slots := make(chan struct{}, siteTestSlots)
+	for _, site := range sites {
+		go func() {
+			slots <- struct{}{}
+			defer func() { <-slots }()
+			results <- tools.TestSite(ctx, proxy, site)
+		}()
+	}
+	for range sites {
+		select {
+		case r := <-results:
+			emit(r)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// UnlockList returns the services the connectivity page checks: the
+// default ones but those turned off, and the optional ones turned on.
+func (s Tools) UnlockList() []tools.Unlock {
+	cfg := s.a.settings.Get()
+	return tools.UnlockList(cfg.UnlockHidden, cfg.UnlockEnabled)
+}
+
+// UnlockCatalog returns every check there is, for the page to choose from.
+func (s Tools) UnlockCatalog() []tools.Unlock { return tools.UnlockCatalog() }
 
 // CheckUnlock checks services through the proxy, sending each result as it
 // arrives.
 func (s Tools) CheckUnlock(ctx context.Context, ids []string, ch *mygo.Channel[tools.Unlock]) error {
-	tools.CheckUnlock(ctx, s.a.proxyURL(), ids, func(u tools.Unlock) { _ = ch.Send(u) })
+	tools.CheckUnlock(ctx, s.a.proxyURL(), ids, s.a.routeOf, func(u tools.Unlock) { _ = ch.Send(u) })
 	return nil
+}
+
+// routeOf names the proxy the core sent connections to hosts through: the
+// last of the chain, the node itself, of the newest open connection to any
+// of them; "" when the core shows none.
+func (a *App) routeOf(hosts []string) string {
+	c := a.core.Client()
+	if c == nil || len(hosts) == 0 {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, 2*time.Second)
+	defer cancel()
+	snap, err := c.Connections(ctx)
+	if err != nil {
+		return ""
+	}
+	var best *coreapi.Connection
+	for i := range snap.Connections {
+		cn := &snap.Connections[i]
+		host := cmp.Or(cn.Metadata.Host, cn.Metadata.SniffHost)
+		if len(cn.Chains) > 0 && slices.Contains(hosts, host) && (best == nil || cn.Start.After(best.Start)) {
+			best = cn
+		}
+	}
+	if best == nil {
+		return ""
+	}
+	return best.Chains[0]
 }
 
 // SpeedTest measures the latency and speeds through the proxy, sending

@@ -18,13 +18,13 @@ func DemoIPInfo(view string) (IPInfo, error) {
 	case ViewDomestic:
 		return IPInfo{
 			IP: demoDomesticIP, Country: "中国", CountryCode: "CN", City: "测试节点",
-			ISP: "中国电信", ASN: "4134", Timezone: "Asia/Shanghai",
+			ISP: "中国电信", ASN: "4134", Timezone: "Asia/Shanghai", Latitude: 31.23, Longitude: 121.47,
 			Source: "IPIP.net",
 		}, nil
 	case ViewGlobal:
 		return IPInfo{
 			IP: "198.51.100.21", Country: "Japan", CountryCode: "JP", City: "测试节点",
-			ISP: "Amazon.com", ASN: "16509", Timezone: "Asia/Tokyo",
+			ISP: "Amazon.com", ASN: "16509", Timezone: "Asia/Tokyo", Latitude: 35.68, Longitude: 139.69,
 			Source: "ip.sb",
 		}, nil
 	case ViewCloudflare:

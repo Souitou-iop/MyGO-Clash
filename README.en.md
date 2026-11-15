@@ -82,6 +82,63 @@
 - On macOS 26 and later, the app icon follows the system's light, dark, clear and tinted appearances
 - Updates of the app itself: choose whether and how often to check (hourly to monthly) and whether to install without asking; updates are signed, and delta updates download only what changed
 
+## Command line and MCP (for scripts and AI agents)
+
+While it runs, the app serves a local control socket in its data directory. The same executable is a command line (`ctl`) and an MCP server (`mcp`), so scripts and agents such as Claude Code can read the state, pick nodes and flip the switches without the window.
+
+The executable:
+
+| System | Path |
+|---|---|
+| macOS | `/Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash` |
+| Windows | `%LOCALAPPDATA%\Programs\MyGO-Clash\MyGO-Clash.exe` |
+| Linux (deb / rpm / Arch) | `mygo-clash` |
+
+Below it is `mygo-clash` (on macOS: `alias mygo-clash=/Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash`).
+
+```bash
+mygo-clash ctl status                      # core, system proxy, TUN, mode, profile, the exit node
+mygo-clash ctl groups                      # proxy groups; ctl groups Proxy lists its nodes and delays
+mygo-clash ctl select Proxy "🇭🇰 HK 01"     # select a node
+mygo-clash ctl delay --group Auto          # test a whole group; ctl delay <node> tests one
+mygo-clash ctl proxy on                    # system proxy; ctl tun on|off, ctl mode rule|global|direct
+mygo-clash ctl conns github --limit 10     # connections; ctl close <id>… or ctl close --all
+mygo-clash ctl traffic                     # current speed and totals; ctl stats 7d for statistics
+mygo-clash ctl profiles                    # profiles (URLs masked); import <url>, update --all, use <name>
+mygo-clash ctl settings clash.mixedPort    # read a setting; ctl set clash.allowLan=true changes one
+mygo-clash ctl logs -n 50 --level warning  # the latest logs
+mygo-clash ctl tailscale                   # Tailscale's state and peers
+mygo-clash ctl --json status               # --json on any command prints JSON
+```
+
+Exit codes: 0 ok, 1 error, 2 usage, 3 the app is not running (`ctl launch` starts it in the background). `ctl methods` lists every method; `ctl call <method> '<JSON>'` calls one directly.
+
+**MCP**: `mygo-clash mcp` serves 23 tools over stdio (state, nodes, delay tests, connections, profiles, settings, logs, Tailscale…), each with a description and an input schema. The dangerous ones (deleting a profile, changing settings) say DANGEROUS and carry `destructiveHint`. When the app is not running, `app_launch` starts it. Claude Code:
+
+```bash
+claude mcp add mygo-clash -- /Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash mcp
+```
+
+Claude Desktop, Cursor and other clients take JSON:
+
+```json
+{
+  "mcpServers": {
+    "mygo-clash": {
+      "command": "/Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Clash",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Security:
+
+- Nothing listens on the network. The socket sits in the data directory, which only the user can enter (mode 0600), and every call carries a random token the app writes beside it at each start (`control.token`, 0600)
+- The controller secret, the LAN password, the WebDAV address and user name and the Tailscale control server read `[redacted]`; subscription URLs keep only their scheme and host, and URLs in errors and logs are masked too. A patch holding `[redacted]` is refused, so a mask is never written back
+- On by default, off at any time: `mygo-clash ctl set agent.enabled=false`, or `agent.enabled` in `settings.json`. The switch belongs to the device and does not sync
+- `--dev` (`ctl --dev …`, `mcp --dev`) talks to the development build
+
 ## Download
 
 Download the latest release (currently a beta) from the [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) page, or build from source (below):

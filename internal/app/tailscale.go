@@ -178,6 +178,7 @@ func (m *tailscaleManager) setStatus(s coreapi.TailscaleStatus) {
 	m.probeOk = s.ControlProbe != nil && s.ControlProbe.Reachable
 	m.mu.Unlock()
 	_ = TailscaleEvent.Broadcast(s)
+	m.a.main.refresh()
 	menu := trayKey(s)
 	m.mu.Lock()
 	menuChanged := menu != m.trayKey

@@ -343,33 +343,6 @@ export default function General() {
             <Switch checked={s.tray.showSpeed} onChange={(v) => patch({ tray: { showSpeed: v } })} />
           </Row>
         )}
-        <Row label={t("settings.speedWindow")} desc={t("settings.speedWindowDesc")}>
-          <Switch checked={s.speedWindow.enabled} onChange={(v) => patch({ speedWindow: { enabled: v } })} />
-        </Row>
-        <Collapse open={s.speedWindow.enabled}>
-          <Row label={t("settings.speedWindowStyle")}>
-            <Select
-              value={s.speedWindow.style}
-              onChange={(v) => patch({ speedWindow: { style: v } })}
-              options={[
-                { value: "standard", label: t("settings.speedWindowStandard") },
-                { value: "mini", label: t("settings.speedWindowMini") },
-              ]}
-              width={170}
-            />
-          </Row>
-          <Row label={t("settings.speedWindowOpacity")}>
-            <Select
-              value={String(s.speedWindow.opacity)}
-              onChange={(v) => patch({ speedWindow: { opacity: Number(v) } })}
-              options={[100, 90, 80, 70, 60, 50, 40].map((n) => ({ value: String(n), label: `${n}%` }))}
-              width={170}
-            />
-          </Row>
-          <Row label={t("settings.speedWindowLock")} desc={t("settings.speedWindowLockDesc")}>
-            <Switch checked={s.speedWindow.locked} onChange={(v) => patch({ speedWindow: { locked: v } })} />
-          </Row>
-        </Collapse>
       </Section>
 
       <Section title={t("settings.shortcuts")}>

@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo"
+
+	"github.com/mygo-clash/mygo-clash/internal/config"
 )
 
 // languages are the languages of the interface, as settings.language
@@ -176,4 +178,18 @@ func tr(a *App, key string) string {
 		return s
 	}
 	return key
+}
+
+// applyLocale shows the language of the settings, which MyGo's catalogs
+// (locales) and its own controls say their messages in, or the system's
+// without one.
+func (a *App) applyLocale(st config.Settings) {
+	switch st.Language {
+	case "zh-CN":
+		mygo.App.SetLocale("zh-Hans")
+	case "zh-TW":
+		mygo.App.SetLocale("zh-Hant")
+	default:
+		mygo.App.SetLocale(st.Language)
+	}
 }

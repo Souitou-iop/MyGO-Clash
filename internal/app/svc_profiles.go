@@ -105,6 +105,7 @@ func (s Profiles) Update(ctx context.Context, uid string, withProxy *bool) (prof
 		return profiles.Profile{}, err
 	}
 	_ = ProfilesEvent.Broadcast(s.a.profilesView())
+	s.a.main.refresh()
 	p, err := s.a.profiles.Update(ctx, uid, withProxy)
 	if err == nil {
 		go s.a.checkQuotas()
@@ -296,6 +297,7 @@ func (s Profiles) SetDNSOverride(ctx context.Context, uid string, on bool) error
 	_, err := s.a.updateSettings(ctx, func(st *config.Settings) { st.DNS.Profiles[uid] = on })
 	if err == nil {
 		_ = ProfilesEvent.Broadcast(s.a.profilesView())
+		s.a.main.refresh()
 	}
 	return err
 }

@@ -2,6 +2,12 @@
 
 The section of each version is what the app's update window shows.
 
+## Unreleased
+
+### ✨ 新增功能 / New Features
+
+- 新增**命令行与 MCP**：同一个可执行文件可以用 `ctl` 查状态、切节点、测速、开关系统代理与 TUN、切模式、管理订阅和设置；`mcp` 是一个 stdio MCP 服务器，Claude Code 等 Agent 可以直接操作应用。只走本机 socket，并用令牌鉴权，密钥与订阅地址会掩码，可在设置里用 `agent.enabled` 关闭 / **A command line and MCP**: the same executable answers `ctl` (state, nodes, delay tests, the system proxy and TUN, the mode, profiles and settings) and `mcp`, a stdio MCP server through which agents such as Claude Code drive the app. It goes through a local socket with a token only, masks secrets and subscription URLs, and `agent.enabled` turns it off
+
 ## 0.2.32-beta
 
 规则与自动化的一个大版本：快捷规则、社区规则集、链式代理与 WiFi 场景自动化。/ A release about rules and automation: quick rules, community rule sets, proxy chains, and Wi-Fi scenes.
