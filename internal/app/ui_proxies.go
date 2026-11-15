@@ -206,10 +206,11 @@ func (m *mainUI) proxiesReady(c *ui.Context, groups []*ProxyGroup, sel *ProxyGro
 		body.Children(func() {
 			if len(groups) > 1 {
 				list := ui.Scroll(c.Key("groups")).TrackScroll(m.keepScroll("groups")).Gap(8).Shrink(0)
+				// The bar keeps to a strip of its own, clear of the groups.
 				if narrow {
-					list.Row().Height(78).ScrollbarAxes(true, false)
+					list.Row().Height(88).Padding(0, 0, 10).ScrollbarAxes(true, false)
 				} else {
-					list.Width(236)
+					list.Width(246).PaddingEnd(10)
 				}
 				list.Children(func() {
 					for _, g := range groups {

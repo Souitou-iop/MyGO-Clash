@@ -466,7 +466,7 @@ func (m *mainUI) ruleList(c *ui.Context, profile string, reload func()) {
 			cell(cols[6], func() {
 				line := ruleLine(r)
 				draftable := slices.Contains(ruleTypes, syn) && syn != "MATCH" && profile != ""
-				m.iconButton(c, "more", icMoreHorizontal, locales.RulesActions()).Size(24, 24).PopoverMenu(func(menu *ui.Menu) {
+				m.iconButton(c, "more", icMoreHorizontal, locales.RulesActions()).Size(24, 24).PopoverMenuButton(func(menu *ui.Menu) {
 					if menu.Item(locales.RulesCopy()).Chosen() {
 						mygo.Clipboard.WriteText(line)
 						c.Toast(locales.CommonCopied())
@@ -479,7 +479,7 @@ func (m *mainUI) ruleList(c *ui.Context, profile string, reload func()) {
 						d := [2]string{syn, r.Payload}
 						m.openExt(profile, profile, locales.ProfilesExtRules()+" · "+m.state.ProfileName, "rules", &d)
 					}
-				})
+				}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
 			})
 		})
 	}).Grow(1)
@@ -704,7 +704,7 @@ func (m *mainUI) ruleSetsDialog(c *ui.Context) {
 					}
 				})
 			}
-			ui.Scroll(c.Key("catalog")).Grow(1).Basis(0).MinHeight(160).Gap(12).Children(func() {
+			gutter(ui.Scroll(c.Key("catalog")).Grow(1).Basis(0).MinHeight(160).Gap(12), 14).Children(func() {
 				for _, g := range ruleCatalog {
 					ui.Column(c.Key(g.key)).Gap(2).Children(func() {
 						ui.Text(c, m.T(g.key)).FontSize(12).FontWeight(600).TextColor(p.TextMuted).PaddingY(4)

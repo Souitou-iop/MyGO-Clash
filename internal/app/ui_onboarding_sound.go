@@ -9,25 +9,25 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/egoist/mygo/audio"
 )
 
 // The guide's sound: each scene has a short score of its own, made from
 // the scene's own timing (ui_onboarding_score.go), so that what sounds
 // falls as what moves, over a soft chord; the chords go round the key of A
 // as the pages turn, and come home with the chime as the compass lands
-// back on the sidebar's mark. MyGo plays no sound of its own: a score is
-// written once to the cache and played by the system's player. The guide
-// is quiet when muted, when skipped, and on the Mac while the system's
-// interface sounds are off.
+// back on the sidebar's mark. The scores are made in memory and played by
+// mygo's audio, which starts them within a few hundredths of a second of
+// being asked, so that they keep time with the drawing; one giving way
+// fades out rather than stopping. The guide is quiet when muted, when
+// skipped, and on the Mac while the system's interface sounds are off.
 
 const (
 	sndRate = 44100
-	// sndVersion names the files: a new one for a new score.
-	sndVersion = 5
 	// A scene's score rings on sndTail seconds past its scene, its chord
 	// and last notes dying away, and is let go over its last sndRelease
 	// seconds: it fades out as music does, rather than stopping.
@@ -73,47 +73,61 @@ func encodeWAV(samples []float64, peak, release float64) []byte {
 
 // onbAudio plays the guide's scores, one at a time.
 type onbAudio struct {
-	mu    sync.Mutex
-	gen   int       // the score asked for last
-	cur   *exec.Cmd // the one playing
-	muted bool
-	quiet bool // the system's interface sounds are off
+	mu     sync.Mutex
+	gen    int           // the score asked for last
+	cur    *audio.Player // the one playing
+	muted  bool
+	quiet  bool // the system's interface sounds are off
+	sounds map[string]*audio.Sound
 }
 
 var onbSound = &onbAudio{}
 
-// sndDir is where the scores are written; none in a test's window, which
-// has no app.
-func (m *mainUI) sndDir() string {
-	if m.a == nil {
-		return ""
-	}
-	if m.a.dirs.Cache != "" {
-		return m.a.dirs.Cache
-	}
-	return os.TempDir()
-}
-
-// sndFile is the score name's file in dir, written if it is not yet.
-func sndFile(dir, name string) (string, bool) {
-	path := filepath.Join(dir, "onboarding-"+name+"-"+strconv.Itoa(sndVersion)+".wav")
-	if _, err := os.Stat(path); err == nil {
-		return path, true
+// sound is the score called name, made and decoded the first time.
+func (au *onbAudio) sound(name string) *audio.Sound {
+	au.mu.Lock()
+	snd := au.sounds[name]
+	au.mu.Unlock()
+	if snd != nil {
+		return snd
 	}
 	wav := renderScore(name)
-	if wav == nil || os.WriteFile(path, wav, 0o644) != nil {
-		return "", false
+	if wav == nil {
+		return nil
 	}
-	return path, true
+	snd, err := audio.DecodeSound(wav)
+	if err != nil {
+		return nil
+	}
+	au.mu.Lock()
+	if au.sounds == nil {
+		au.sounds = map[string]*audio.Sound{}
+	}
+	au.sounds[name] = snd
+	au.mu.Unlock()
+	return snd
 }
 
-// onbScore plays a scene's score: the one before goes a moment after it
-// starts, so that the two overlap rather than leave a gap.
-func (m *mainUI) onbScore(name string, still bool) {
-	dir := m.sndDir()
-	if dir == "" {
+// fadeOut turns a player down to silence over d, then stops it.
+func fadeOut(p *audio.Player, d time.Duration) {
+	if p == nil {
 		return
 	}
+	go func() {
+		from := p.Volume()
+		const steps = 24
+		for i := 1; i <= steps; i++ {
+			k := 1 - float64(i)/steps
+			p.SetVolume(from * k * k)
+			time.Sleep(d / steps)
+		}
+		p.Stop()
+		p.Close()
+	}()
+}
+
+// onbScore plays a scene's score; the one before fades out under it.
+func (m *mainUI) onbScore(name string, still bool) {
 	if still {
 		name += "-still"
 	}
@@ -126,8 +140,8 @@ func (m *mainUI) onbScore(name string, still bool) {
 		return
 	}
 	go func() {
-		path, ok := sndFile(dir, name)
-		if !ok {
+		snd := au.sound(name)
+		if snd == nil {
 			return
 		}
 		au.mu.Lock()
@@ -136,43 +150,28 @@ func (m *mainUI) onbScore(name string, still bool) {
 			return // another page came meanwhile
 		}
 		prev := au.cur
-		cmd := soundCmd(path, 0.6)
-		if cmd == nil || cmd.Start() != nil {
-			au.mu.Unlock()
-			return
-		}
-		au.cur = cmd
+		pl := snd.NewPlayer().SetVolume(0.6)
+		pl.Play()
+		au.cur = pl
 		au.mu.Unlock()
-		if prev != nil {
-			// The page before rings on under the new one's first notes, and
-			// its chord coming in, before it goes.
-			time.AfterFunc(400*time.Millisecond, func() { stopCmd(prev) })
-		}
-		_ = cmd.Wait()
-		au.mu.Lock()
-		if au.cur == cmd {
-			au.cur = nil
-		}
-		au.mu.Unlock()
+		// The page before rings on under the new one's first notes, and its
+		// chord coming in, as it fades.
+		fadeOut(prev, 450*time.Millisecond)
 	}()
 }
 
-// onbPrepare writes the scores ahead, as the guide opens, so that each
-// page sounds as it comes.
+// onbPrepare makes the scores ahead, as the guide opens, so that each page
+// sounds as soon as it comes; and clears the files an earlier version
+// wrote for the system's player.
 func (m *mainUI) onbPrepare(still bool) {
-	dir := m.sndDir()
-	if dir == "" {
-		return
-	}
 	go func() {
 		q := !uiSoundsOn()
 		onbSound.mu.Lock()
 		onbSound.quiet = q
 		onbSound.mu.Unlock()
-		// The scores of an earlier version go.
-		old, _ := filepath.Glob(filepath.Join(dir, "onboarding-*.wav"))
-		for _, f := range old {
-			if !strings.HasSuffix(f, "-"+strconv.Itoa(sndVersion)+".wav") {
+		if m.a != nil && m.a.dirs.Cache != "" {
+			old, _ := filepath.Glob(filepath.Join(m.a.dirs.Cache, "onboarding-*.wav"))
+			for _, f := range old {
 				_ = os.Remove(f)
 			}
 		}
@@ -180,13 +179,13 @@ func (m *mainUI) onbPrepare(still bool) {
 			if still {
 				name += "-still"
 			}
-			sndFile(dir, name)
+			onbSound.sound(name)
 		}
-		sndFile(dir, "chime")
+		onbSound.sound("chime")
 	}()
 }
 
-// onbHush stops the score playing, after a while.
+// onbHush fades out the score playing, after a while.
 func onbHush(after time.Duration) {
 	au := onbSound
 	au.mu.Lock()
@@ -195,7 +194,7 @@ func onbHush(after time.Duration) {
 	au.cur = nil
 	au.mu.Unlock()
 	if cur != nil {
-		time.AfterFunc(after, func() { stopCmd(cur) })
+		time.AfterFunc(after, func() { fadeOut(cur, 220*time.Millisecond) })
 	}
 }
 
@@ -216,23 +215,27 @@ func onbMuted() bool {
 }
 
 // onbChime plays the last sound as the compass flies home, the scene's
-// score giving way to it.
+// score giving way to it: it starts so that what it has for the landing
+// falls as the compass lands, the output's own lead included.
 func (m *mainUI) onbChime() {
-	dir := m.sndDir()
-	if dir == "" || onbMuted() {
+	if onbMuted() {
 		onbHush(150 * time.Millisecond)
 		return
 	}
-	// It starts so that what it has for the landing falls as the compass
-	// lands, the player's own start included.
 	lead := time.Duration((onbFly - sndLead) * float32(time.Second))
-	onbHush(lead + 60*time.Millisecond)
-	go func() {
-		time.Sleep(lead)
-		if path, ok := sndFile(dir, "chime"); ok {
-			_ = playSound(path)
+	onbHush(lead)
+	snd := onbSound.sound("chime")
+	onbSound.mu.Lock()
+	quiet := onbSound.quiet
+	onbSound.mu.Unlock()
+	if snd == nil || quiet {
+		return
+	}
+	time.AfterFunc(lead, func() {
+		if !onbMuted() {
+			snd.NewPlayer().SetVolume(0.8).Play()
 		}
-	}()
+	})
 }
 
 // uiSoundsOn reports whether the system plays interface sounds: the Mac's
@@ -247,47 +250,19 @@ func uiSoundsOn() bool {
 	return err != nil || strings.TrimSpace(string(out)) != "0"
 }
 
-// soundCmd is the system's player playing path at volume (0 to 1, where
-// the player has one), or nil where there is none.
-func soundCmd(path string, volume float64) *exec.Cmd {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("afplay", "-v", strconv.FormatFloat(volume, 'f', 2, 64), path)
-	case "windows":
-		q := strings.ReplaceAll(path, "'", "''")
-		cmd = exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "(New-Object Media.SoundPlayer '"+q+"').PlaySync()")
-	default:
-		for _, p := range [][]string{{"paplay"}, {"pw-play"}, {"aplay", "-q"}} {
-			if _, err := exec.LookPath(p[0]); err == nil {
-				cmd = exec.Command(p[0], append(p[1:], path)...)
-				break
-			}
-		}
+// playWAV plays a WAV to its end, for listening to the scores in a test.
+func playWAV(wav []byte) error {
+	snd, err := audio.DecodeSound(wav)
+	if err != nil {
+		return err
 	}
-	if cmd != nil {
-		hideConsole(cmd)
+	done := make(chan struct{})
+	p := snd.NewPlayer().SetVolume(0.8)
+	p.OnEnd(func() { close(done) })
+	p.Play()
+	select {
+	case <-done:
+	case <-time.After(snd.Duration() + 2*time.Second):
 	}
-	return cmd
-}
-
-// playSound plays a WAV file to its end, if the system can and its
-// interface sounds are on.
-func playSound(path string) error {
-	if !uiSoundsOn() {
-		return nil
-	}
-	cmd := soundCmd(path, 0.8)
-	if cmd == nil {
-		return nil
-	}
-	timer := time.AfterFunc(10*time.Second, func() { stopCmd(cmd) })
-	defer timer.Stop()
-	return cmd.Run()
-}
-
-func stopCmd(cmd *exec.Cmd) {
-	if cmd != nil && cmd.Process != nil {
-		_ = cmd.Process.Kill()
-	}
+	return audio.Err()
 }

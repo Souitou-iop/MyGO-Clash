@@ -270,7 +270,7 @@ func TestScores(t *testing.T) {
 				t.Fatal(err)
 			}
 			if os.Getenv("MYGO_ONB_PLAY") != "" {
-				if err := playSound(path); err != nil {
+				if err := playWAV(wav); err != nil {
 					t.Errorf("%s: play: %v", name, err)
 				}
 			}

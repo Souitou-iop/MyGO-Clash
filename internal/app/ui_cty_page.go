@@ -700,8 +700,9 @@ func (m *mainUI) sitesDetail(c *ui.Context, running bool) {
 			code := tools.RegionCode(reg)
 			row := ui.ButtonBase(c.Key("r-" + reg)).Row().Absolute().Left(0).Right(0).Height(regionRowH).
 				PaddingStart(10).PaddingEnd(10).Gap(8).Radius(9).AlignItems(ui.Center).Label(m.countryName(code))
-			pressed := row.Pressed()
-			_, dy, _ := row.Dragged()
+			// Held, wherever the pointer is: Pressed is false while it is
+			// outside the row, which a quick drag outruns.
+			_, dy, pressed := row.Dragged()
 			now := c.Now()
 			switch {
 			case pressed && s.regionPress == "":

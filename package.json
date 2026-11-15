@@ -27,7 +27,7 @@
     "@tanstack/react-virtual": "latest",
     "flag-icons": "^7.6.0",
     "lucide-react": "latest",
-    "mygo-runtime": "^0.9.0",
+    "mygo-runtime": "^0.9.1",
     "react": "^19",
     "react-dom": "^19",
     "zustand": "^5"

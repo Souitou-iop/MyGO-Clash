@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4f8fc0" alt="平台">
   <img src="https://img.shields.io/badge/core-mihomo%201.19.33-e2617f" alt="内核">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2a7ab0" alt="许可证">
-  <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="状态">
+  <img src="https://img.shields.io/badge/status-stable-3fa66b" alt="状态">
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 <p align="center"><sub><a href="docs/showcase/promo.mp4">观看 30 秒宣传片（MP4，有声）</a> · <a href="docs/showcase/hero-dark.gif">快捷面板速览（GIF）</a> · <a href="docs/showcase/hero-light.gif">浅色主题（GIF）</a></sub></p>
 
 > [!NOTE]
-> MyGO-Clash 目前处于 beta 阶段。界面和主要功能已在 macOS（Apple Silicon）和 Windows 上实际使用；Linux 尚未在真实环境中测试。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
+> 从 1.0 起，MyGO-Clash 的主窗口由 MyGo 原生绘制。界面和主要功能已在 macOS（Apple Silicon）和 Windows 上实际使用；Linux 尚未在真实环境中测试。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
 
 ## 功能
 
@@ -141,7 +141,7 @@ Claude Desktop、Cursor 等客户端用 JSON 配置：
 
 ## 下载
 
-可以从 [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) 页面下载最新版本（目前是 beta），也可以从源码构建（见下文）：
+可以从 [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) 页面下载最新版本，也可以从源码构建（见下文）：
 
 | 系统 | 安装包 | 自动更新 |
 |---|---|---|

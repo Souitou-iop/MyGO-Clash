@@ -102,8 +102,9 @@ func (m *mainUI) favoriteGrid(c *ui.Context, of []tools.Site, card func(tools.Si
 	wrap.Children(func() {
 		for i, st := range of {
 			box := ui.Column(c.Key(st.ID)).Absolute().Width(cellW).Height(siteCardH)
-			pressed := box.Pressed()
-			dx, dy, _ := box.Dragged()
+			// Held, wherever the pointer is: Pressed is false while it is
+			// outside the card, which a quick drag outruns.
+			dx, dy, pressed := box.Dragged()
 			now := c.Now()
 			switch {
 			case pressed && s.favPress == "":

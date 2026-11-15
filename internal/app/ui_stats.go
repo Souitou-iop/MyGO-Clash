@@ -125,7 +125,7 @@ func (m *mainUI) statsView(c *ui.Context) {
 			}
 			s.rng = i
 		}
-		m.iconButton(c, "more", icMoreHorizontal, locales.StatsMore()).PopoverMenu(func(menu *ui.Menu) {
+		m.iconButton(c, "more", icMoreHorizontal, locales.StatsMore()).PopoverMenuButton(func(menu *ui.Menu) {
 			exportAs := func(format string) {
 				from, to := "", ""
 				if s.report != nil {
@@ -169,7 +169,7 @@ func (m *mainUI) statsView(c *ui.Context) {
 					m.run(locales.CommonFailed(), func() error { return Stats{a}.Clear(context.Background()) }, func(error) { s.key = "" })
 				})
 			}
-		})
+		}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
 	})
 	ui.Scroll(c.Key("stats")).TrackScroll(m.keepScroll("stats")).Grow(1).Padding(4, 22, 22).Gap(14).Children(func() {
 		// The days to choose fold in as the range becomes custom.
@@ -569,7 +569,7 @@ func (m *mainUI) devicePicker(c *ui.Context, me string) {
 			}
 		}
 	}
-	m.button(c, "devices", label, icMonitorSmartphone, "").PopoverMenu(func(menu *ui.Menu) {
+	m.button(c, "devices", label, icMonitorSmartphone, "").PopoverMenuButton(func(menu *ui.Menu) {
 		if menu.Item(locales.StatsAllDevices()).Checked(all).Chosen() {
 			if all {
 				s.picked = nil

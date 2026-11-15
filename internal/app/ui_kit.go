@@ -10,6 +10,11 @@ import (
 
 // The main window's own widgets, in the app's look.
 
+// gutter gives a scroll container a strip of its own at its end, from
+// DIPs wide, taken from the padding around it, for its scroll bar to lie
+// in rather than over what scrolls; what scrolls keeps its width.
+func gutter(e ui.Element, from float32) ui.Element { return e.MarginEnd(-from).PaddingEnd(from) }
+
 // iconButton is a small button with an icon alone, named by its tip.
 func (m *mainUI) iconButton(c *ui.Context, key any, icon *ui.SVG, tip string) ui.Element {
 	p := m.pal

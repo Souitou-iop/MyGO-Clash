@@ -153,3 +153,22 @@ func TestKeepForever(t *testing.T) {
 		t.Fatalf("after keeping 30 days: %+v", r)
 	}
 }
+
+// A query narrowed to an hour counts only what moved in that hour of the
+// day.
+func TestWhereHour(t *testing.T) {
+	s := newStore(t)
+	s.Observe(snap(0, 0))
+	s.Observe(snap(0, 0, conn("a", "github.com", "git", 1, 100, "JP1", "Proxy")))
+	s.now = func() time.Time { return noon.Add(2 * time.Hour) }
+	s.Observe(snap(0, 0, conn("a", "github.com", "git", 1, 100, "JP1", "Proxy"), conn("b", "x.com", "chrome", 2, 300, "HK1", "Proxy")))
+	if r := s.Query(StatsQuery{Range: "today", Where: map[string]string{WhereHour: "12"}}); r.Down != 100 || len(r.Apps) != 1 || r.Apps[0].Name != "git" {
+		t.Fatalf("12h: down %d apps %+v", r.Down, r.Apps)
+	}
+	if r := s.Query(StatsQuery{Range: "today", Where: map[string]string{WhereHour: "14"}}); r.Down != 300 || r.Apps[0].Name != "chrome" {
+		t.Fatalf("14h: down %d apps %+v", r.Down, r.Apps)
+	}
+	if r := s.Query(StatsQuery{Range: "today", Where: map[string]string{WhereHour: "03"}}); r.Down != 0 {
+		t.Fatalf("03h: down %d", r.Down)
+	}
+}

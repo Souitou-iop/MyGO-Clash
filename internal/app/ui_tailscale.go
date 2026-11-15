@@ -41,6 +41,9 @@ type tailscalePage struct {
 	qr       *ui.SVG
 	qrFor    string
 	qrWait   time.Time // since when the login card waits for its link
+	qrBusy   bool      // a new link is being asked for
+	qrAsked  bool      // one was asked for as the card first showed
+	pingedAt time.Time // when the home page's sheet last pinged the peers
 }
 
 // qrWaitMax is how long the login card holds the place of a QR code whose
@@ -322,39 +325,85 @@ func (m *mainUI) tsLogin(c *ui.Context, st *coreapi.TailscaleStatus) {
 					})
 				})
 			})
-			// The link to sign in by comes a moment after the state asks for
-			// it: until then its QR code's place breathes, the same size, so
-			// that the card does not jump as the code comes in. A link that
-			// would not come (no way to the control server) or long overdue
-			// leaves no place.
+			// The QR code of the link to sign in by. Its place stays while
+			// the node waits to be signed in: breathing while a link is on its
+			// way (one is asked for as the card first shows, without opening
+			// the browser), the code once it comes, and the way to ask for
+			// another where none came. A press asks for a new one any time.
+			if st.BackendState != "NeedsLogin" {
+				return
+			}
 			if shown != "" {
 				s.qrWait = time.Time{}
 			} else if s.qrWait.IsZero() {
 				s.qrWait = c.Now()
 			}
+			refresh := func() {
+				if s.qrBusy {
+					return
+				}
+				s.qrBusy, s.qrWait = true, time.Now()
+				win := m.window()
+				go func() {
+					u, err := (Tailscale{a}).Login(context.Background(), "")
+					win.Update(func() {
+						s.qrBusy, s.qrWait = false, time.Now()
+						if err != nil {
+							m.notices = append(m.notices, Notice{Level: "error", Message: locales.TsLoginFailed(), Detail: err.Error()})
+							return
+						}
+						if u != "" {
+							s.loginURL = u
+						}
+					})
+				}()
+			}
+			if shown == "" && !s.qrAsked {
+				s.qrAsked = true
+				refresh()
+			}
 			reachable := st.ControlProbe == nil || st.ControlProbe.Reachable
-			waiting := shown == "" && st.BackendState == "NeedsLogin" && reachable && c.Now().Sub(s.qrWait) < qrWaitMax
-			if shown == "" && !waiting {
-				return
+			waiting := shown == "" && (s.qrBusy || (reachable && c.Now().Sub(s.qrWait) < qrWaitMax))
+			if waiting {
+				c.After(qrWaitMax - c.Now().Sub(s.qrWait))
 			}
 			ui.Column(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Box(c.Key("qr")).Size(168, 168).Radius(8).Clip().Children(func() {
-					if q := m.qrImage(shown); q != nil {
-						ui.Box(c.Key("code")).Absolute().Left(0).Top(0).Right(0).Bottom(0).Transition(revealIn).Children(func() { ui.Image(c, q).Fill() })
-					} else {
-						ui.Box(c.Key("wait")).Absolute().Left(0).Top(0).Right(0).Bottom(0).Transition(revealIn).Children(func() {
-							m.skeleton(c, 168).Width(168)
-						})
+					state := "code"
+					switch {
+					case shown != "" && !s.qrBusy:
+					case waiting || s.qrBusy:
+						state = "wait"
+					default:
+						state = "none"
 					}
+					ui.Box(c.Key(state)).Absolute().Left(0).Top(0).Right(0).Bottom(0).AlignItems(ui.Center).Justify(ui.Center).Transition(revealIn).Children(func() {
+						switch state {
+						case "code":
+							if q := m.qrImage(shown); q != nil {
+								ui.Image(c, q).Fill()
+							}
+						case "wait":
+							m.skeleton(c, 168).Width(168)
+						default:
+							ui.Box(c).Absolute().Left(0).Top(0).Right(0).Bottom(0).Background(p.Surface2)
+							if m.iconButton(c, "again", icRefreshCw, locales.CommonRefresh()).Size(44, 44).Clicked() {
+								refresh()
+							}
+						}
+					})
 				})
 				ui.Text(c, locales.TsScanHint()).FontSize(11.5).TextColor(p.Faint).TextAlign(ui.Center).MaxWidth(180).Wrap()
 				ui.Row(c).Gap(6).Children(func() {
-					if m.button(c, "open", locales.CommonOpen(), icExternalLink, "").Disabled(waiting).Clicked() {
+					if m.button(c, "open", locales.CommonOpen(), icExternalLink, "").Disabled(shown == "").Clicked() {
 						go mygo.Shell.OpenExternal(shown)
 					}
-					if m.button(c, "copy", locales.CommonCopy(), icCopy, "").Disabled(waiting).Clicked() {
+					if m.button(c, "copy", locales.CommonCopy(), icCopy, "").Disabled(shown == "").Clicked() {
 						mygo.Clipboard.WriteText(shown)
 						c.Toast(locales.CommonCopied())
+					}
+					if m.spinButton(c, "refresh", icRefreshCw, locales.CommonRefresh(), s.qrBusy).Clicked() {
+						refresh()
 					}
 				})
 			})

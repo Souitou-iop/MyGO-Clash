@@ -307,7 +307,7 @@ func (m *mainUI) profileTile(c *ui.Context, pr *profiles.Profile) {
 				})
 			})
 			more := m.iconButton(c, "more", icMoreHorizontal, "")
-			more.PopoverMenu(func(menu *ui.Menu) {
+			more.PopoverMenuButton(func(menu *ui.Menu) {
 				if menu.Item(locales.ProfilesEditInfo()).Chosen() {
 					m.openProfileDialog(pr)
 				}
@@ -388,7 +388,7 @@ func (m *mainUI) profileTile(c *ui.Context, pr *profiles.Profile) {
 						move(1)
 					}
 				}
-			})
+			}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
 		})
 		if pr.Desc != "" {
 			ui.Text(c, pr.Desc).FontSize(12).TextColor(p.TextMuted).SingleLine()
@@ -720,7 +720,7 @@ func (m *mainUI) editorDialog(c *ui.Context) {
 				editor.View(c.Key(s.editUID), s.code).Grow(1).FillWidth().AutoFocus()
 			})
 			if len(s.codeLogs) > 0 {
-				ui.Scroll(c).MaxHeight(130).Gap(4).Children(func() { m.enhanceLog(c, s.codeLogs) })
+				gutter(ui.Scroll(c).MaxHeight(130).Gap(4), 14).Children(func() { m.enhanceLog(c, s.codeLogs) })
 			}
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				hint := "⌘S " + locales.CommonSave()
@@ -891,7 +891,7 @@ func (m *mainUI) seqDialog(c *ui.Context) {
 				case s.seqTab == 2:
 					form.Children(func() {
 						ui.SearchField(c.Key("q"), &s.seqQ).Placeholder(locales.CommonSearch())
-						ui.Scroll(c).MaxHeight(200).Children(func() {
+						ui.Scroll(c).MaxHeight(200).PaddingEnd(12).Children(func() {
 							q := strings.ToLower(s.seqQ)
 							n := 0
 							for _, name := range s.seqOwn {
@@ -937,7 +937,7 @@ func (m *mainUI) seqDialog(c *ui.Context) {
 					form.Children(func() { m.groupForm(c, add) })
 				}
 			})
-			ui.Scroll(c.Key("items")).Grow(1).Basis(0).MinHeight(120).Radius(10).Border(1, p.Border).Children(func() {
+			ui.Scroll(c.Key("items")).Grow(1).Basis(0).MinHeight(120).Radius(10).Border(1, p.Border).PaddingEnd(10).Children(func() {
 				// Each tab's items slide in from its side.
 				m.switchPane(c, "seq-items", s.seqTab, 0, func() {
 					var items []any
@@ -1067,7 +1067,7 @@ func (m *mainUI) groupForm(c *ui.Context, add func(...any)) {
 	}
 	ui.SearchField(c.Key("filter"), &s.group[3]).Placeholder(locales.EditorMembers()).Width(260)
 	all := slices.Concat(s.seqNames.Builtin[:min(2, len(s.seqNames.Builtin))], s.seqNames.Groups, s.seqNames.Proxies)
-	ui.Scroll(c).MaxHeight(140).Children(func() {
+	ui.Scroll(c).MaxHeight(140).PaddingEnd(12).Children(func() {
 		ui.Row(c).Wrap().Gap(6).Children(func() {
 			for _, n := range all {
 				if f := strings.ToLower(s.group[3]); f != "" && !strings.Contains(strings.ToLower(n), f) {
@@ -1175,7 +1175,7 @@ func (m *mainUI) enhanceLogsDialog(c *ui.Context) {
 				m.empty(c, locales.ProfilesNoLogs(), nil)
 				return
 			}
-			ui.Scroll(c).Grow(1).Gap(14).Children(func() {
+			gutter(ui.Scroll(c).Grow(1).Gap(14), 14).Children(func() {
 				for _, uid := range uids {
 					ui.Column(c.Key(uid)).Gap(6).Children(func() {
 						ui.Text(c, cmp.Or(names[uid], uid)).FontSize(12).FontWeight(600).TextColor(p.TextMuted)
@@ -1242,7 +1242,7 @@ func (m *mainUI) subStoreDialog(c *ui.Context) {
 			case len(s.subItems) == 0:
 				m.empty(c, locales.SubstoreEmpty(), nil)
 			default:
-				ui.Scroll(c).Grow(1).Children(func() {
+				gutter(ui.Scroll(c).Grow(1), 14).Children(func() {
 					m.rows(c, "items", func() {
 						for _, it := range s.subItems {
 							kind := locales.SubstoreSub()

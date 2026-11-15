@@ -34,6 +34,9 @@ type ProxyItem struct {
 	Now      string `json:"now,omitempty"`
 	Icon     string `json:"icon,omitempty"`
 	Hidden   bool   `json:"hidden,omitempty"`
+	// History is the delays of its last tests, oldest first, 0 for one that
+	// failed: how steady it is, beside how fast it was last.
+	History []int `json:"history,omitempty"`
 }
 
 // ProxyGroup is a group of proxies.
@@ -69,26 +72,40 @@ type ProviderView struct {
 	TestURL          string                    `json:"testUrl,omitempty"`
 }
 
-func lastDelay(p coreapi.Proxy, testURL string) (int, bool) {
-	hist := p.History
-	alive := p.Alive
+// historyOf is a proxy's delay tests, against the group's test address
+// where it has one.
+func historyOf(p coreapi.Proxy, testURL string) ([]coreapi.DelayHistory, bool) {
+	hist, alive := p.History, p.Alive
 	if testURL != "" {
 		if st, ok := p.Extra[testURL]; ok {
 			hist, alive = st.History, st.Alive
 		}
 	}
+	return hist, alive
+}
+
+func lastDelay(p coreapi.Proxy, testURL string) (int, bool) {
+	hist, alive := historyOf(p, testURL)
 	if len(hist) == 0 {
 		return -1, alive
 	}
 	return hist[len(hist)-1].Delay, alive
 }
 
+// historyKept is how many of a node's last tests the pages are given.
+const historyKept = 12
+
 func itemOf(p coreapi.Proxy, testURL string) ProxyItem {
 	d, alive := lastDelay(p, testURL)
+	hist, _ := historyOf(p, testURL)
+	var delays []int
+	for _, h := range hist[max(0, len(hist)-historyKept):] {
+		delays = append(delays, h.Delay)
+	}
 	return ProxyItem{
 		Name: p.Name, Type: p.Type, UDP: p.UDP, XUDP: p.XUDP, TFO: p.TFO, MPTCP: p.MPTCP,
 		Alive: alive, Delay: d, Provider: p.ProviderName, IsGroup: len(p.All) > 0 || p.Now != "",
-		Now: p.Now, Icon: p.Icon, Hidden: p.Hidden,
+		Now: p.Now, Icon: p.Icon, Hidden: p.Hidden, History: delays,
 	}
 }
 

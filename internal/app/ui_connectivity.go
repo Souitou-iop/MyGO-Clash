@@ -110,6 +110,10 @@ type connectivityPage struct {
 type uiCache struct {
 	Unlock map[string]unlockResult `json:"unlock,omitempty"`
 	Speed  *speedResult            `json:"speed,omitempty"`
+	// What the home page's sheets show over days (ui_history.go).
+	ProfileUse map[string][]useMark `json:"profileUse,omitempty"`
+	Takeover   []onMark             `json:"takeover,omitempty"`
+	CoreStarts []int64              `json:"coreStarts,omitempty"`
 }
 
 var uiCacheMu sync.Mutex
@@ -661,7 +665,7 @@ func (m *mainUI) sitesDialog(c *ui.Context, running bool) {
 					}
 				})
 			default:
-				ui.Scroll(c).Grow(1).Gap(10).Children(func() {
+				gutter(ui.Scroll(c).Grow(1).Gap(10), 14).Children(func() {
 					for _, g := range tools.SiteCategories(s.sites) {
 						var of []tools.Site
 						for _, st := range s.sites {
@@ -794,7 +798,7 @@ func (m *mainUI) unlockDialog(c *ui.Context) {
 				ui.Icon(c, icSlidersHorizontal).FontSize(16).TextColor(p.TextMuted)
 				ui.Text(c, locales.UnlockManage()).FontSize(15).FontWeight(650)
 			})
-			ui.Scroll(c).Grow(1).Gap(10).Children(func() {
+			gutter(ui.Scroll(c).Grow(1).Gap(10), 14).Children(func() {
 				for _, g := range tools.UnlockGroups {
 					var of []tools.Unlock
 					for _, u := range catalog {

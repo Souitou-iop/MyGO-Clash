@@ -51,6 +51,17 @@ type dashState struct {
 	backStart      bool
 	growAfter      bool // grow on into the page once open
 	leftFull       bool // the page grown into took the home page's place
+
+	nodeOrder int // how a group's sheet orders its nodes: as listed, by delay, by region
+
+	hist   uiCache // what the sheets show over days, as last read
+	histAt time.Time
+
+	hour       string             // the hour today's traffic sheet narrows to, "" for all day
+	reportHour string             // the hour the report was made for
+	allDay     *usage.StatsReport // today's report for all day, which the hours and yesterday come from
+	closed     []usage.Closed
+	closedAt   time.Time
 }
 
 // flagOf finds the country of a node in its name: an emoji flag, or a code
@@ -380,62 +391,7 @@ func (m *mainUI) compassTile(c *ui.Context, t ui.Element) {
 	// choices under them.
 	box := t.LayoutBounds()
 	side := box.W == 0 || box.W >= 330
-	drawDial := func(size float32) {
-		dial := ui.ButtonBase(c.Key("dial")).Shrink(0).Cursor(ui.CursorPointer).Label(locales.HomeTakeover())
-		sz := dial.AnimateTo("size", size, ui.Animation{Duration: 280 * time.Millisecond, Ease: easeStd})
-		dial.Width(sz).Height(sz).Radius(sz / 2)
-		// The star springs upright, past it a little, and settles.
-		lit := dial.AnimateTo("on", b2f(on), ui.Animation{Spring: ui.SpringOptions{Stiffness: 110, Damping: 11}})
-		hover := dial.Animate("hover", b2f(dial.Hovered()), 140*time.Millisecond)
-		k := dial.AnimateTo("press", map[bool]float32{true: 0.96, false: 1}[dial.Pressed()], pressSpring)
-		dial.Scale(k, k)
-		tone := ""
-		switch s.Core.Status {
-		case coremgr.StatusError:
-			tone = "error"
-		case coremgr.StatusRunning:
-		default:
-			tone = "warn"
-		}
-		dial.Draw(func(pt *ui.Painter, r ui.Rect) {
-			cx, cy := r.X+r.W/2, r.Y+r.H/2
-			l := float32(math.Max(0, math.Min(1, float64(lit))))
-			bg := p.Surface2.Mix(p.Surface3, hover).Mix(p.Card.Mix(p.Accent, 0.16+0.04*hover), l)
-			pt.FillPath((&ui.Path{}).Circle(cx, cy, r.W/2), bg)
-			switch tone {
-			case "error":
-				pt.StrokePath((&ui.Path{}).Circle(cx, cy, r.W/2-1), 1.5, p.Danger.Alpha(0.8))
-			case "warn":
-				pt.StrokePath((&ui.Path{}).Circle(cx, cy, r.W/2-1).Dash(0, 3, 5), 1.5, p.Warning.Alpha(0.9))
-			}
-			turn := (1 - lit) * -38
-			star := r.W * 0.62
-			pt.Transform(ui.Translation(-cx, -cy).Then(ui.Scaling(0.92+0.08*l, 0.92+0.08*l)).Then(ui.Translation(cx, cy)), 0, 0, func() {
-				if l < 0.999 {
-					drawCompass(pt, cx, cy, star, monoLook(p.Faint, turn))
-				}
-				if l > 0.01 {
-					drawCompass(pt, cx, cy, star, compassLook{Turn: turn, Alpha: l})
-				}
-			})
-		})
-		if dial.Clicked() {
-			switch {
-			case h.busy != "":
-			case !running:
-				h.busy = "core"
-				m.run(locales.CommonFailed(), func() error { return Core{a}.Restart(context.Background()) }, func(error) { h.busy = "" })
-			case on:
-				setTakeover(false, false)
-			case d.method == "tun":
-				if useTun() {
-					setTakeover(false, true)
-				}
-			default:
-				setTakeover(true, false)
-			}
-		}
-	}
+	drawDial := func(size float32) { m.takeoverDial(c, size) }
 	stateText := func() {
 		// What is true now.
 		state, col := locales.HomeStateOff(), p.Text
@@ -979,7 +935,7 @@ func (m *mainUI) todayTile(c *ui.Context, t ui.Element) {
 // delay is a button of its own, which tests the node; it is returned too.
 func (m *mainUI) nodeTile(c *ui.Context, key string, it *ProxyItem, delay int, active, testing bool) (ui.Element, ui.Element) {
 	p := m.pal
-	b := ui.ButtonBase(c.Key(key)).Column().Height(96).Padding(12, 14).Radius(16).MinWidth(0).AlignItems(ui.Stretch).Tooltip(it.Name)
+	b := ui.ButtonBase(c.Key(key)).Column().Height(104).Padding(12, 14).Radius(16).MinWidth(0).AlignItems(ui.Stretch).Tooltip(it.Name)
 	bg := p.Surface2
 	switch {
 	case active:
@@ -1019,6 +975,12 @@ func (m *mainUI) nodeTile(c *ui.Context, key string, it *ProxyItem, delay int, a
 			})
 		})
 		ui.Spacer(c)
+		// Its last tests, as a trail: how steady it is, beside how fast.
+		if len(it.History) >= 2 {
+			m.trail(c, "trail", historyVals(it.History), 0, 14, p.Accent.Alpha(0.85)).Margin(0, 0, 4)
+		} else {
+			ui.Box(c).Height(14).Margin(0, 0, 4)
+		}
 		sub := it.Type
 		if it.IsGroup && it.Now != "" {
 			sub = "→ " + it.Now
@@ -1030,6 +992,98 @@ func (m *mainUI) nodeTile(c *ui.Context, key string, it *ProxyItem, delay int, a
 		}
 	})
 	return b, test
+}
+
+// historyVals is delay tests as a trail draws them.
+func historyVals(h []int) []float64 {
+	out := make([]float64, len(h))
+	for i, d := range h {
+		out[i] = float64(d)
+	}
+	return out
+}
+
+// takeoverDial is the switch that takes traffic over, size wide: the
+// app's star on a disc, grey and turned aside while traffic goes its own
+// way, upright in the band's blue as the app takes it over. A press takes
+// traffic over the way chosen, or lets it go; it starts a stopped core.
+func (m *mainUI) takeoverDial(c *ui.Context, size float32) {
+	h, d, p, a, s := &m.home, &m.dash, m.pal, m.a, m.state
+	running := s.Core.Status == coremgr.StatusRunning
+	on := running && (s.SystemProxy || s.Tun)
+	setTakeover := func(sys, tun bool) {
+		h.busy = "takeover"
+		m.run(locales.CommonFailed(), func() error {
+			_, err := (SettingsService{a}).Patch(context.Background(), map[string]any{
+				"systemProxy": map[string]any{"enabled": sys}, "tun": map[string]any{"enabled": tun},
+			})
+			return err
+		}, func(error) { h.busy = "" })
+	}
+	useTun := func() bool {
+		if s.TunAvailable {
+			return true
+		}
+		if s.Service.Supported && h.busy == "" {
+			h.busy = "svc"
+			m.run("", func() error { a.installServiceForTun(); return nil }, func(error) { h.busy = "" })
+		}
+		return false
+	}
+	dial := ui.ButtonBase(c.Key("dial")).Shrink(0).Cursor(ui.CursorPointer).Label(locales.HomeTakeover())
+	sz := dial.AnimateTo("size", size, ui.Animation{Duration: 280 * time.Millisecond, Ease: easeStd})
+	dial.Width(sz).Height(sz).Radius(sz / 2)
+	// The star springs upright, past it a little, and settles.
+	lit := dial.AnimateTo("on", b2f(on), ui.Animation{Spring: ui.SpringOptions{Stiffness: 110, Damping: 11}})
+	hover := dial.Animate("hover", b2f(dial.Hovered()), 140*time.Millisecond)
+	k := dial.AnimateTo("press", map[bool]float32{true: 0.96, false: 1}[dial.Pressed()], pressSpring)
+	dial.Scale(k, k)
+	tone := ""
+	switch s.Core.Status {
+	case coremgr.StatusError:
+		tone = "error"
+	case coremgr.StatusRunning:
+	default:
+		tone = "warn"
+	}
+	dial.Draw(func(pt *ui.Painter, r ui.Rect) {
+		cx, cy := r.X+r.W/2, r.Y+r.H/2
+		l := float32(math.Max(0, math.Min(1, float64(lit))))
+		bg := p.Surface2.Mix(p.Surface3, hover).Mix(p.Card.Mix(p.Accent, 0.16+0.04*hover), l)
+		pt.FillPath((&ui.Path{}).Circle(cx, cy, r.W/2), bg)
+		switch tone {
+		case "error":
+			pt.StrokePath((&ui.Path{}).Circle(cx, cy, r.W/2-1), 1.5, p.Danger.Alpha(0.8))
+		case "warn":
+			pt.StrokePath((&ui.Path{}).Circle(cx, cy, r.W/2-1).Dash(0, 3, 5), 1.5, p.Warning.Alpha(0.9))
+		}
+		turn := (1 - lit) * -38
+		star := r.W * 0.62
+		pt.Transform(ui.Translation(-cx, -cy).Then(ui.Scaling(0.92+0.08*l, 0.92+0.08*l)).Then(ui.Translation(cx, cy)), 0, 0, func() {
+			if l < 0.999 {
+				drawCompass(pt, cx, cy, star, monoLook(p.Faint, turn))
+			}
+			if l > 0.01 {
+				drawCompass(pt, cx, cy, star, compassLook{Turn: turn, Alpha: l})
+			}
+		})
+	})
+	if dial.Clicked() {
+		switch {
+		case h.busy != "":
+		case !running:
+			h.busy = "core"
+			m.run(locales.CommonFailed(), func() error { return Core{a}.Restart(context.Background()) }, func(error) { h.busy = "" })
+		case on:
+			setTakeover(false, false)
+		case d.method == "tun":
+			if useTun() {
+				setTakeover(false, true)
+			}
+		default:
+			setTakeover(true, false)
+		}
+	}
 }
 
 // heroGroup is the group whose exit leads the page: the global one in

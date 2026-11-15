@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"math"
 	"regexp"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 )
@@ -152,4 +153,15 @@ func drawSparkle(p *ui.Painter, x, y, r float32, c ui.Color) {
 	}
 	path := (&ui.Path{}).MoveTo(x, y-r).QuadTo(x, y, x+r, y).QuadTo(x, y, x, y+r).QuadTo(x, y, x-r, y).QuadTo(x, y, x, y-r).Close()
 	p.FillPath(path, c)
+}
+
+// compassSpin gives a compass mark a spin as b, its button, is pressed: a
+// whole turn more each press, springing past north and back as a needle
+// settles. It returns the degrees to turn the mark by.
+func compassSpin(b ui.Element) float32 {
+	turns := ui.Local(b, "spin", func() float32 { return 0 })
+	if b.Clicked() {
+		*turns += 360
+	}
+	return b.Spring("spin", *turns, ui.SpringOptions{Duration: 1100 * time.Millisecond, Bounce: 0.32})
 }

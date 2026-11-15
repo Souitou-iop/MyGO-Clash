@@ -23,9 +23,9 @@ const (
 	nA6, nB6, nCs7, nE7                       = 1760.0, 1975.53, 2217.46, 2637.02
 )
 
-// sndLead is how far a score runs ahead of the drawing: the player's own
-// start.
-const sndLead = 0.07
+// sndLead is how far a score runs ahead of the drawing: how far ahead the
+// audio output mixes before it is heard (audio.LatencyInteractive).
+const sndLead = 0.04
 
 // onbScoreNames are the scores the guide plays.
 var onbScoreNames = []string{"build", "fly", "home", "traffic", "nodes", "tiles", "radar", "more"}

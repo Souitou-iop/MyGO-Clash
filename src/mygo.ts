@@ -677,6 +677,11 @@ export interface ProxyItem {
   now?: string;
   icon?: string;
   hidden?: boolean;
+  /**
+   * History is the delays of its last tests, oldest first, 0 for one that
+   * failed: how steady it is, beside how fast it was last.
+   */
+  history?: number[];
 }
 
 /** Report says what a sync did. */

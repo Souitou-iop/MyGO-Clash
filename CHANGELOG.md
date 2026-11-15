@@ -2,11 +2,28 @@
 
 The section of each version is what the app's update window shows.
 
-## Unreleased
+## 1.0.0
+
+第一个正式版。主窗口用 MyGo 在 Go 里原生重写：不再由网页视图绘制，每一处交互都有连贯的过渡；首页、连通性与首次引导也都重新设计。/ The first stable release. The main window is rewritten natively in Go with MyGo: no longer drawn by a web view, every interaction moves through continuous transitions, and the home page, connectivity and the first-run guide are designed anew.
 
 ### ✨ 新增功能 / New Features
 
+- **原生主窗口**：首页、代理、订阅、活动、连通性、Tailscale、规则、设置全部改由 MyGo 原生绘制，窗口缩放时布局随之流动重排，切换、展开、增删都有过渡；若遇到问题，可暂时设置环境变量 `MYGO_CLASH_UI=web` 回到旧界面 / A **native main window**: home, proxies, profiles, activity, connectivity, Tailscale, rules and settings are all drawn natively by MyGo; the layout flows as the window resizes, and switching, expanding, adding and removing all move through transitions. Should something go wrong, the environment variable `MYGO_CLASH_UI=web` brings the old interface back for now
+- **全新首页**：罗盘就是接管开关，旁边是出口、实时速率与今日流量；每张卡片都能就地展开为详情——出口节点与它最近的延迟轨迹、当天接管时间环与三种模式示意、订阅用量与按近期速度预计的用完日期、内核与本机状态、按路由的速率、按应用的连接与刚刚关闭的连接、可按小时筛选的流量、Tailscale 网络涟漪图、国内/国外/Cloudflare 三方所见的出口 / A **new home page**: the compass is the switch that takes traffic over, beside the exit, the speed now and today's traffic; every card opens in place into its details — the exit node and its recent delay trail, today's takeover ring and the three modes drawn, the subscription's usage with the day it would run out at its recent pace, the core and this computer, speed by route, connections by app and those just closed, traffic narrowed to any hour, the tailnet as ripples, and the exit as sites at home, sites abroad and Cloudflare see it
+- **连通性独立成页**：出口 IP（三方视角、IP 质量与风险）、329 个网站按 14 类测试（各国网站并入“地区”，国家可拖动排序）、服务解锁 21 项（15 项默认、6 项按需开启，每项显示实际经由的节点，结果也标在对应网站上）、测速 / **Connectivity gets a page of its own**: the exit IP (three views, its quality and risk), 329 sites tested in 14 categories (each country's under “Region”, the countries in an order you drag), 21 service-unlock checks (15 by default, 6 to turn on, each naming the proxy it went through and marked on its site too), and the speed test
+- **常用与网站管理**：常用是一份可拖动排序的收藏；预设网站可以隐藏、随时恢复，自己添加的网站可以删除；以后版本新增的预设网站会自动出现 / **Favorites and site management**: Favorites is a list of shortcuts in an order you drag; preset sites hide and come back at any time, sites you added delete, and presets added by later versions show up by themselves
+- **首次启动引导**：一段带配乐的动画介绍主要功能，可静音，可在“设置”里再看一遍 / A **first-run guide**: an animated tour with its own score shows the main features; it mutes, and replays from the settings
+- **全局隐私开关**：侧边栏的眼睛一键隐藏所有页面上的 IP、地点和运营商，旗帜换成地球 / **One privacy switch for the whole app**: the eye in the sidebar hides every address, place and provider at once, flags turning into a globe
 - 新增**命令行与 MCP**：同一个可执行文件可以用 `ctl` 查状态、切节点、测速、开关系统代理与 TUN、切模式、管理订阅和设置；`mcp` 是一个 stdio MCP 服务器，Claude Code 等 Agent 可以直接操作应用。只走本机 socket，并用令牌鉴权，密钥与订阅地址会掩码，可在设置里用 `agent.enabled` 关闭 / **A command line and MCP**: the same executable answers `ctl` (state, nodes, delay tests, the system proxy and TUN, the mode, profiles and settings) and `mcp`, a stdio MCP server through which agents such as Claude Code drive the app. It goes through a local socket with a token only, masks secrets and subscription URLs, and `agent.enabled` turns it off
+
+### 🔧 改进 / Improvements
+
+- 侧边栏展开与收起一气呵成：图标原地滑动，名称随边缘淡出，网速与按钮滑到位置 / The sidebar folds and unfolds in one motion: the icons glide, the names fade as the edge passes them, and the speed and buttons slide into place
+- 菜单栏网速在未接管流量时显示网卡自身的实时速率，不再停住不动 / The menu bar's speed shows the network card's own rate while the app is not taking traffic over, rather than standing still
+- 按下左上角或“关于”里的罗盘，它会转上一圈再稳稳回正 / Pressing the compass in the corner or in “About” spins it round, and it settles back to north
+- 滚动条不再盖住内容；“更多”菜单按钮单击即可打开 / Scroll bars no longer lie over what scrolls, and the “more” menu buttons open on a click
+- MyGo 框架与 `mygo-runtime` 升级至 0.9.1；引导的配乐改在应用内播放，与画面同步 / Upgrades the MyGo framework and `mygo-runtime` to 0.9.1; the guide's score plays inside the app, in time with the picture
+- 旧版保存的连通性网站列表会自动迁移：自己添加的网站保留，删掉的预设网站改为“已隐藏” / The connectivity site list older versions saved migrates by itself: sites you added stay, and presets you removed become hidden
 
 ## 0.2.32-beta
 

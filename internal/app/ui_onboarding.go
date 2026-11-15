@@ -1841,7 +1841,10 @@ func (s *onbScene) more() {
 	}
 	if k := s.k(0.2, 0.5); k > 0 {
 		q := easeBack(k)
-		s.circle(cloud[0], cloud[1], s.r.H*0.09*q, p.AccentSoft.Alpha(s.a))
+		// The accent's soft fill, made solid on the ground, so that the
+		// lines going into the cloud stop at its edge rather than show
+		// through it.
+		s.circle(cloud[0], cloud[1], s.r.H*0.09*q, p.Theme.Background.Mix(p.Accent, 0.2).Alpha(s.a))
 		s.icon(icCloud, cloud[0], cloud[1], s.r.H*0.095, p.AccentFg.Alpha(s.a), q)
 	}
 	for j, d := range devs {

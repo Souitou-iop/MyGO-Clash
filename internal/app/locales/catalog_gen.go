@@ -2813,6 +2813,16 @@ func (msgs Messages) FlowConns(n string) string {
 	return Catalog.Format(msgs.locale, "flowConns", map[string]any{"n": n})
 }
 
+// HomeAllDay says "All day"
+// in the language the app shows.
+func HomeAllDay() string { return In(i18n.Locale()).HomeAllDay() }
+
+// HomeAllDay says "All day"
+// in the language of msgs.
+func (msgs Messages) HomeAllDay() string {
+	return Catalog.Format(msgs.locale, "homeAllDay", nil)
+}
+
 // HomeApplied says "Configuration applied"
 // in the language the app shows.
 func HomeApplied() string { return In(i18n.Locale()).HomeApplied() }
@@ -2831,6 +2841,16 @@ func HomeAutoFastest() string { return In(i18n.Locale()).HomeAutoFastest() }
 // in the language of msgs.
 func (msgs Messages) HomeAutoFastest() string {
 	return Catalog.Format(msgs.locale, "homeAutoFastest", nil)
+}
+
+// HomeByRoute says "By route"
+// in the language the app shows.
+func HomeByRoute() string { return In(i18n.Locale()).HomeByRoute() }
+
+// HomeByRoute says "By route"
+// in the language of msgs.
+func (msgs Messages) HomeByRoute() string {
+	return Catalog.Format(msgs.locale, "homeByRoute", nil)
 }
 
 // HomeCardControl says "Status & mode"
@@ -3013,6 +3033,16 @@ func (msgs Messages) HomeCustomizeHint() string {
 	return Catalog.Format(msgs.locale, "homeCustomizeHint", nil)
 }
 
+// HomeDaysLeft says "{n} days left"
+// in the language the app shows.
+func HomeDaysLeft(n string) string { return In(i18n.Locale()).HomeDaysLeft(n) }
+
+// HomeDaysLeft says "{n} days left"
+// in the language of msgs.
+func (msgs Messages) HomeDaysLeft(n string) string {
+	return Catalog.Format(msgs.locale, "homeDaysLeft", map[string]any{"n": n})
+}
+
 // HomeExitNow says "Current exit"
 // in the language the app shows.
 func HomeExitNow() string { return In(i18n.Locale()).HomeExitNow() }
@@ -3091,6 +3121,16 @@ func HomeIsp() string { return In(i18n.Locale()).HomeIsp() }
 // in the language of msgs.
 func (msgs Messages) HomeIsp() string {
 	return Catalog.Format(msgs.locale, "homeIsp", nil)
+}
+
+// HomeJustClosed says "Just closed"
+// in the language the app shows.
+func HomeJustClosed() string { return In(i18n.Locale()).HomeJustClosed() }
+
+// HomeJustClosed says "Just closed"
+// in the language of msgs.
+func (msgs Messages) HomeJustClosed() string {
+	return Catalog.Format(msgs.locale, "homeJustClosed", nil)
 }
 
 // HomeJustNow says "Just now"
@@ -3233,6 +3273,16 @@ func (msgs Messages) HomeNoProfile() string {
 	return Catalog.Format(msgs.locale, "homeNoProfile", nil)
 }
 
+// HomeNodeRegions says "Nodes by region"
+// in the language the app shows.
+func HomeNodeRegions() string { return In(i18n.Locale()).HomeNodeRegions() }
+
+// HomeNodeRegions says "Nodes by region"
+// in the language of msgs.
+func (msgs Messages) HomeNodeRegions() string {
+	return Catalog.Format(msgs.locale, "homeNodeRegions", nil)
+}
+
 // HomeNodes says "Proxies"
 // in the language the app shows.
 func HomeNodes() string { return In(i18n.Locale()).HomeNodes() }
@@ -3261,6 +3311,46 @@ func HomeOpenAll() string { return In(i18n.Locale()).HomeOpenAll() }
 // in the language of msgs.
 func (msgs Messages) HomeOpenAll() string {
 	return Catalog.Format(msgs.locale, "homeOpenAll", nil)
+}
+
+// HomeOrderDelay says "By delay"
+// in the language the app shows.
+func HomeOrderDelay() string { return In(i18n.Locale()).HomeOrderDelay() }
+
+// HomeOrderDelay says "By delay"
+// in the language of msgs.
+func (msgs Messages) HomeOrderDelay() string {
+	return Catalog.Format(msgs.locale, "homeOrderDelay", nil)
+}
+
+// HomeOrderListed says "As listed"
+// in the language the app shows.
+func HomeOrderListed() string { return In(i18n.Locale()).HomeOrderListed() }
+
+// HomeOrderListed says "As listed"
+// in the language of msgs.
+func (msgs Messages) HomeOrderListed() string {
+	return Catalog.Format(msgs.locale, "homeOrderListed", nil)
+}
+
+// HomeOrderRegion says "By region"
+// in the language the app shows.
+func HomeOrderRegion() string { return In(i18n.Locale()).HomeOrderRegion() }
+
+// HomeOrderRegion says "By region"
+// in the language of msgs.
+func (msgs Messages) HomeOrderRegion() string {
+	return Catalog.Format(msgs.locale, "homeOrderRegion", nil)
+}
+
+// HomeOtherProfiles says "Other profiles"
+// in the language the app shows.
+func HomeOtherProfiles() string { return In(i18n.Locale()).HomeOtherProfiles() }
+
+// HomeOtherProfiles says "Other profiles"
+// in the language of msgs.
+func (msgs Messages) HomeOtherProfiles() string {
+	return Catalog.Format(msgs.locale, "homeOtherProfiles", nil)
 }
 
 // HomeOtherRoutes says "Other routes"
@@ -3313,6 +3403,16 @@ func HomeRulesLine(rules string, exits string, fallback string) string {
 // in the language of msgs.
 func (msgs Messages) HomeRulesLine(rules string, exits string, fallback string) string {
 	return Catalog.Format(msgs.locale, "homeRulesLine", map[string]any{"rules": rules, "exits": exits, "fallback": fallback})
+}
+
+// HomeRunsOut says "runs out around {date}"
+// in the language the app shows.
+func HomeRunsOut(date string) string { return In(i18n.Locale()).HomeRunsOut(date) }
+
+// HomeRunsOut says "runs out around {date}"
+// in the language of msgs.
+func (msgs Messages) HomeRunsOut(date string) string {
+	return Catalog.Format(msgs.locale, "homeRunsOut", map[string]any{"date": date})
 }
 
 // HomeSignIn says "Sign in"
@@ -3543,6 +3643,16 @@ func HomeVersion() string { return In(i18n.Locale()).HomeVersion() }
 // in the language of msgs.
 func (msgs Messages) HomeVersion() string {
 	return Catalog.Format(msgs.locale, "homeVersion", nil)
+}
+
+// HomeVsYesterday says "vs yesterday {pct}"
+// in the language the app shows.
+func HomeVsYesterday(pct string) string { return In(i18n.Locale()).HomeVsYesterday(pct) }
+
+// HomeVsYesterday says "vs yesterday {pct}"
+// in the language of msgs.
+func (msgs Messages) HomeVsYesterday(pct string) string {
+	return Catalog.Format(msgs.locale, "homeVsYesterday", map[string]any{"pct": pct})
 }
 
 // HomeWhoUses says "Who's using it"

@@ -83,6 +83,12 @@ type mainUI struct {
 	nav      navState
 	onb      onboarding
 	connList []coreapi.Connection
+	// The last trafficLen seconds of the core's memory and connections, and
+	// the last routeLen of what each route (a chain's last proxy) brings
+	// down, for the sheets' trails.
+	memHist   []int64
+	connHist  []int
+	routeHist map[string][]int64
 	upd      *UpdateState
 }
 
@@ -126,6 +132,7 @@ func (m *mainUI) attach(win *mygo.Window) {
 	})
 	go follow(ctx, m.a.memory, func(v coreapi.Memory) {
 		mygo.RunOnMain(func() {
+			m.memHist = keepLast(append(m.memHist, int64(v.Inuse)), trafficLen)
 			if m.memory != int64(v.Inuse) {
 				m.memory = int64(v.Inuse)
 				win.Invalidate()
@@ -135,12 +142,57 @@ func (m *mainUI) attach(win *mygo.Window) {
 	go follow(ctx, m.a.conns, func(v coreapi.Connections) {
 		mygo.RunOnMain(func() {
 			m.connList = v.Connections
+			m.connHist = keepLast(append(m.connHist, len(v.Connections)), trafficLen)
+			m.noteRoutes(v.Connections)
 			if n := len(v.Connections); m.conns != n || m.page == "home" {
 				m.conns = n
 				win.Invalidate()
 			}
 		})
 	})
+}
+
+// routeLen is how many seconds of each route's speed are kept.
+const routeLen = 40
+
+// noteRoutes adds a second of what each route brings down, from the
+// connections now: every route seen keeps going, at nothing once idle,
+// until it has been idle all its routeLen seconds.
+func (m *mainUI) noteRoutes(conns []coreapi.Connection) {
+	now := map[string]int64{}
+	for _, cn := range conns {
+		if len(cn.Chains) > 0 {
+			now[cn.Chains[0]] += cn.DownloadSpeed + cn.UploadSpeed
+		}
+	}
+	if m.routeHist == nil {
+		m.routeHist = map[string][]int64{}
+	}
+	for r := range now {
+		if _, ok := m.routeHist[r]; !ok {
+			m.routeHist[r] = nil
+		}
+	}
+	for r, h := range m.routeHist {
+		h = keepLast(append(h, now[r]), routeLen)
+		idle := true
+		for _, v := range h {
+			idle = idle && v == 0
+		}
+		if idle && len(h) == routeLen {
+			delete(m.routeHist, r)
+			continue
+		}
+		m.routeHist[r] = h
+	}
+}
+
+// keepLast is the last n of s.
+func keepLast[T any](s []T, n int) []T {
+	if len(s) > n {
+		return s[len(s)-n:]
+	}
+	return s
 }
 
 // follow calls fn with the values of a hub until ctx ends.
@@ -179,6 +231,7 @@ func (m *mainUI) refresh() {
 	if a.syncer != nil {
 		sy = a.syncer.statusSnapshot()
 	}
+	go a.noteHistory(state, pv)
 	win.Update(func() { m.st, m.state, m.pv, m.ts, m.sy = st, state, pv, ts, sy })
 }
 
@@ -426,8 +479,12 @@ func (m *mainUI) sidebar(c *ui.Context) {
 		// Brand: the compass stays where the rail centers it.
 		ui.Row(c.Key("brand")).Height(40).Gap(10).AlignItems(ui.Center).DragWindow().Clip().
 			PaddingStart(lerp(18, (railW-30)/2, k)).Children(func() {
-			ui.Box(c).Size(30, 30).Shrink(0).Draw(func(pt *ui.Painter, r ui.Rect) {
-				drawCompass(pt, r.X+r.W/2, r.Y+r.H/2, 34, compassLook{Ring: true})
+			// A press spins it.
+			mark := ui.ButtonBase(c.Key("mark")).Size(30, 30).Shrink(0).Label("MyGO-Clash")
+			pressable(mark)
+			turn := compassSpin(mark)
+			mark.Draw(func(pt *ui.Painter, r ui.Rect) {
+				drawCompass(pt, r.X+r.W/2, r.Y+r.H/2, 34, compassLook{Ring: true, Turn: turn})
 			})
 			if !rail {
 				ui.RichText(c, ui.Span{Text: "MyGO", Weight: 700, Color: p.AccentFg}, ui.Span{Text: "-Clash", Weight: 700}).

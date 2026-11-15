@@ -436,7 +436,7 @@ func (m *mainUI) layoutDialog(c *ui.Context) {
 	m.modal(c, "layout", &open, func() {
 		ui.Column(c).Width(520).MaxHeight(620).Gap(12).Children(func() {
 			ui.Text(c, locales.SettingsLayout()).FontSize(15).FontWeight(650)
-			ui.Scroll(c).Grow(1).Gap(12).Children(func() {
+			gutter(ui.Scroll(c).Grow(1).Gap(12), 14).Children(func() {
 				m.rows(c, "rows", func() {
 					m.swRow(c, "graph", locales.SettingsTrafficGraph(), locales.SettingsTrafficGraphDesc(), st.UI.TrafficGraph, "ui.trafficGraph")
 					m.swRow(c, "mem", locales.SettingsMemoryUsage(), locales.SettingsMemoryUsageDesc(), st.UI.MemoryUsage, "ui.memoryUsage")
@@ -823,7 +823,7 @@ func (m *mainUI) dialogFrame(c *ui.Context, key, title string, width float32, bo
 	m.modal(c, "dlg-"+key, &open, func() {
 		ui.Column(c).Width(width).MaxHeight(660).Gap(14).Children(func() {
 			ui.Text(c, title).FontSize(15).FontWeight(650)
-			ui.Scroll(c).Grow(1).Basis(0).MinHeight(0).Gap(14).Children(body)
+			gutter(ui.Scroll(c).Grow(1).Basis(0).MinHeight(0).Gap(14), 14).Children(body)
 			ui.Row(c).Gap(8).Justify(ui.End).Children(func() {
 				if save == nil {
 					if m.button(c, "done", locales.CommonDone(), nil, "primary").Clicked() {

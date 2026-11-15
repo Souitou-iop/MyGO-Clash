@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -45,6 +46,10 @@ type StatsItem struct {
 	Down  int64  `json:"down"`
 	Conns int64  `json:"conns,omitempty"`
 }
+
+// WhereHour narrows a query (StatsQuery.Where) to an hour of each day,
+// "00" to "23", as the hours of a day's traffic are labelled.
+const WhereHour = "hour"
 
 // StatsReport is the answer to a query.
 type StatsReport struct {
@@ -246,6 +251,13 @@ func (s *Store) QueryWith(q StatsQuery, local bool, sources ...Source) StatsRepo
 
 func matches(k flowKey, where map[string]string) bool {
 	for dim, want := range where {
+		if dim == WhereHour {
+			// An hour of the day, "00" to "23".
+			if h, err := strconv.Atoi(want); err != nil || h != int(k.Hour) {
+				return false
+			}
+			continue
+		}
 		got := k.get(dim)
 		if want == "\x00other" || want == otherKey {
 			if got != otherKey {

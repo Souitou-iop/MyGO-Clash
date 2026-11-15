@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4f8fc0" alt="Platforms">
   <img src="https://img.shields.io/badge/core-mihomo%201.19.33-e2617f" alt="Core">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2a7ab0" alt="License">
-  <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="Status">
+  <img src="https://img.shields.io/badge/status-stable-3fa66b" alt="Status">
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 <p align="center"><sub><a href="docs/showcase/promo.mp4">Watch the 30-second promo (MP4, with sound)</a> · <a href="docs/showcase/hero-dark-en.gif">Quick panel preview (GIF)</a> · <a href="docs/showcase/hero-light-en.gif">Light theme (GIF)</a></sub></p>
 
 > [!NOTE]
-> MyGO-Clash is in beta. Its interface and main features have been used on macOS (Apple silicon) and Windows. Linux has not yet been tested in a real environment. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
+> Since 1.0, MyGO-Clash draws its main window natively with MyGo. Its interface and main features have been used on macOS (Apple silicon) and Windows. Linux has not yet been tested in a real environment. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
 
 ## Features
 
@@ -141,7 +141,7 @@ Security:
 
 ## Download
 
-Download the latest release (currently a beta) from the [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) page, or build from source (below):
+Download the latest release from the [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) page, or build from source (below):
 
 | System | Package | Updates |
 |---|---|---|

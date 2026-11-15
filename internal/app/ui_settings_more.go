@@ -467,7 +467,7 @@ func (m *mainUI) deviceList(c *ui.Context) {
 						ui.Text(c, line).FontSize(12).TextColor(p.TextMuted).SingleLine()
 					})
 					dev := d
-					m.iconButton(c, "more", icMoreHorizontal, locales.SyncManage()).PopoverMenu(func(menu *ui.Menu) {
+					m.iconButton(c, "more", icMoreHorizontal, locales.SyncManage()).PopoverMenuButton(func(menu *ui.Menu) {
 						if menu.Item(locales.SyncRename()).Chosen() {
 							m.ask(locales.SyncRenameTitle(), locales.SyncRenameLabel(), cmp.Or(dev.Label, dev.Name), false, func(v string) {
 								label := strings.TrimSpace(v)
@@ -483,7 +483,7 @@ func (m *mainUI) deviceList(c *ui.Context) {
 								m.openRemove([]DeviceInfo{dev})
 							}
 						}
-					})
+					}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
 				})
 			}
 		})
@@ -919,7 +919,7 @@ func (m *mainUI) syncSetupDialog(c *ui.Context) {
 			if c.Direction() == ui.RightToLeft {
 				dir = -dir
 			}
-			ui.Scroll(c).Grow(1).Basis(0).MinHeight(0).ChildExit(ui.Motion{X: -16 * dir}).Children(func() {
+			gutter(ui.Scroll(c).Grow(1).Basis(0).MinHeight(0).ChildExit(ui.Motion{X: -16 * dir}), 14).Children(func() {
 				ui.Column(c.Key(s.step)).Gap(12).Transition(ui.ElementTransition{
 					Enter: &ui.Motion{X: 16 * dir}, Exit: &ui.Motion{X: -16 * dir},
 					Colors: true, Duration: 240 * time.Millisecond, Ease: easeStd,
@@ -1233,10 +1233,13 @@ func (m *mainUI) about(c *ui.Context) {
 	ui.Column(c.Key("about")).Gap(8).Children(func() {
 		ui.Text(c, locales.AdvAbout()).FontSize(12).FontWeight(600).TextColor(p.TextMuted)
 		ui.Row(c).Padding(18).Gap(16).Radius(tileRadius).Background(p.Card).AlignItems(ui.Center).Children(func() {
-			logo := ui.Box(c).Size(64, 64).Shrink(0)
+			// It drifts round slowly, and a press spins it.
+			logo := ui.ButtonBase(c.Key("logo")).Size(64, 64).Shrink(0).Label("MyGO-Clash")
+			pressable(logo)
 			spin := logo.Loop("about", 40*time.Second, ui.Linear)
+			turn := compassSpin(logo)
 			logo.Draw(func(pt *ui.Painter, r ui.Rect) {
-				drawCompass(pt, r.X+r.W/2, r.Y+r.H/2, 72, compassLook{Ring: true, Turn: spin * 360, Glints: 1, Glint: p.Spark})
+				drawCompass(pt, r.X+r.W/2, r.Y+r.H/2, 72, compassLook{Ring: true, Turn: spin*360 + turn, Glints: 1, Glint: p.Spark})
 			})
 			ui.Column(c).Grow(1).Basis(0).Gap(5).Children(func() {
 				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {

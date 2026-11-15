@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-4f8fc0" alt="対応プラットフォーム">
   <img src="https://img.shields.io/badge/core-mihomo%201.19.33-e2617f" alt="コア">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2a7ab0" alt="ライセンス">
-  <img src="https://img.shields.io/badge/status-beta-e8b84a" alt="ステータス">
+  <img src="https://img.shields.io/badge/status-stable-3fa66b" alt="ステータス">
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 <p align="center"><sub><a href="docs/showcase/promo.mp4">30 秒のプロモーション映像（MP4・音声あり）</a> · <a href="docs/showcase/hero-dark-en.gif">クイックパネルの概要（GIF）</a> · <a href="docs/showcase/hero-light-en.gif">ライトテーマ（GIF）</a></sub></p>
 
 > [!NOTE]
-> MyGO-Clash は現在ベータ段階です。画面と主な機能は macOS（Apple シリコン）と Windows で実際に使用しています。Linux での動作は、実環境ではまだテストしていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
+> 1.0 から、MyGO-Clash のメインウィンドウは MyGo がネイティブに描画しています。画面と主な機能は macOS（Apple シリコン）と Windows で実際に使用しています。Linux での動作は、実環境ではまだテストしていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
 
 ## 機能
 
@@ -98,7 +98,7 @@ claude mcp add mygo-clash -- /Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Cl
 
 ## ダウンロード
 
-最新版（現在はベータ）は [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) ページからダウンロードできます。ソースからビルドすることもできます（下記）：
+最新版は [Releases](https://github.com/Souitou-iop/MyGO-Clash/releases) ページからダウンロードできます。ソースからビルドすることもできます（下記）：
 
 | システム | パッケージ | アップデート |
 |---|---|---|
