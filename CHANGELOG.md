@@ -2,6 +2,22 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.1
+
+修复版：在 Fedora 等启用了 SELinux 与 firewalld 的 Linux 上，TUN 模式终于可以正常使用；同时修复设置弹窗的显示问题。/ A fix release: TUN mode finally works on Linux distributions with SELinux and firewalld, such as Fedora, and the settings dialogs show properly again.
+
+### ✨ 新增功能 / New Features
+
+- 从旧版升级的用户，前三次打开主窗口时左上角的罗盘会轻轻摆动并带一个小圆点，点一下即可观看新版引导 / For those who upgrade, the compass in the corner swings once and keeps a small dot on the first three times the main window opens; a click plays the new guide
+
+### 🐛 修复 / Fixes
+
+- 修复 Linux 上开启 SELinux 时 TUN 服务被拦截、无法联网和打开虚拟网卡的问题：服务程序改放到 `/usr/local/sbin`，已安装的服务更新后会自动迁移 (#15) / Fixes the TUN service being blocked on Linux with SELinux, unable to reach the network or open the virtual adapter: the service now lives in `/usr/local/sbin`, and an installed one moves there by itself as it updates (#15)
+- 修复 Linux 上 TUN 开启后所有连接都失败：firewalld 不再拒绝经过虚拟网卡的连接；使用 systemd-resolved 的系统上，内核的 DNS 查询不再绕回自身得到假 IP / Fixes every connection failing with TUN on Linux: firewalld no longer refuses connections through the virtual adapter, and on systems with systemd-resolved the core's DNS queries no longer loop back to it for fake IPs
+- 修复系统代理、TUN、端口等设置弹窗只显示标题和按钮；编辑订阅时链接不再盖住下方的 User-Agent (#18) / Fixes the system proxy, TUN, ports and other settings dialogs showing only a title and buttons; the subscription link no longer covers User-Agent below it in the profile editor (#18)
+- 侧边栏收起时，网速数字不再跳动一下 / The speed lines in the sidebar no longer jump as it folds
+- 在 Tailscale 页切换模式时，状态卡片不再闪现又消失 / Choosing a mode on the Tailscale page no longer flashes a status card that then goes away
+
 ## 1.0.0
 
 第一个正式版。主窗口用 MyGo 在 Go 里原生重写：不再由网页视图绘制，每一处交互都有连贯的过渡；首页、连通性与首次引导也都重新设计。/ The first stable release. The main window is rewritten natively in Go with MyGo: no longer drawn by a web view, every interaction moves through continuous transitions, and the home page, connectivity and the first-run guide are designed anew.
