@@ -64,8 +64,84 @@ type dashState struct {
 	closedAt   time.Time
 }
 
-// flagOf finds the country of a node in its name: an emoji flag, or a code
-// as "HK" or "US" standing alone.
+// placeCodes name the places node names often use instead of a country
+// code: "Tokyo" is what an airport calls its nodes, and the node has no
+// reason to say JP. Airport codes are here too, as providers often name
+// nodes NRT or LAX.
+var placeCodes = map[string]string{
+	"TOKYO": "JP", "OSAKA": "JP", "NAGOYA": "JP", "FUKUOKA": "JP", "SAPPORO": "JP", "JAPAN": "JP",
+	"NRT": "JP", "HND": "JP", "KIX": "JP", "ITM": "JP", "CTS": "JP", "FUK": "JP", "OKA": "JP", "NGO": "JP",
+	"HONGKONG": "HK", "HONG": "HK", "KONG": "HK", "KOWLOON": "HK", "HKG": "HK",
+	"TAIPEI": "TW", "TAIWAN": "TW", "TPE": "TW", "TSA": "TW", "KHH": "TW",
+	"SINGAPORE": "SG", "SIN": "SG", "SEOUL": "KR", "KOREA": "KR", "INCHEON": "KR", "ICN": "KR", "GMP": "KR",
+	"LOSANGELES": "US", "SANJOSE": "US", "SANFRANCISCO": "US", "SILICONVALLEY": "US", "ASHBURN": "US",
+	"NEWYORK": "US", "SEATTLE": "US", "DALLAS": "US", "CHICAGO": "US",
+	"MIAMI": "US", "WASHINGTON": "US", "ATLANTA": "US", "PHOENIX": "US", "DENVER": "US", "BOSTON": "US", "USA": "US",
+	"LAX": "US", "SJC": "US", "SEA": "US", "JFK": "US", "EWR": "US", "DFW": "US", "ORD": "US",
+	"MIA": "US", "IAD": "US", "ATL": "US", "SFO": "US", "DEN": "US", "BOS": "US", "PHX": "US",
+	"LONDON": "GB", "MANCHESTER": "GB", "UK": "GB", "LHR": "GB", "LGW": "GB", "MAN": "GB", "STN": "GB",
+	"FRANKFURT": "DE", "GERMANY": "DE", "BERLIN": "DE", "MUNICH": "DE", "FRA": "DE", "MUC": "DE", "BER": "DE", "DUS": "DE",
+	"PARIS": "FR", "CDG": "FR", "ORY": "FR", "AMSTERDAM": "NL", "AMS": "NL",
+	"ZURICH": "CH", "ZRH": "CH", "MILAN": "IT", "MXP": "IT", "FCO": "IT", "LIN": "IT",
+	"MADRID": "ES", "BCN": "ES", "BARCELONA": "ES",
+	"STOCKHOLM": "SE", "ARN": "SE", "OSLO": "NO", "OSL": "NO", "HELSINKI": "FI", "HEL": "FI",
+	"COPENHAGEN": "DK", "CPH": "DK", "VIENNA": "AT", "VIE": "AT",
+	"BRUSSELS": "BE", "BRU": "BE", "DUBLIN": "IE", "DUB": "IE", "LISBON": "PT", "LIS": "PT",
+	"WARSAW": "PL", "WAW": "PL", "PRAGUE": "CZ", "PRG": "CZ",
+	"BUDAPEST": "HU", "BUD": "HU", "BUCHAREST": "RO", "OTP": "RO", "KYIV": "UA", "KIEV": "UA", "KBP": "UA",
+	"SYDNEY": "AU", "MELBOURNE": "AU", "AUSTRALIA": "AU", "SYD": "AU", "MEL": "AU", "BNE": "AU",
+	"TORONTO": "CA", "VANCOUVER": "CA", "MONTREAL": "CA", "CANADA": "CA", "YYZ": "CA", "YVR": "CA", "YUL": "CA",
+	"MOSCOW": "RU", "RUSSIA": "RU", "SVO": "RU", "DME": "RU",
+	"ISTANBUL": "TR", "IST": "TR", "DUBAI": "AE", "DXB": "AE", "TELAVIV": "IL", "TLV": "IL",
+	"BANGKOK": "TH", "BKK": "TH", "JAKARTA": "ID", "CGK": "ID", "MANILA": "PH", "MNL": "PH",
+	"MUMBAI": "IN", "DELHI": "IN", "BANGALORE": "IN", "BOM": "IN", "DEL": "IN", "BLR": "IN",
+	"KUALALUMPUR": "MY", "KUL": "MY", "HANOI": "VN", "SAIGON": "VN", "HAN": "VN", "SGN": "VN",
+	"GRU": "BR", "MEX": "MX", "JNB": "ZA", "AKL": "NZ", "CAI": "EG", "RUH": "SA", "JED": "SA",
+}
+
+// countryCodes3 are the three-letter codes providers use instead of the
+// two-letter ones: JPN, USA, HKG.
+var countryCodes3 = map[string]string{
+	"JPN": "JP", "USA": "US", "HKG": "HK", "SGP": "SG", "KOR": "KR", "TWN": "TW",
+	"GBR": "GB", "DEU": "DE", "FRA": "FR", "NLD": "NL", "AUS": "AU", "CAN": "CA",
+	"RUS": "RU", "TUR": "TR", "ARE": "AE", "THA": "TH", "IDN": "ID", "PHL": "PH",
+	"IND": "IN", "MYS": "MY", "VNM": "VN", "CHE": "CH", "ITA": "IT", "ESP": "ES",
+	"SWE": "SE", "NOR": "NO", "FIN": "FI", "DNK": "DK", "AUT": "AT", "BEL": "BE",
+	"IRL": "IE", "PRT": "PT", "POL": "PL", "CZE": "CZ", "HUN": "HU", "ROU": "RO",
+	"UKR": "UA", "ISR": "IL", "BRA": "BR", "MEX": "MX", "ARG": "AR", "CHL": "CL",
+	"ZAF": "ZA", "EGY": "EG", "SAU": "SA", "IRN": "IR", "PAK": "PK", "BGD": "BD",
+	"LKA": "LK", "NZL": "NZ",
+}
+
+// extraCountryCodes are two-letter codes the map in ui_viz.go has no
+// coordinates for, which nodes still use: GR, HR, RS and the like. Codes
+// that read as English words (TO, TV, AS, PM, ME) are left out.
+var extraCountryCodes = map[string]bool{
+	"GR": true, "IS": true, "HR": true, "RS": true, "BG": true,
+	"EE": true, "LV": true, "LT": true, "SI": true, "SK": true,
+	"AL": true, "AM": true, "AZ": true, "BA": true, "BY": true, "CY": true,
+	"GE": true, "MD": true, "MK": true, "MT": true, "LB": true, "JO": true,
+	"KW": true, "QA": true, "OM": true, "BH": true, "IQ": true, "NP": true,
+	"LK": true, "KH": true, "MM": true, "MN": true, "BN": true, "NZ": true,
+	"PR": true, "UY": true, "PY": true, "PE": true, "MA": true, "TN": true,
+	"KE": true, "NG": true,
+}
+
+// placeNamesZH are the Chinese names providers write on their nodes.
+var placeNamesZH = map[string]string{
+	"东京": "JP", "大阪": "JP", "名古屋": "JP", "福冈": "JP", "札幌": "JP", "日本": "JP",
+	"香港": "HK", "九龙": "HK", "台北": "TW", "台湾": "TW", "新加坡": "SG",
+	"首尔": "KR", "韩国": "KR", "洛杉矶": "US", "圣何塞": "US", "旧金山": "US",
+	"西雅图": "US", "纽约": "US", "达拉斯": "US", "芝加哥": "US", "迈阿密": "US", "美国": "US",
+	"伦敦": "GB", "英国": "GB", "法兰克福": "DE", "德国": "DE", "巴黎": "FR",
+	"阿姆斯特丹": "NL", "悉尼": "AU", "多伦多": "CA", "莫斯科": "RU",
+	"伊斯坦布尔": "TR", "迪拜": "AE", "曼谷": "TH", "雅加达": "ID",
+	"马尼拉": "PH", "孟买": "IN", "吉隆坡": "MY", "河内": "VN", "胡志明": "VN",
+}
+
+// flagOf finds the country of a node in its name: an emoji flag, a code
+// as "HK" or "US" standing alone, the place the name gives as "Tokyo", or
+// its Chinese name.
 func flagOf(name string) string {
 	rs := []rune(name)
 	for i := 0; i+1 < len(rs); i++ {
@@ -73,12 +149,54 @@ func flagOf(name string) string {
 			return string([]rune{'A' + (rs[i] - 0x1F1E6), 'A' + (rs[i+1] - 0x1F1E6)})
 		}
 	}
-	for _, f := range strings.FieldsFunc(strings.ToUpper(name), func(r rune) bool { return !(r >= 'A' && r <= 'Z') }) {
-		if _, ok := countryCenters[f]; ok && len(f) == 2 {
-			return f
+	if hasHan(rs) {
+		for zh, code := range placeNamesZH {
+			if strings.Contains(name, zh) {
+				return code
+			}
+		}
+	}
+	up := strings.ToUpper(name)
+	// The name without separators, so "Los Angeles" and "losangeles" both
+	// find the one entry.
+	var letters strings.Builder
+	for _, r := range up {
+		if r >= 'A' && r <= 'Z' {
+			letters.WriteRune(r)
+		}
+	}
+	if code, ok := placeCodes[letters.String()]; ok {
+		return code
+	}
+	if code, ok := countryCodes3[letters.String()]; ok {
+		return code
+	}
+	for _, f := range strings.FieldsFunc(up, func(r rune) bool { return r < 'A' || r > 'Z' }) {
+		if code, ok := placeCodes[f]; ok {
+			return code
+		}
+		if code, ok := countryCodes3[f]; ok {
+			return code
+		}
+		if len(f) == 2 {
+			if _, ok := countryCenters[f]; ok {
+				return f
+			}
+			if extraCountryCodes[f] {
+				return f
+			}
 		}
 	}
 	return ""
+}
+
+func hasHan(rs []rune) bool {
+	for _, r := range rs {
+		if r >= 0x4E00 && r <= 0x9FFF {
+			return true
+		}
+	}
+	return false
 }
 
 // stripFlag takes an emoji flag off the front of a name.

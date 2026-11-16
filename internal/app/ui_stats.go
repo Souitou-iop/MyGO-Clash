@@ -529,7 +529,7 @@ func (m *mainUI) ranking(c *ui.Context, dim, title string, all []usage.StatsItem
 // flagMasked is flagSmall for a place that is private: its block stays as
 // the eye shuts, a globe crossfading in over the flag.
 func (m *mainUI) flagMasked(c *ui.Context, code string, masked bool) {
-	box := ui.Box(c.Key("flag")).Size(18, 13.5).Radius(2).Clip().Shrink(0).Background(m.pal.Surface3).AlignItems(ui.Center).Justify(ui.Center)
+	box := ui.Box(c.Key("flag")).Size(18, 13.5).Radius(2).Clip().Shrink(0).Background(m.pal.Surface3).Border(1, m.pal.Border).AlignItems(ui.Center).Justify(ui.Center)
 	s := svgImage("assets/flags/" + strings.ToLower(code) + ".svg")
 	box.Children(func() {
 		if masked || s == nil {
@@ -541,7 +541,7 @@ func (m *mainUI) flagMasked(c *ui.Context, code string, masked bool) {
 }
 
 func (m *mainUI) flagSmall(c *ui.Context, code string) {
-	box := ui.Box(c.Key("flag-"+code)).Size(18, 13.5).Radius(2).Clip().Shrink(0).Background(m.pal.Surface3).Transition(unveil)
+	box := ui.Box(c.Key("flag-"+code)).Size(18, 13.5).Radius(2).Clip().Shrink(0).Background(m.pal.Surface3).Border(1, m.pal.Border).Transition(unveil)
 	if s := svgImage("assets/flags/" + strings.ToLower(code) + ".svg"); s != nil {
 		box.Children(func() { ui.Image(c, s).Fill() })
 	}
