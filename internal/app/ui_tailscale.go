@@ -115,7 +115,12 @@ func (m *mainUI) tailscaleView(c *ui.Context) {
 				switch {
 				case st != nil && (st.BackendState == "NeedsLogin" || st.BackendState == "NeedsMachineAuth"):
 					state = "login"
-				case (st != nil && st.BackendState == "Starting") || (st == nil && coreRunning):
+				case st != nil && st.BackendState == "Starting":
+					// Only as the node says so. Before its first status
+					// (st is nil: the page was just chosen) the card would
+					// show for a moment and go as the status that comes,
+					// stopped or running, takes its place, with the
+					// settings below it jumping up and down.
 					state = "starting"
 				case st != nil && st.BackendState == "Running":
 					state = "running"
@@ -136,13 +141,18 @@ func (m *mainUI) tailscaleView(c *ui.Context) {
 			case "system":
 				state := "running"
 				switch {
-				case st == nil || !st.Available:
+				case st == nil:
+					// Not heard from yet, as the page is just chosen: no
+					// card of a missing app to give way to the real one.
+					state = ""
+				case !st.Available:
 					state = "missing"
 				case st.BackendState != "Running":
 					state = "stopped"
 				}
 				m.swapPane(c, "state", state, 12, func() {
 					switch state {
+					case "":
 					case "missing":
 						m.card(c, "missing", locales.TsNotDetected(), icAppWindow, nil, func() {
 							ui.Text(c, locales.TsInstallHint()).FontSize(12.5).TextColor(p.TextMuted).Wrap()
