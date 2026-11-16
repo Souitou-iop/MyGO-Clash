@@ -341,6 +341,7 @@ const flipDur = 320 * time.Millisecond
 type flipGridState struct {
 	cols  int
 	laid  bool    // it had its width in the frame before
+	w     float32 // its width in the frame before
 	gridH float32 // the grid's own height in the frame before
 	fromH float32
 	start time.Time
@@ -368,8 +369,13 @@ func (m *mainUI) flipGrid(c *ui.Context, key any, gap float32, colsFor func(widt
 	prev := gs.laid
 	// Not as the grid first gets its width, which only places its cells.
 	changed := gs.cols != cols && prev && wb.W > 0 && !c.Preferences().ReduceMotion
-	gs.laid, gs.cols = wb.W > 0, cols
-	settled := prev && !changed
+	// Only the cells of a grid that changed width move by hand: Transition
+	// leaves those still, but glides the cells of any other change (cells
+	// of another kind, the columns set) from where the new layout really
+	// puts them, which this frame cannot tell: their heights may change too.
+	resized := changed && wb.W != gs.w
+	gs.laid, gs.cols, gs.w = wb.W > 0, cols, wb.W
+	settled := prev && !resized
 	if changed {
 		gs.fromH, gs.start = wb.H, now
 	}
@@ -391,7 +397,7 @@ func (m *mainUI) flipGrid(c *ui.Context, key any, gap float32, colsFor func(widt
 					rowTop += rowH + gap
 					rowH = 0
 				}
-				if changed && lb.W > 0 {
+				if resized && lb.W > 0 {
 					// From where it shows to where it goes.
 					nx, ny := float32(i%cols)*(cellW+gap), rowTop
 					cs.fromX = lb.X - wb.X + cs.offX - nx
