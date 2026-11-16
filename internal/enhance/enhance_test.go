@@ -214,6 +214,19 @@ func TestOwnedFieldsWinOverExtensions(t *testing.T) {
 	}
 }
 
+func TestApplyBaseControlsTunDNSMode(t *testing.T) {
+	cfg := parse(t, "tun: {enable: true, dns-mode: hijack}\n")
+	ApplyBase(cfg, Base{Tun: Tun{Enable: true, DNSMode: "native"}})
+	if got := cfg.Map("tun").String("dns-mode"); got != "native" {
+		t.Fatalf("dns-mode = %q, want native", got)
+	}
+
+	ApplyBase(cfg, Base{})
+	if cfg.Map("tun").Has("dns-mode") {
+		t.Fatal("dns-mode remained after TUN was disabled")
+	}
+}
+
 func TestCleanupGroups(t *testing.T) {
 	cfg := parse(t, profile+`proxy-providers: {sub: {type: http, url: "https://x"}}
 `)

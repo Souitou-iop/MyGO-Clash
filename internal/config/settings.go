@@ -638,6 +638,11 @@ func Defaults() Settings {
 // DefaultDNSConfig is the DNS override offered to new installations. All
 // upstreams are domestic: a foreign one would race them and often answer
 // first with a far CDN node, slowing direct connections down.
+//
+// Nothing here goes to a server in the clear: the encrypted servers are
+// named by address, so no name has to be resolved before the first query,
+// and the plain addresses only bootstrap them. A system server would send
+// every name the core looks up to the ISP.
 const DefaultDNSConfig = `dns:
   enable: true
   listen: :53
@@ -656,20 +661,19 @@ const DefaultDNSConfig = `dns:
     - '*.msftncsi.com'
     - www.msftconnecttest.com
   default-nameserver:
-    - system
     - 223.5.5.5
     - 119.29.29.29
   nameserver:
-    - https://doh.pub/dns-query
-    - https://dns.alidns.com/dns-query
+    - https://223.5.5.5/dns-query
+    - https://120.53.53.53/dns-query
   fallback: []
   nameserver-policy:
     'geosite:cn':
-      - https://doh.pub/dns-query
-      - https://dns.alidns.com/dns-query
+      - https://223.5.5.5/dns-query
+      - https://120.53.53.53/dns-query
   proxy-server-nameserver:
-    - https://doh.pub/dns-query
-    - https://dns.alidns.com/dns-query
+    - https://223.5.5.5/dns-query
+    - https://120.53.53.53/dns-query
   direct-nameserver: []
   direct-nameserver-follow-policy: false
   respect-rules: false

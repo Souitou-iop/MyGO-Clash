@@ -157,6 +157,9 @@ func (m *Manager) Generate(ctx context.Context, in Inputs) (*Runtime, error) {
 	if in.Tailnet != nil {
 		logf("tailscale", enhance.ApplyTailscale(cfg, *in.Tailnet)...)
 	}
+	if in.Base.Tun.Enable && in.Base.Tun.DNSMode == "native" {
+		logf("dns", enhance.AvoidSystemDNS(cfg)...)
+	}
 	logf("cleanup", enhance.CleanupGroups(cfg)...)
 	rt.Display = enhance.Sort(cfg)
 	rt.Core = rt.Display.Clone()

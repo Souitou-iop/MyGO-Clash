@@ -54,6 +54,7 @@ type Tun struct {
 	Enable              bool
 	Stack               string // gvisor, system, mixed
 	Device              string
+	DNSMode             string // disabled, native, hijack
 	AutoRoute           bool
 	StrictRoute         bool
 	AutoDetectInterface bool
@@ -72,7 +73,7 @@ var controlKeys = []string{
 
 // tunKeys are the keys of the tun section the app owns.
 var tunKeys = []string{
-	"enable", "stack", "device", "auto-route", "strict-route", "auto-detect-interface",
+	"enable", "stack", "device", "dns-mode", "auto-route", "strict-route", "auto-detect-interface",
 	"auto-redirect", "dns-hijack", "mtu", "route-exclude-address",
 }
 
@@ -161,6 +162,11 @@ func ApplyBase(cfg *yamlx.Map, b Base) {
 	tun.Set("stack", t.Stack)
 	if t.Device != "" {
 		tun.Set("device", t.Device)
+	}
+	if t.DNSMode != "" {
+		tun.Set("dns-mode", t.DNSMode)
+	} else {
+		tun.Delete("dns-mode")
 	}
 	tun.Set("auto-route", t.AutoRoute)
 	tun.Set("strict-route", t.StrictRoute)

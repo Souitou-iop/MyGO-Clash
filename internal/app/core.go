@@ -153,6 +153,12 @@ func (a *App) inputs(st config.Settings) profiles.Inputs {
 		GeoAutoUpdate: c.GeoAutoUpdate, GeoUpdateInterval: c.GeoUpdateInterval, GeoMirror: c.GeoMirror,
 		Tun: enhance.Tun{
 			Enable: st.Tun.Enabled && privileged, Stack: st.Tun.Stack, Device: st.Tun.Device,
+			DNSMode: func() string {
+				if runtime.GOOS == "darwin" && st.Tun.Enabled && privileged {
+					return "native"
+				}
+				return ""
+			}(),
 			AutoRoute: st.Tun.AutoRoute, StrictRoute: st.Tun.StrictRoute, AutoDetectInterface: st.Tun.AutoDetectInterface,
 			AutoRedirect: st.Tun.AutoRedirect && runtime.GOOS == "linux", DNSHijack: st.Tun.DNSHijack, MTU: st.Tun.MTU,
 			RouteExcludeAddress: st.Tun.RouteExcludeAddress,
