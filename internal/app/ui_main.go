@@ -570,7 +570,10 @@ func (m *mainUI) sidebar(c *ui.Context) {
 					m.trafficGraph(c, 40, 34, true).Width(wideW - 28).Shrink(0)
 				})
 			}
-			ui.Column(c).Gap(8).Children(func() {
+			// Keyed: the graph above comes and goes with the fold, and a
+			// column known only by its place would be a new one then, its
+			// rates' glides starting over from an unmeasured width.
+			ui.Column(c.Key("rates")).Gap(8).Children(func() {
 				// Folded, each rate is centered on the column of the icons
 				// above; as its digits change its width, its place glides
 				// rather than jumps.
