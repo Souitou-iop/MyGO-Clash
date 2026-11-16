@@ -46,6 +46,10 @@ type ServiceState struct {
 	// works: its core is the older one, until the service is updated.
 	Behind bool   `json:"behind"`
 	Error  string `json:"error,omitempty"`
+	// Updating reports that the app is updating the service quietly: as
+	// it restarts, it does not answer for a few seconds, which is no
+	// reason to offer to install it.
+	Updating bool `json:"updating,omitempty"`
 }
 
 // Usable reports whether the core can run in the service: it is installed,

@@ -667,6 +667,7 @@
  "serviceUnprivileged": "Không đặc quyền",
  "serviceUpdate": "Cập nhật",
  "serviceUpdated": "Đã cập nhật dịch vụ",
+ "serviceUpdating": "Đang cập nhật lên phiên bản của ứng dụng, vài giây…",
  "settingsAccent": "Màu nhấn",
  "settingsAddress": "Địa chỉ",
  "settingsAddressHint": "127.0.0.1 giới hạn trong máy này",

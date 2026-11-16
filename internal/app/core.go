@@ -50,7 +50,7 @@ func (a *App) bootstrap(mode string) coreapi.Bootstrap {
 
 // checkService asks the service how it is and records it.
 func (a *App) checkService(ctx context.Context) ServiceState {
-	s := ServiceState{Supported: serviceSupported()}
+	s := ServiceState{Supported: serviceSupported(), Updating: a.svcUpdating.Load()}
 	if s.Supported {
 		st, err := service.Check(ctx, a.slug)
 		switch {

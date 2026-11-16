@@ -517,6 +517,8 @@ func (m *mainUI) takeoverWays(c *ui.Context) {
 			tunDesc = locales.HomeTunOn() + " · " + st.Tun.Stack
 		case s.TunAvailable:
 			tunDesc = locales.HomeTunOff()
+		case s.Service.Updating:
+			tunDesc = locales.ServiceUpdating()
 		case s.Service.Installed && s.Service.Outdated:
 			tunDesc = locales.HomeTunServiceOutdated()
 		}
@@ -528,7 +530,7 @@ func (m *mainUI) takeoverWays(c *ui.Context) {
 					set("tun.enabled", on)
 				}
 			case s.Service.Supported:
-				if h.busy == "svc" {
+				if h.busy == "svc" || s.Service.Updating {
 					ui.Spinner(c)
 				} else if m.button(c, "svc", locales.ServiceInstall(), nil, "").Clicked() {
 					h.busy = "svc"

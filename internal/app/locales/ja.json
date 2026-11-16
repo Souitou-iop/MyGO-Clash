@@ -667,6 +667,7 @@
  "serviceUnprivileged": "特権なし",
  "serviceUpdate": "更新",
  "serviceUpdated": "サービスを更新しました",
+ "serviceUpdating": "アプリのバージョンに更新中（数秒かかります）…",
  "settingsAccent": "アクセントカラー",
  "settingsAddress": "アドレス",
  "settingsAddressHint": "127.0.0.1 ならこのコンピューターからのみ",

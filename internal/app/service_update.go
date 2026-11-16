@@ -33,6 +33,12 @@ func (a *App) updateServiceQuietly(svc ServiceState) {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 		defer cancel()
+		a.svcUpdating.Store(true)
+		defer func() {
+			a.svcUpdating.Store(false)
+			a.checkService(context.Background())
+		}()
+		a.checkService(ctx)
 		if err := a.updateService(ctx); err != nil {
 			log.Printf("service: updating to %s: %v", Version, err)
 		}

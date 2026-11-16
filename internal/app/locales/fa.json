@@ -667,6 +667,7 @@
  "serviceUnprivileged": "بدون دسترسی ویژه",
  "serviceUpdate": "به‌روزرسانی",
  "serviceUpdated": "سرویس به‌روز شد",
+ "serviceUpdating": "در حال به‌روزرسانی به نسخهٔ برنامه، چند ثانیه…",
  "settingsAccent": "رنگ تأکید",
  "settingsAddress": "نشانی",
  "settingsAddressHint": "127.0.0.1 آن را به همین رایانه محدود می‌کند",

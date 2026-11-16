@@ -667,6 +667,7 @@
  "serviceUnprivileged": "دون صلاحيات",
  "serviceUpdate": "تحديث",
  "serviceUpdated": "تم تحديث الخدمة",
+ "serviceUpdating": "يجري التحديث إلى إصدار التطبيق، بضع ثوانٍ…",
  "settingsAccent": "لون التمييز",
  "settingsAddress": "العنوان",
  "settingsAddressHint": "127.0.0.1 يقصره على هذا الحاسوب",

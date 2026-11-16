@@ -667,6 +667,7 @@
  "serviceUnprivileged": "Non privilégié",
  "serviceUpdate": "Mettre à jour",
  "serviceUpdated": "Service mis à jour",
+ "serviceUpdating": "Mise à jour vers la version de l’app, quelques secondes…",
  "settingsAccent": "Couleur d’accent",
  "settingsAddress": "Adresse",
  "settingsAddressHint": "127.0.0.1 le limite à cet ordinateur",

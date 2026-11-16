@@ -628,6 +628,8 @@ func (m *mainUI) networkTab(c *ui.Context) {
 		switch {
 		case state.TunAvailable:
 			desc = locales.SettingsTunDesc()
+		case state.Service.Updating:
+			desc = locales.ServiceUpdating()
 		case state.Service.Outdated:
 			desc = locales.HomeTunServiceOutdated()
 		}
@@ -637,7 +639,7 @@ func (m *mainUI) networkTab(c *ui.Context) {
 				s.hijack, s.exclude, s.mtu = strings.Join(st.Tun.DNSHijack, ", "), strings.Join(st.Tun.RouteExcludeAddress, "\n"), strconv.Itoa(st.Tun.MTU)
 			}
 			v := st.Tun.Enabled && state.TunAvailable
-			if s.busy == "tun" {
+			if s.busy == "tun" || (state.Service.Updating && !state.TunAvailable) {
 				ui.Spinner(c)
 			} else if ui.Switch(c.Key("sw"), &v).Changed() {
 				if v && !state.TunAvailable {
@@ -756,6 +758,8 @@ func (m *mainUI) networkTab(c *ui.Context) {
 		m.section(c, "service", locales.ServiceTitle(), func() {
 			desc := locales.ServiceNotInstalled()
 			switch {
+			case svc.Updating:
+				desc = locales.ServiceUpdating()
 			case svc.Installed && svc.Error != "":
 				desc = svc.Error
 			case svc.Installed && svc.Outdated:
@@ -773,7 +777,7 @@ func (m *mainUI) networkTab(c *ui.Context) {
 						}
 					})
 				}
-				if strings.HasPrefix(s.busy, "svc") {
+				if strings.HasPrefix(s.busy, "svc") || svc.Updating {
 					ui.Spinner(c)
 					return
 				}

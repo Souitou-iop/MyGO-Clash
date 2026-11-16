@@ -667,6 +667,7 @@
  "serviceUnprivileged": "一般權限",
  "serviceUpdate": "更新",
  "serviceUpdated": "服務已更新",
+ "serviceUpdating": "正在更新至應用程式的版本，需要幾秒…",
  "settingsAccent": "強調色",
  "settingsAddress": "監聽位址",
  "settingsAddressHint": "127.0.0.1 表示僅本機可存取",

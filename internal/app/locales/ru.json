@@ -667,6 +667,7 @@
  "serviceUnprivileged": "Без привилегий",
  "serviceUpdate": "Обновить",
  "serviceUpdated": "Служба обновлена",
+ "serviceUpdating": "Обновляется до версии приложения, несколько секунд…",
  "settingsAccent": "Акцентный цвет",
  "settingsAddress": "Адрес",
  "settingsAddressHint": "127.0.0.1 — доступ только с этого компьютера",

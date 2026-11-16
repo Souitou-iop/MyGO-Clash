@@ -87,6 +87,7 @@ type App struct {
 
 	outdatedTold  atomic.Bool  // the user heard that the service needs updating
 	serviceUpdate atomic.Bool  // the service was updated quietly, or tried
+	svcUpdating   atomic.Bool  // the service is being updated quietly now
 	coreSeen      atomic.Int32 // the restarts of a crash the user has heard of
 
 	applyMu sync.Mutex // one configuration at a time

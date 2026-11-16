@@ -667,6 +667,7 @@
  "serviceUnprivileged": "Tanpa hak istimewa",
  "serviceUpdate": "Perbarui",
  "serviceUpdated": "Layanan diperbarui",
+ "serviceUpdating": "Memperbarui ke versi aplikasi, beberapa detik…",
  "settingsAccent": "Warna aksen",
  "settingsAddress": "Alamat",
  "settingsAddressHint": "127.0.0.1 membatasinya ke komputer ini",

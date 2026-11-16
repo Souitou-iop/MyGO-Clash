@@ -6717,6 +6717,16 @@ func (msgs Messages) ServiceUpdated() string {
 	return Catalog.Format(msgs.locale, "serviceUpdated", nil)
 }
 
+// ServiceUpdating says "Updating to the app’s version, a few seconds…"
+// in the language the app shows.
+func ServiceUpdating() string { return In(i18n.Locale()).ServiceUpdating() }
+
+// ServiceUpdating says "Updating to the app’s version, a few seconds…"
+// in the language of msgs.
+func (msgs Messages) ServiceUpdating() string {
+	return Catalog.Format(msgs.locale, "serviceUpdating", nil)
+}
+
 // SettingsAccent says "Accent color"
 // in the language the app shows.
 func SettingsAccent() string { return In(i18n.Locale()).SettingsAccent() }

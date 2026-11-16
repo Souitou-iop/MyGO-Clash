@@ -667,6 +667,7 @@
  "serviceUnprivileged": "권한 없음",
  "serviceUpdate": "업데이트",
  "serviceUpdated": "서비스를 업데이트했습니다",
+ "serviceUpdating": "앱 버전으로 업데이트하는 중, 몇 초 걸립니다…",
  "settingsAccent": "강조 색상",
  "settingsAddress": "주소",
  "settingsAddressHint": "127.0.0.1이면 이 컴퓨터에서만 접근할 수 있습니다",

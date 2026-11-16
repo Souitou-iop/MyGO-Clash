@@ -667,6 +667,7 @@
  "serviceUnprivileged": "Yetkisiz",
  "serviceUpdate": "Güncelle",
  "serviceUpdated": "Hizmet güncellendi",
+ "serviceUpdating": "Uygulamanın sürümüne güncelleniyor, birkaç saniye…",
  "settingsAccent": "Vurgu rengi",
  "settingsAddress": "Adres",
  "settingsAddressHint": "127.0.0.1 onu bu bilgisayarla sınırlar",
