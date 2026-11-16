@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,10 +48,77 @@ ExecStart="%s" service run --name "%s" --owner "%s"
 Restart=on-failure
 RestartSec=2
 LimitNOFILE=1048576
-
+%s
 [Install]
 WantedBy=multi-user.target
 `
+
+// unitFile is the service's systemd unit; seCtx is its SELinux context, or
+// "" for none (see selinuxContext).
+func unitFile(p Paths, cfg Config, seCtx string) string {
+	line := ""
+	if seCtx != "" {
+		line = "SELinuxContext=" + seCtx + "\n"
+	}
+	return fmt.Sprintf(unitTemplate, p.Bin, cfg.Slug, cfg.Owner, line)
+}
+
+// seContext is the SELinux domain the service runs in. systemd moves a
+// program it starts into it by itself only when the program is labeled
+// bin_t, and the service's executable in /usr/local/lib is labeled lib_t:
+// it would stay in systemd's own init_t, which may neither connect to
+// the network nor open /dev/net/tun. A label given to the file would not
+// last: the service's updates replace the file.
+const seContext = "system_u:system_r:unconfined_service_t:s0"
+
+// selinuxContext returns seContext where SELinux is on and its policy has
+// that domain, and "" otherwise, since systemd refuses to start a unit
+// whose context the policy does not know. The kernel checks the context
+// when it is written to selinuxfs, as libselinux's security_check_context
+// does.
+func selinuxContext() string {
+	f, err := os.OpenFile("/sys/fs/selinux/context", os.O_RDWR, 0)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	if _, err := f.Write([]byte(seContext + "\x00")); err != nil {
+		return ""
+	}
+	return seContext
+}
+
+// fixUnit gives the unit of a service installed before it had a SELinux
+// context that context, and restarts the service in it. It does so only
+// when the service runs in init_t, where it cannot work; the service
+// reaches this version through its own update, without the user
+// installing it again.
+func fixUnit(cfg Config) {
+	cur, err := os.ReadFile("/proc/self/attr/current")
+	if err != nil || !strings.Contains(string(cur), ":init_t:") {
+		return
+	}
+	seCtx := selinuxContext()
+	if seCtx == "" {
+		return
+	}
+	p := Layout(cfg.Slug)
+	old, err := os.ReadFile(p.Unit)
+	if err != nil || strings.Contains(string(old), "SELinuxContext=") {
+		return
+	}
+	if err := os.WriteFile(p.Unit, []byte(unitFile(p, cfg, seCtx)), 0o644); err != nil {
+		log.Printf("selinux: write the unit: %v", err)
+		return
+	}
+	if out, err := exec.Command("systemctl", "daemon-reload").CombinedOutput(); err != nil {
+		log.Printf("selinux: systemctl daemon-reload: %v: %s", err, out)
+		_ = os.WriteFile(p.Unit, old, 0o644)
+		return
+	}
+	log.Printf("selinux: restarting in %s", seCtx)
+	os.Exit(exitRestart)
+}
 
 func install(cfg Config) error {
 	if os.Geteuid() != 0 {
@@ -68,8 +136,7 @@ func install(cfg Config) error {
 	if err := copyExecutable(exe, p.Bin); err != nil {
 		return err
 	}
-	unit := fmt.Sprintf(unitTemplate, p.Bin, cfg.Slug, cfg.Owner)
-	if err := os.WriteFile(p.Unit, []byte(unit), 0o644); err != nil {
+	if err := os.WriteFile(p.Unit, []byte(unitFile(p, cfg, selinuxContext())), 0o644); err != nil {
 		return err
 	}
 	for _, args := range [][]string{{"daemon-reload"}, {"enable", "--now", p.Label}, {"restart", p.Label}} {

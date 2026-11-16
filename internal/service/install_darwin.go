@@ -147,3 +147,6 @@ func Elevate(ctx context.Context, prompt string, args ...string) error {
 
 // CurrentOwner identifies the user running the app to the service.
 func CurrentOwner() string { return strconv.Itoa(os.Getuid()) }
+
+// fixUnit is for SELinux, on Linux.
+func fixUnit(Config) {}
