@@ -76,16 +76,6 @@ func (s AppService) State(ctx context.Context) (AppState, error) {
 	return s.a.snapshot(), nil
 }
 
-// TakePage returns, once, the page a window just created should show
-// (the target of a notification or a tray item), or "".
-func (s AppService) TakePage() string {
-	s.a.mu.Lock()
-	defer s.a.mu.Unlock()
-	p := s.a.pendingPage
-	s.a.pendingPage = ""
-	return p
-}
-
 // OpenDir opens a directory of the app: data, core or logs.
 func (s AppService) OpenDir(kind string) error {
 	dir := map[string]string{"data": s.a.dirs.Data, "core": s.a.dirs.Core, "logs": s.a.dirs.Logs}[kind]

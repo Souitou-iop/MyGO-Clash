@@ -153,7 +153,7 @@ Claude Desktop、Cursor 等客户端用 JSON 配置：
 | Arch Linux | `.pkg.tar.zst`（`sudo pacman -U`） | 由软件包管理器更新 |
 | 其他发行版 | `.AppImage` | 下载新版本替换 |
 
-Linux 需要 GTK 3、WebKitGTK 4.1 和 libayatana-appindicator（托盘图标）。deb、rpm 和 Arch 包会自动安装这些依赖，AppImage 和 tar.gz 需要系统里已经有。
+Linux 需要 GTK 3 和 libayatana-appindicator（托盘图标）。deb、rpm 和 Arch 包会自动安装这些依赖，AppImage 和 tar.gz 需要系统里已经有。
 
 目前安装包还没有代码签名：macOS 首次打开请右键选择「打开」，Windows 可能会弹出 SmartScreen 提示。
 
@@ -163,18 +163,16 @@ Linux 需要 GTK 3、WebKitGTK 4.1 和 libayatana-appindicator（托盘图标）
 
 - [Go](https://go.dev/dl/) 1.27.3 或更高版本
 - [Bun](https://bun.sh)
-- Linux：GTK 3 和 WebKitGTK 4.1，例如 Debian / Ubuntu 上 `sudo apt install libwebkit2gtk-4.1-0`
-- Windows 10：[WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/)（Windows 11 已自带）
+- Linux：GTK 3，例如 Debian / Ubuntu 上 `sudo apt install libgtk-3-0`
 
 ```bash
 git clone https://github.com/Souitou-iop/MyGO-Clash.git
 cd MyGO-Clash
-bun install
 bun run dev     # 开发模式，修改后自动重新构建
 bun run build   # 打包当前平台，输出到 build/
 ```
 
-请通过 `package.json` 里的脚本构建：它们会加上 mihomo 需要的 `-tags=with_gvisor`。修改 Go 侧的接口后，用 `bun run generate` 重新生成前端绑定 `src/mygo.ts`。
+请通过 `package.json` 里的脚本构建：它们会加上 mihomo 需要的 `-tags=with_gvisor`。修改 `internal/app/locales` 里的翻译后，用 `bun run generate` 重新生成 Go 里的文案目录。
 
 Go 不需要 cgo，所以在一台 Mac 上就能构建所有平台：
 
@@ -187,7 +185,7 @@ macOS 的 DMG 只能在 macOS 上生成。Windows 安装程序需要 NSIS（`bre
 
 推送 `v0.2.0` 这样的版本标签后，GitHub Actions（`.github/workflows/release.yml`）会构建所有平台，签名更新包，并上传到 Release 草稿；发布草稿后，已安装的应用就会更新到这个版本。签名密钥用 `go tool mygo keygen` 生成，放在仓库的 `MYGO_UPDATER_PRIVATE_KEY` secret 里，更新说明取自 `CHANGELOG.md`。
 
-应用图标来自 Icon Composer 文件。修改设计后，在装有 Xcode 26 或更高版本的 Mac 上运行下面的命令，重新生成 macOS 的 `Assets.car`、其他平台用的 `icon.png` 和界面里的图标：
+应用图标来自 Icon Composer 文件。修改设计后，在装有 Xcode 26 或更高版本的 Mac 上运行下面的命令，重新生成 macOS 的 `Assets.car`、其他平台用的 `icon.png`：
 
 ```bash
 go run ./cmd/genicon path/to/MyGo-Clash.icon
@@ -197,7 +195,7 @@ go run ./cmd/genicon path/to/MyGo-Clash.icon
 
 ```
 main.go              入口：同一个可执行文件运行应用、内核（core）或特权服务（service）
-internal/app         窗口、托盘、快捷面板、通知、设置与前端接口
+internal/app         主窗口与快捷面板（原生界面）、托盘、通知与设置
 internal/corehost    运行 mihomo 内核
 internal/coremgr     以独立进程或系统服务的方式管理内核
 internal/service     TUN 所需的特权服务
@@ -206,7 +204,7 @@ internal/enhance     合并、脚本等配置扩展
 internal/tailnet     Tailscale 集成
 internal/cloudsync   端到端加密同步
 internal/sysproxy    系统代理
-src/                 React 前端
+design/              应用图标的设计源文件
 cmd/genicon          从 Icon Composer 文件生成各平台图标
 tools/linuxpkg       生成 rpm、Arch 包和 AppImage（独立的 Go 模块）
 ```

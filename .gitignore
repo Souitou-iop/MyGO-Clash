@@ -1,11 +1,9 @@
 node_modules/
-/dist/
 /build/
-/tools/showcase/dist/
-/tools/showcase/out/
+/tools/showcase/tools/showcase/out/
 /.mygo/
 mygo_windows_*.syso
 .DS_Store
-# Icon design lives in src/assets/icon-design: source/, exports/ and the
-# .icon project are tracked; the project's own Assets are exports of source/.
-/src/assets/icon-design/MyGo-Clash.icon/Assets/
+# Icon design lives in design/: source/, exports/ and the .icon project are
+# tracked; the project's own Assets are exports of source/.
+/design/MyGo-Clash.icon/Assets/

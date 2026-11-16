@@ -1,11 +1,11 @@
 # AGENTS.md — MyGO-Clash 协作须知
 
-跨平台代理客户端：mihomo 内核（独立 core 进程，配置仅内存传递）+ mygo 框架 GUI（React 19，15 种语言）+ mygo ui 包绘制的原生托盘快捷面板 + Tailscale + WebDAV 端到端加密同步。GPL-3.0，公开仓库。
+跨平台代理客户端：mihomo 内核（独立 core 进程，配置仅内存传递）+ mygo 框架原生绘制的 GUI（主窗口与托盘快捷面板，15 种语言，没有网页前端） + Tailscale + WebDAV 端到端加密同步。GPL-3.0，公开仓库。
 
 ## 构建与环境
-- 所有构建走 package.json 脚本：bun run dev / build / generate / typecheck（已带 -tags=with_gvisor），不要手动拼命令
-- go.mod 要求 go 1.27.3；go test ./... 与 tsc --noEmit 必须全过再交付
-- dev 调试：MYGO_CLASH_KEYRING=file MYGO_CLASH_DEBUG=127.0.0.1:47391 bun run dev；调试端口 /capture 截图、/eval 执行 JS；代理页测试节点显示"超时"是正常的（假节点）
+- 所有构建走 package.json 脚本：bun run dev / build / generate（已带 -tags=with_gvisor；bun 只用来跑脚本，没有 JS 依赖），不要手动拼命令
+- go.mod 要求 go 1.27.3；go test ./... 必须全过再交付
+- dev 调试：MYGO_CLASH_KEYRING=file MYGO_CLASH_DEBUG=127.0.0.1:47391 bun run dev；调试端口 /capture 截图（?w=panel 为快捷面板）、/navigate?page= 切页、/patch 改设置；代理页测试节点显示"超时"是正常的（假节点）
 
 ## 临时文件与缓存
 - README 预览图、调试截图和渲染中间文件放在 `/Volumes/SanDisk/Developer/tmp/MyGo-Clash/<任务名>/`，不要在 `/Volumes/SanDisk` 根目录新建 `tmp`。

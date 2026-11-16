@@ -4,11 +4,6 @@
   "identifier": "io.mygo.clash",
   "version": "1.0.1",
   "copyright": "© 2026 MyGO-Clash contributors. GPL-3.0.",
-  "devUrl": "http://localhost:5173",
-  "devCommand": "bun run dev:web",
-  "buildCommand": "bun run geodata && bun run build:web",
-  "frontendDist": "dist",
-  "bindings": "src/mygo.ts",
   "i18n": {
     "dir": "internal/app/locales",
     "source": "en"
@@ -31,7 +26,8 @@
     "depends": [
       "libayatana-appindicator3-1"
     ],
-    "command": "mygo-clash"
+    "command": "mygo-clash",
+    "webview": false
   },
   "macos": {
     "minimumSystemVersion": "12.0",

@@ -10,17 +10,12 @@
 //     clear or tinted (mygo.json names it with CFBundleIconName);
 //   - resources/icon.png, its default rendition on the grid of macOS app
 //     icons (824 of 1024 pixels, over a soft shadow), which mygo build
-//     makes the icon of Windows, Linux and earlier macOS;
-//   - src/assets/icon.png and icon-dark.png, its light and dark renditions
-//     for the About page;
-//   - src/assets/mark.png, its badge (the first layer) for the sidebar.
+//     makes the icon of Windows, Linux and earlier macOS.
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"image"
-	"image/color"
 	"image/png"
 	"log"
 	"math"
@@ -48,11 +43,7 @@ func main() {
 	defer os.RemoveAll(tmp)
 
 	compile(doc, tmp)
-	light, dark := render(doc, tmp, "Default"), render(doc, tmp, "Dark")
-	save("resources/icon.png", appIcon(light))
-	save("src/assets/icon.png", scale(light, 192))
-	save("src/assets/icon-dark.png", scale(dark, 192))
-	save("src/assets/mark.png", scale(trim(load(badge(doc))), 192))
+	save("resources/icon.png", appIcon(render(doc, tmp, "Default")))
 }
 
 // compile builds Assets.car with actool, from a copy of the document named
@@ -86,28 +77,6 @@ func render(doc, tmp, rendition string) image.Image {
 	run(ictool, doc, "--export-image", "--output-file", out, "--platform", "macOS",
 		"--rendition", rendition, "--width", "1024", "--height", "1024", "--scale", "1")
 	return load(out)
-}
-
-// badge is the image of the document's first layer.
-func badge(doc string) string {
-	b, err := os.ReadFile(filepath.Join(doc, "icon.json"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	var d struct {
-		Groups []struct {
-			Layers []struct {
-				Image string `json:"image-name"`
-			} `json:"layers"`
-		} `json:"groups"`
-	}
-	if err := json.Unmarshal(b, &d); err != nil {
-		log.Fatal("icon.json: ", err)
-	}
-	if len(d.Groups) == 0 || len(d.Groups[0].Layers) == 0 || d.Groups[0].Layers[0].Image == "" {
-		log.Fatal("icon.json: no layer with an image")
-	}
-	return filepath.Join(doc, "Assets", d.Groups[0].Layers[0].Image)
 }
 
 func run(name string, args ...string) {
@@ -172,32 +141,6 @@ func gaussian(v []float64, size int, sigma float64) []float64 {
 	rows := func(x, y int) int { return y*size + x }
 	cols := func(x, y int) int { return x*size + y }
 	return pass(pass(v, rows), cols)
-}
-
-// trim crops img to the square around what it draws.
-func trim(img image.Image) image.Image {
-	b := img.Bounds()
-	box := image.Rectangle{Min: b.Max, Max: b.Min}
-	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			if _, _, _, a := img.At(x, y).RGBA(); a > 0x0400 {
-				box = box.Union(image.Rect(x, y, x+1, y+1))
-			}
-		}
-	}
-	side := max(box.Dx(), box.Dy())
-	cx, cy := (box.Min.X+box.Max.X)/2, (box.Min.Y+box.Max.Y)/2
-	sq := image.Rect(cx-side/2, cy-side/2, cx-side/2+side, cy-side/2+side)
-	out := image.NewNRGBA(image.Rect(0, 0, side, side))
-	draw.Draw(out, out.Bounds(), &image.Uniform{color.Transparent}, image.Point{}, draw.Src)
-	draw.Draw(out, out.Bounds(), img, sq.Min, draw.Over)
-	return out
-}
-
-func scale(img image.Image, px int) image.Image {
-	out := image.NewNRGBA(image.Rect(0, 0, px, px))
-	draw.CatmullRom.Scale(out, out.Bounds(), img, img.Bounds(), draw.Over, nil)
-	return out
 }
 
 func load(path string) image.Image {

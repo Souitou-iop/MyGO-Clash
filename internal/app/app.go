@@ -100,7 +100,6 @@ type App struct {
 	cleaned     bool
 	released    bool // the system proxy is off for good
 	pendingURLs []string
-	pendingPage string // for the main window being created; see navigate
 	hotkeys     []string
 }
 
@@ -109,7 +108,6 @@ func Main() {
 	corehost.AppVersion = Version
 	a := &App{ready: make(chan struct{})}
 	a.ctx, a.stop = context.WithCancel(context.Background())
-	a.bind()
 	if !mygo.App.RequestSingleInstanceLock() {
 		return // the running instance takes over
 	}
@@ -419,7 +417,6 @@ func (a *App) showMain() {
 	}
 	opts := mygo.WindowOptions{
 		Title:           a.name,
-		URL:             "/",
 		Width:           1120,
 		Height:          740,
 		MinWidth:        880,
@@ -430,11 +427,9 @@ func (a *App) showMain() {
 		TitleBarHeight:  44,
 		BackgroundColor: windowBackground(a.settings.Get()),
 	}
-	if nativeMain() {
-		opts.URL, opts.Content = "", ui.View(a.main.view)
-		// A swipe between pages goes back, as a mouse's back button does.
-		opts.Page.SwipeNavigation = true
-	}
+	opts.Content = ui.View(a.main.view)
+	// A swipe between pages goes back, as a mouse's back button does.
+	opts.Page.SwipeNavigation = true
 	win = mygo.NewWindow(opts)
 	win.OnReadyToShow(func() {
 		win.Show()
@@ -452,16 +447,7 @@ func (a *App) showMain() {
 		win.Hide()
 		a.afterHide()
 	})
-	if page := win.Page(); page != nil {
-		page.OnWillNavigate(func(e *mygo.NavigateEvent) {
-			if u, err := url.Parse(e.URL); err == nil && (u.Scheme == "http" || u.Scheme == "https") && !mygo.IsDev() && e.UserInitiated {
-				e.PreventDefault()
-				go mygo.Shell.OpenExternal(e.URL)
-			}
-		})
-	} else {
-		a.main.attach(win)
-	}
+	a.main.attach(win)
 	a.mu.Lock()
 	a.win = win
 	a.mu.Unlock()
@@ -518,24 +504,8 @@ func (a *App) navigate(page string) {
 	if page == "" {
 		page = "home"
 	}
-	a.mu.Lock()
-	win := a.win
-	if win == nil || win.IsDestroyed() {
-		// The window showMain creates takes it when its page boots
-		// (App.takePage), as events sent before that are lost.
-		a.pendingPage = page
-		win = nil
-	}
-	a.mu.Unlock()
-	if nativeMain() {
-		a.main.navigate(page)
-		a.showMain()
-		return
-	}
+	a.main.navigate(page)
 	a.showMain()
-	if win != nil {
-		_ = NavigateEvent.Emit(win, page)
-	}
 }
 
 // ---- Deep links ----

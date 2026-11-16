@@ -4,39 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "GOFLAGS=-tags=with_gvisor go tool mygo dev",
-    "build": "GOFLAGS=-tags=with_gvisor go tool mygo build",
+    "build": "bun run geodata && GOFLAGS=-tags=with_gvisor go tool mygo build",
     "build:windows-installer": "go run ./tools/winsetup build/windows-amd64 build/windows-arm64",
     "generate": "GOFLAGS=-tags=with_gvisor go tool mygo generate",
-    "dev:web": "vite",
-    "build:web": "tsc --noEmit && vite build",
-    "geodata": "go run ./tools/geodata",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@codemirror/autocomplete": "latest",
-    "@codemirror/commands": "latest",
-    "@codemirror/lang-css": "latest",
-    "@codemirror/lang-javascript": "latest",
-    "@codemirror/lang-yaml": "latest",
-    "@codemirror/language": "latest",
-    "@codemirror/lint": "latest",
-    "@codemirror/search": "latest",
-    "@codemirror/state": "latest",
-    "@codemirror/view": "latest",
-    "@lezer/highlight": "latest",
-    "@tanstack/react-virtual": "latest",
-    "flag-icons": "^7.6.0",
-    "lucide-react": "latest",
-    "mygo-runtime": "^0.9.1",
-    "react": "^19",
-    "react-dom": "^19",
-    "zustand": "^5"
-  },
-  "devDependencies": {
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "latest",
-    "typescript": "latest",
-    "vite": "latest"
+    "geodata": "go run ./tools/geodata"
   }
 }

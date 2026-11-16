@@ -57,22 +57,6 @@ func (a *App) startDebug() {
 		w.Header().Set("Content-Type", "image/png")
 		_, _ = w.Write(png)
 	})
-	mux.HandleFunc("POST /eval", func(w http.ResponseWriter, r *http.Request) {
-		a.mu.Lock()
-		win := a.win
-		a.mu.Unlock()
-		if win == nil || win.Page() == nil {
-			http.Error(w, "no page", http.StatusNotFound)
-			return
-		}
-		code, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-		v, err := win.Page().Eval(string(code))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		_ = json.NewEncoder(w).Encode(v)
-	})
 	mux.HandleFunc("POST /navigate", func(w http.ResponseWriter, r *http.Request) {
 		a.navigate(r.URL.Query().Get("page"))
 		w.WriteHeader(http.StatusNoContent)

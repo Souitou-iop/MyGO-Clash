@@ -50,12 +50,12 @@ const (
 	license  = "GPL-3.0-or-later"
 )
 
-// depends lists what the app loads at run time, by format: GTK, WebKitGTK
-// and the AppIndicator library of the tray. RPM names them by the shared
+// depends lists what the app loads at run time, by format: GTK and the
+// AppIndicator library of the tray. RPM names them by the shared
 // libraries, which Fedora and openSUSE package under different names.
 var depends = map[string][]string{
-	"rpm":       {"libgtk-3.so.0()(64bit)", "libwebkit2gtk-4.1.so.0()(64bit)", "libayatana-appindicator3.so.1()(64bit)"},
-	"archlinux": {"gtk3", "webkit2gtk-4.1", "libayatana-appindicator"},
+	"rpm":       {"libgtk-3.so.0()(64bit)", "libayatana-appindicator3.so.1()(64bit)"},
+	"archlinux": {"gtk3", "libayatana-appindicator"},
 }
 
 // The AppImage runtime, from https://github.com/AppImage/type2-runtime.

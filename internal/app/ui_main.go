@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -15,11 +14,6 @@ import (
 	"github.com/mygo-clash/mygo-clash/internal/config"
 	"github.com/mygo-clash/mygo-clash/internal/coreapi"
 )
-
-// nativeMain reports whether the main window is native UI, which MyGo
-// draws itself, rather than the web page. While both exist,
-// MYGO_CLASH_UI=web keeps the page.
-func nativeMain() bool { return os.Getenv("MYGO_CLASH_UI") != "web" }
 
 // pages are the pages of the main window, in the order of the navigation.
 var pages = []string{"home", "proxies", "profiles", "connections", "stats", "rules", "logs", "tailscale", "connectivity", "settings"}

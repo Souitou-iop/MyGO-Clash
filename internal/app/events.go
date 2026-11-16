@@ -83,8 +83,6 @@ var (
 	TailscaleEvent = mygo.NewEvent[coreapi.TailscaleStatus]("tailscale")
 	// SyncEvent is sent when the sync's status changed.
 	SyncEvent = mygo.NewEvent[SyncStatus]("sync")
-	// NavigateEvent asks the page to show a page: home, proxies, settings...
-	NavigateEvent = mygo.NewEvent[string]("navigate")
 	// RuntimeEvent is sent after a configuration was applied, when proxies,
 	// rules and providers may have changed.
 	RuntimeEvent = mygo.NewEvent[RuntimeInfo]("runtime")

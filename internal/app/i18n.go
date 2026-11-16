@@ -9,7 +9,7 @@ import (
 )
 
 // languages are the languages of the interface, as settings.language
-// takes them; src/lib/i18n.ts has the same.
+// takes them.
 var languages = []string{"en", "zh-CN", "zh-TW", "ja", "ko", "ru", "es", "pt-BR", "de", "fr", "tr", "id", "vi", "fa", "ar"}
 
 // systemLanguages are languages as MyGo matches the user's against, for

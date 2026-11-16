@@ -153,7 +153,7 @@ Download the latest release from the [Releases](https://github.com/Souitou-iop/M
 | Arch Linux | `.pkg.tar.zst` (`sudo pacman -U`) | By the package manager |
 | Other distributions | `.AppImage` | Download the new version |
 
-Linux needs GTK 3, WebKitGTK 4.1 and libayatana-appindicator, for the tray icon. The deb, rpm and Arch packages install them; the AppImage and the tar.gz expect them on the system.
+Linux needs GTK 3 and libayatana-appindicator, for the tray icon. The deb, rpm and Arch packages install them; the AppImage and the tar.gz expect them on the system.
 
 The packages are not code-signed yet: on macOS, open the app the first time with right-click › Open; Windows may show a SmartScreen warning.
 
@@ -163,18 +163,16 @@ You need:
 
 - [Go](https://go.dev/dl/) 1.27.3 or later
 - [Bun](https://bun.sh)
-- On Linux, GTK 3 and WebKitGTK 4.1, e.g. `sudo apt install libwebkit2gtk-4.1-0` on Debian and Ubuntu
-- On Windows 10, the [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (Windows 11 includes it)
+- On Linux, GTK 3, e.g. `sudo apt install libgtk-3-0` on Debian and Ubuntu
 
 ```bash
 git clone https://github.com/Souitou-iop/MyGO-Clash.git
 cd MyGO-Clash
-bun install
 bun run dev     # development: rebuilds on changes
 bun run build   # packages the app for this platform into build/
 ```
 
-Build through the scripts of `package.json`: they add the `-tags=with_gvisor` mihomo needs. After changing the Go side's API, `bun run generate` updates the frontend bindings in `src/mygo.ts`.
+Build through the scripts of `package.json`: they add the `-tags=with_gvisor` mihomo needs. After changing the translations in `internal/app/locales`, `bun run generate` updates the message catalog in Go.
 
 Go needs no cgo, so one Mac builds every platform:
 
@@ -187,7 +185,7 @@ Only macOS makes the DMG. The Windows installers need NSIS (`brew install makens
 
 Pushing a version tag such as `v0.2.0` runs GitHub Actions (`.github/workflows/release.yml`), which builds every platform, signs the updates and uploads them to a draft release; publishing the draft updates the installed apps. `go tool mygo keygen` makes the signing key, which goes in the repository's `MYGO_UPDATER_PRIVATE_KEY` secret; the release notes come from `CHANGELOG.md`.
 
-The app icon comes from an Icon Composer document. After changing the design, run this on a Mac with Xcode 26 or later to make the macOS `Assets.car`, the `icon.png` of the other platforms and the interface's icons again:
+The app icon comes from an Icon Composer document. After changing the design, run this on a Mac with Xcode 26 or later to make the macOS `Assets.car`, and the `icon.png` of the other platforms again:
 
 ```bash
 go run ./cmd/genicon path/to/MyGo-Clash.icon
@@ -197,7 +195,7 @@ go run ./cmd/genicon path/to/MyGo-Clash.icon
 
 ```
 main.go              entry: one executable runs the app, the core (core) or the privileged service (service)
-internal/app         windows, tray, quick panel, notifications, settings and the frontend's API
+internal/app         the native main window and quick panel, tray, notifications and settings
 internal/corehost    runs the mihomo core
 internal/coremgr     runs the core as its own process or through the system service
 internal/service     the privileged service TUN needs
@@ -206,7 +204,7 @@ internal/enhance     merges, scripts and other extensions of profiles
 internal/tailnet     Tailscale
 internal/cloudsync   end-to-end encrypted sync
 internal/sysproxy    the system proxy
-src/                 the React frontend
+design/              the app icon's design files
 cmd/genicon          makes every platform's icons from the Icon Composer document
 tools/linuxpkg       makes the rpm, Arch package and AppImage (a Go module of its own)
 ```

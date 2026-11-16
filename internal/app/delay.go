@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// The delay classes, with the thresholds of delayClass in src/lib/format.ts.
+// The delay classes.
 type delayKind int
 
 const (

@@ -110,7 +110,7 @@ claude mcp add mygo-clash -- /Applications/MyGO-Clash.app/Contents/MacOS/MyGO-Cl
 | Arch Linux | `.pkg.tar.zst`（`sudo pacman -U`） | パッケージマネージャー |
 | その他のディストリビューション | `.AppImage` | 新しい版をダウンロード |
 
-Linux では GTK 3、WebKitGTK 4.1 と、トレイアイコン用の libayatana-appindicator が必要です。deb・rpm・Arch パッケージは自動で入れますが、AppImage と tar.gz ではシステムにあらかじめ必要です。
+Linux では GTK 3 と、トレイアイコン用の libayatana-appindicator が必要です。deb・rpm・Arch パッケージは自動で入れますが、AppImage と tar.gz ではシステムにあらかじめ必要です。
 
 パッケージにはまだコード署名がありません。macOS では初回は右クリックから「開く」を選んでください。Windows では SmartScreen の警告が出ることがあります。
 
@@ -120,18 +120,16 @@ Linux では GTK 3、WebKitGTK 4.1 と、トレイアイコン用の libayatana-
 
 - [Go](https://go.dev/dl/) 1.27.3 以降
 - [Bun](https://bun.sh)
-- Linux：GTK 3 と WebKitGTK 4.1（Debian / Ubuntu なら `sudo apt install libwebkit2gtk-4.1-0`）
-- Windows 10：[WebView2 ランタイム](https://developer.microsoft.com/microsoft-edge/webview2/)（Windows 11 には同梱）
+- Linux：GTK 3（Debian / Ubuntu なら `sudo apt install libgtk-3-0`）
 
 ```bash
 git clone https://github.com/Souitou-iop/MyGO-Clash.git
 cd MyGO-Clash
-bun install
 bun run dev     # 開発モード：変更すると自動で再ビルド
 bun run build   # このプラットフォーム向けにパッケージを作成（build/ に出力）
 ```
 
-ビルドには `package.json` のスクリプトを使ってください。mihomo に必要な `-tags=with_gvisor` が付きます。Go 側の API を変えたら、`bun run generate` でフロントエンドのバインディング `src/mygo.ts` を作り直します。
+ビルドには `package.json` のスクリプトを使ってください。mihomo に必要な `-tags=with_gvisor` が付きます。`internal/app/locales` の翻訳を変えたら、`bun run generate` で Go のメッセージカタログを作り直します。
 
 Go は cgo を使わないので、Mac 1 台ですべてのプラットフォームをビルドできます：
 
@@ -144,7 +142,7 @@ DMG は macOS でしか作れません。Windows のインストーラーには 
 
 `v0.2.0` のようなバージョンタグを push すると、GitHub Actions（`.github/workflows/release.yml`）がすべてのプラットフォームをビルドし、アップデートに署名して Release の下書きにアップロードします。下書きを公開すると、インストール済みのアプリがそのバージョンに更新されます。署名鍵は `go tool mygo keygen` で作り、リポジトリの `MYGO_UPDATER_PRIVATE_KEY` シークレットに置きます。リリースノートは `CHANGELOG.md` から取られます。
 
-アプリアイコンは Icon Composer のファイルから作っています。デザインを変えたら、Xcode 26 以降を入れた Mac で次のコマンドを実行すると、macOS 用の `Assets.car`、ほかのプラットフォーム用の `icon.png`、画面内のアイコンがまとめて作り直されます：
+アプリアイコンは Icon Composer のファイルから作っています。デザインを変えたら、Xcode 26 以降を入れた Mac で次のコマンドを実行すると、macOS 用の `Assets.car`、ほかのプラットフォーム用の `icon.png` が作り直されます：
 
 ```bash
 go run ./cmd/genicon path/to/MyGo-Clash.icon
@@ -154,7 +152,7 @@ go run ./cmd/genicon path/to/MyGo-Clash.icon
 
 ```
 main.go              エントリー：1 つの実行ファイルがアプリ・コア（core）・特権サービス（service）を兼ねる
-internal/app         ウィンドウ、トレイ、クイックパネル、通知、設定、フロントエンド向け API
+internal/app         ネイティブのメインウィンドウとクイックパネル、トレイ、通知、設定
 internal/corehost    mihomo コアの実行
 internal/coremgr     コアを独立プロセスまたはシステムサービスとして管理
 internal/service     TUN に必要な特権サービス
@@ -163,7 +161,7 @@ internal/enhance     マージやスクリプトなどの拡張
 internal/tailnet     Tailscale 連携
 internal/cloudsync   エンドツーエンド暗号化の同期
 internal/sysproxy    システムプロキシ
-src/                 React のフロントエンド
+design/              アプリアイコンのデザインファイル
 cmd/genicon          Icon Composer のファイルから各プラットフォームのアイコンを作成
 tools/linuxpkg       rpm・Arch パッケージ・AppImage を作成（独立した Go モジュール）
 ```
