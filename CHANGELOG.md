@@ -2,6 +2,15 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.3
+
+修复版：首页节点卡片里的分组按钮在某些窗口宽度下不再被截成半截；应用更新后静默更新 TUN 服务的那几秒，设置里不再误显示“未安装”。/ A fix release: the group buttons on the home page's node card are no longer cut in half at some window widths, and in the few seconds the app takes to update the TUN service after an update, the settings no longer show it as not installed.
+
+### 🐛 修复 / Fixes
+
+- 首页节点卡片下方的分组按钮换行时，卡片随之变高，最多显示三行，不再露出半截按钮 / The group buttons under the exit on the home page make its card taller as they wrap, up to three lines, instead of showing one cut in half
+- 应用更新后会自动把 TUN 服务更新到同一版本，服务重启的几秒内设置页与首页显示“正在更新”，不再显示“未安装”和安装按钮，无需重新安装 / As the app brings the TUN service up to its version after an update, the settings and the home page say it is updating for the few seconds the service restarts, instead of “not installed” with an install button; there is nothing to reinstall
+
 ## 1.0.2
 
 修复版：不再依赖网页视图，Linux 的安装包因此不再需要 WebKitGTK；首页节点名过长时不再被截断，代理页切换方块与列表的动画更连贯，下拉选择与更多菜单有了展开和收回的动画。/ A fix release: nothing depends on a web view any more, so the Linux packages no longer need WebKitGTK; long node names on the home page are no longer cut, switching between tiles and list on the Proxies page is smoother, and drop-downs and menus open and close with a motion.
