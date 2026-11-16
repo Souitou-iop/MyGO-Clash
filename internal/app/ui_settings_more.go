@@ -483,7 +483,7 @@ func (m *mainUI) deviceList(c *ui.Context) {
 								m.openRemove([]DeviceInfo{dev})
 							}
 						}
-					}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
+					}, menuOptions(c))
 				})
 			}
 		})

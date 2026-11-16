@@ -6,7 +6,7 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-// selectPopup is how the list of a drop-down comes and goes: it grows from
+// selectPopup is how the list of a drop-down, or a menu, comes and goes: it grows from
 // the edge of its trigger, a little smaller and nearer to it, and shrinks
 // back as it closes, faster than it came. Flip makes it come up from the
 // trigger where it opened above it.
@@ -17,6 +17,21 @@ var selectPopup = ui.ElementTransition{
 	ExitEase:     ui.EaseIn,
 	Enter:        &ui.Motion{Scale: 0.96, Y: -6, Flip: true},
 	Exit:         &ui.Motion{Scale: 0.96, Y: -6, Flip: true},
+}
+
+// menuOptions places a button's menu, at its end below it unless at says
+// otherwise, and gives it the motion of a drop-down's list.
+func menuOptions(c *ui.Context, place ...ui.Anchor) ui.PopoverMenuButtonOptions {
+	o := ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd}
+	if len(place) == 2 {
+		o.At, o.Self = place[0], place[1]
+	}
+	motion := selectPopup
+	if c.Preferences().ReduceMotion {
+		motion.Duration, motion.ExitDuration = -1, -1
+	}
+	o.Panel = func(panel ui.Element) { panel.AttachedOrigin().Transition(motion) }
+	return o
 }
 
 // dropdown is ui.Select, a drop-down choosing one of options into

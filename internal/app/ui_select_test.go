@@ -69,3 +69,54 @@ func TestDropdownOpensAndClosesWithMotion(t *testing.T) {
 		t.Error("the list stays after it closed")
 	}
 }
+
+// The menu of a "more" button grows out of its button, as a drop-down's
+// list does, and stays a moment as it closes.
+func TestButtonMenuOpensAndClosesWithMotion(t *testing.T) {
+	m := &mainUI{}
+	chosen := ""
+	view := func(c *ui.Context) {
+		m.frame++
+		m.pal = mainPalette(false, false, "", "")
+		c.SetTheme(m.pal.Theme)
+		ui.Row(c).Fill().Padding(40).Justify(ui.End).Children(func() {
+			ui.Button(c.Key("more"), "More").PopoverMenuButton(func(menu *ui.Menu) {
+				if menu.Item("Export").Chosen() {
+					chosen = "Export"
+				}
+				if menu.Item("Clear").Chosen() {
+					chosen = "Clear"
+				}
+			}, menuOptions(c))
+		})
+	}
+	tt := ui.NewTester(view, 400, 300)
+	tt.Frame()
+	tt.Advance(time.Second)
+	if tt.HasText("Export") {
+		t.Fatal("the menu shows before it opens")
+	}
+	if err := tt.Click("More"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Advance(time.Second)
+	if !tt.HasText("Export") {
+		t.Fatal("the menu does not show once opened")
+	}
+	r, _ := tt.Find("Clear")
+	page := tt.Image().At(20, 280)
+	if err := tt.Click("Clear"); err != nil {
+		t.Fatal(err)
+	}
+	if chosen != "Clear" {
+		t.Errorf("chose %q, want Clear", chosen)
+	}
+	tt.Advance(40 * time.Millisecond)
+	if tt.Image().At(int(r.X+r.W/2), int(r.Y+r.H/2)) == page {
+		t.Error("the menu is gone at once instead of shrinking back")
+	}
+	tt.Advance(time.Second)
+	if tt.Image().At(int(r.X+r.W/2), int(r.Y+r.H/2)) != page {
+		t.Error("the menu stays after it closed")
+	}
+}

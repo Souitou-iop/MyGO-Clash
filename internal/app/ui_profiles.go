@@ -388,7 +388,7 @@ func (m *mainUI) profileTile(c *ui.Context, pr *profiles.Profile) {
 						move(1)
 					}
 				}
-			}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
+			}, menuOptions(c))
 		})
 		if pr.Desc != "" {
 			ui.Text(c, pr.Desc).FontSize(12).TextColor(p.TextMuted).SingleLine()

@@ -169,7 +169,7 @@ func (m *mainUI) statsView(c *ui.Context) {
 					m.run(locales.CommonFailed(), func() error { return Stats{a}.Clear(context.Background()) }, func(error) { s.key = "" })
 				})
 			}
-		}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
+		}, menuOptions(c))
 	})
 	ui.Scroll(c.Key("stats")).TrackScroll(m.keepScroll("stats")).Grow(1).Padding(4, 22, 22).Gap(14).Children(func() {
 		// The days to choose fold in as the range becomes custom.
@@ -603,7 +603,7 @@ func (m *mainUI) devicePicker(c *ui.Context, me string) {
 				s.picked = next
 			}
 		}
-	})
+	}, menuOptions(c, ui.AnchorBottomStart, ui.AnchorTopStart))
 }
 
 func (m *mainUI) statsSettings(c *ui.Context) {

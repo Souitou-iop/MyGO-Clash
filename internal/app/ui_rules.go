@@ -479,7 +479,7 @@ func (m *mainUI) ruleList(c *ui.Context, profile string, reload func()) {
 						d := [2]string{syn, r.Payload}
 						m.openExt(profile, profile, locales.ProfilesExtRules()+" · "+m.state.ProfileName, "rules", &d)
 					}
-				}, ui.PopoverMenuButtonOptions{At: ui.AnchorBottomEnd, Self: ui.AnchorTopEnd})
+				}, menuOptions(c))
 			})
 		})
 	}).Grow(1)
