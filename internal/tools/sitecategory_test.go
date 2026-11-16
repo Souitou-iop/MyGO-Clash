@@ -22,6 +22,19 @@ func TestSiteCategory(t *testing.T) {
 		{Site{ID: "binance"}, "money", ""},
 		{Site{ID: "baidu", Group: "domestic"}, CategoryRegion, "china"},
 		{Site{ID: "digikala"}, CategoryRegion, "iran"},
+		{Site{ID: "nhk"}, CategoryRegion, "japan"},
+		{Site{ID: "kakao"}, CategoryRegion, "korea"},
+		{Site{ID: "hk01"}, CategoryRegion, "hongkong"},
+		{Site{ID: "dcard"}, CategoryRegion, "taiwan"},
+		{Site{ID: "grab"}, CategoryRegion, "singapore"},
+		{Site{ID: "irs"}, CategoryRegion, "usa"},
+		{Site{ID: "govuk"}, CategoryRegion, "uk"},
+		{Site{ID: "yahoo-jp"}, CategoryRegion, "japan"},
+		// A site of a country's group and of a theme is the theme's.
+		{Site{ID: "hulu"}, "media", ""},
+		{Site{ID: "gmail"}, "work", ""},
+		{Site{ID: "etherscan"}, "money", ""},
+		{Site{ID: "ghcr"}, "dev", ""},
 		{Site{ID: "my-own"}, CategoryOther, ""},
 	} {
 		if got := SiteCategory(c.site); got != c.want {
@@ -63,6 +76,15 @@ func TestDefaultSitesAll(t *testing.T) {
 	}
 	if n := len(NormalizeSites(ConnectivitySites)); n != len(ConnectivitySites) || n > MaxConnectivitySites {
 		t.Errorf("defaults: %d kept of %d (cap %d)", n, len(ConnectivitySites), MaxConnectivitySites)
+	}
+	// Room is left for the user's own.
+	if room := MaxConnectivitySites - len(ConnectivitySites); room < 300 {
+		t.Errorf("room for %d sites of the user's own", room)
+	}
+	for _, r := range []string{"japan", "korea", "hongkong", "taiwan", "singapore", "usa", "uk"} {
+		if !slices.Contains(SiteRegions(ConnectivitySites), r) || RegionCode(r) == "" {
+			t.Errorf("region %s is missing", r)
+		}
 	}
 	t.Logf("%d default sites in %d categories, %d regions", len(ConnectivitySites), len(SiteCategories(ConnectivitySites)), len(SiteRegions(ConnectivitySites)))
 }

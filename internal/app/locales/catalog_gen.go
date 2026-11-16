@@ -2157,6 +2157,16 @@ func (msgs Messages) ConnectivityPresetGermany() string {
 	return Catalog.Format(msgs.locale, "connectivityPresetGermany", nil)
 }
 
+// ConnectivityPresetHongkong says "Hong Kong Essentials"
+// in the language the app shows.
+func ConnectivityPresetHongkong() string { return In(i18n.Locale()).ConnectivityPresetHongkong() }
+
+// ConnectivityPresetHongkong says "Hong Kong Essentials"
+// in the language of msgs.
+func (msgs Messages) ConnectivityPresetHongkong() string {
+	return Catalog.Format(msgs.locale, "connectivityPresetHongkong", nil)
+}
+
 // ConnectivityPresetIndia says "India Essentials"
 // in the language the app shows.
 func ConnectivityPresetIndia() string { return In(i18n.Locale()).ConnectivityPresetIndia() }
@@ -2175,6 +2185,26 @@ func ConnectivityPresetIran() string { return In(i18n.Locale()).ConnectivityPres
 // in the language of msgs.
 func (msgs Messages) ConnectivityPresetIran() string {
 	return Catalog.Format(msgs.locale, "connectivityPresetIran", nil)
+}
+
+// ConnectivityPresetJapan says "Japan Essentials"
+// in the language the app shows.
+func ConnectivityPresetJapan() string { return In(i18n.Locale()).ConnectivityPresetJapan() }
+
+// ConnectivityPresetJapan says "Japan Essentials"
+// in the language of msgs.
+func (msgs Messages) ConnectivityPresetJapan() string {
+	return Catalog.Format(msgs.locale, "connectivityPresetJapan", nil)
+}
+
+// ConnectivityPresetKorea says "South Korea Essentials"
+// in the language the app shows.
+func ConnectivityPresetKorea() string { return In(i18n.Locale()).ConnectivityPresetKorea() }
+
+// ConnectivityPresetKorea says "South Korea Essentials"
+// in the language of msgs.
+func (msgs Messages) ConnectivityPresetKorea() string {
+	return Catalog.Format(msgs.locale, "connectivityPresetKorea", nil)
 }
 
 // ConnectivityPresetKosovo says "Kosovo Essentials"
@@ -2249,6 +2279,16 @@ func (msgs Messages) ConnectivityPresetRussia() string {
 	return Catalog.Format(msgs.locale, "connectivityPresetRussia", nil)
 }
 
+// ConnectivityPresetSingapore says "Singapore Essentials"
+// in the language the app shows.
+func ConnectivityPresetSingapore() string { return In(i18n.Locale()).ConnectivityPresetSingapore() }
+
+// ConnectivityPresetSingapore says "Singapore Essentials"
+// in the language of msgs.
+func (msgs Messages) ConnectivityPresetSingapore() string {
+	return Catalog.Format(msgs.locale, "connectivityPresetSingapore", nil)
+}
+
 // ConnectivityPresetSocial says "Social Networks"
 // in the language the app shows.
 func ConnectivityPresetSocial() string { return In(i18n.Locale()).ConnectivityPresetSocial() }
@@ -2279,6 +2319,16 @@ func (msgs Messages) ConnectivityPresetStreaming() string {
 	return Catalog.Format(msgs.locale, "connectivityPresetStreaming", nil)
 }
 
+// ConnectivityPresetTaiwan says "Taiwan Essentials"
+// in the language the app shows.
+func ConnectivityPresetTaiwan() string { return In(i18n.Locale()).ConnectivityPresetTaiwan() }
+
+// ConnectivityPresetTaiwan says "Taiwan Essentials"
+// in the language of msgs.
+func (msgs Messages) ConnectivityPresetTaiwan() string {
+	return Catalog.Format(msgs.locale, "connectivityPresetTaiwan", nil)
+}
+
 // ConnectivityPresetThailand says "Thailand Essentials"
 // in the language the app shows.
 func ConnectivityPresetThailand() string { return In(i18n.Locale()).ConnectivityPresetThailand() }
@@ -2297,6 +2347,26 @@ func ConnectivityPresetTravel() string { return In(i18n.Locale()).ConnectivityPr
 // in the language of msgs.
 func (msgs Messages) ConnectivityPresetTravel() string {
 	return Catalog.Format(msgs.locale, "connectivityPresetTravel", nil)
+}
+
+// ConnectivityPresetUk says "United Kingdom Essentials"
+// in the language the app shows.
+func ConnectivityPresetUk() string { return In(i18n.Locale()).ConnectivityPresetUk() }
+
+// ConnectivityPresetUk says "United Kingdom Essentials"
+// in the language of msgs.
+func (msgs Messages) ConnectivityPresetUk() string {
+	return Catalog.Format(msgs.locale, "connectivityPresetUk", nil)
+}
+
+// ConnectivityPresetUsa says "United States Essentials"
+// in the language the app shows.
+func ConnectivityPresetUsa() string { return In(i18n.Locale()).ConnectivityPresetUsa() }
+
+// ConnectivityPresetUsa says "United States Essentials"
+// in the language of msgs.
+func (msgs Messages) ConnectivityPresetUsa() string {
+	return Catalog.Format(msgs.locale, "connectivityPresetUsa", nil)
 }
 
 // ConnectivityRestore says "Restore"
@@ -12357,6 +12427,16 @@ func (msgs Messages) UnlockDetailCaptcha() string {
 	return Catalog.Format(msgs.locale, "unlockDetailCaptcha", nil)
 }
 
+// UnlockDetailChallenge says "Challenge page"
+// in the language the app shows.
+func UnlockDetailChallenge() string { return In(i18n.Locale()).UnlockDetailChallenge() }
+
+// UnlockDetailChallenge says "Challenge page"
+// in the language of msgs.
+func (msgs Messages) UnlockDetailChallenge() string {
+	return Catalog.Format(msgs.locale, "unlockDetailChallenge", nil)
+}
+
 // UnlockDetailNetwork says "Network error"
 // in the language the app shows.
 func UnlockDetailNetwork() string { return In(i18n.Locale()).UnlockDetailNetwork() }
@@ -12487,6 +12567,16 @@ func (msgs Messages) UnlockNameBingRegion() string {
 	return Catalog.Format(msgs.locale, "unlockNameBingRegion", nil)
 }
 
+// UnlockNameGooglePlay says "Google Play region"
+// in the language the app shows.
+func UnlockNameGooglePlay() string { return In(i18n.Locale()).UnlockNameGooglePlay() }
+
+// UnlockNameGooglePlay says "Google Play region"
+// in the language of msgs.
+func (msgs Messages) UnlockNameGooglePlay() string {
+	return Catalog.Format(msgs.locale, "unlockNameGooglePlay", nil)
+}
+
 // UnlockNameGoogleSearch says "Google Search"
 // in the language the app shows.
 func UnlockNameGoogleSearch() string { return In(i18n.Locale()).UnlockNameGoogleSearch() }
@@ -12515,6 +12605,16 @@ func UnlockNameWikipediaEdit() string { return In(i18n.Locale()).UnlockNameWikip
 // in the language of msgs.
 func (msgs Messages) UnlockNameWikipediaEdit() string {
 	return Catalog.Format(msgs.locale, "unlockNameWikipediaEdit", nil)
+}
+
+// UnlockNameYoutubeCdn says "YouTube CDN node"
+// in the language the app shows.
+func UnlockNameYoutubeCdn() string { return In(i18n.Locale()).UnlockNameYoutubeCdn() }
+
+// UnlockNameYoutubeCdn says "YouTube CDN node"
+// in the language of msgs.
+func (msgs Messages) UnlockNameYoutubeCdn() string {
+	return Catalog.Format(msgs.locale, "unlockNameYoutubeCdn", nil)
 }
 
 // UnlockNo says "Blocked"

@@ -202,15 +202,8 @@ func (m *mainUI) ctyTiles(c *ui.Context) {
 			}
 		})
 		// How many sites open, with every round as a cell.
-		ok, done := 0, 0
-		for _, st := range s.sites {
-			if r := s.rounds[st.ID]; len(r) > 0 {
-				done++
-				if bestRound(r) > 0 {
-					ok++
-				}
-			}
-		}
+		d := m.derived()
+		ok, done := d.ok, d.done
 		tile(ctySites, locales.ConnectivitySites(), func() { m.siteVerdict(c) }, func() {
 			v := "—"
 			if done > 0 {
@@ -359,45 +352,9 @@ func (m *mainUI) splitBadge(c *ui.Context) {
 // siteVerdict reads the results like MyIP does: whether sites at home and
 // abroad open.
 func (m *mainUI) siteVerdict(c *ui.Context) {
-	s := &m.cty
-	opens := func(group string) (bool, bool) {
-		// The sites of a country's own and the user's say little about
-		// whether sites abroad open: the verdict leaves them out.
-		var of []tools.Site
-		for _, st := range s.sites {
-			if cat := tools.SiteCategory(st); cmp.Or(st.Group, "global") == group && cat != tools.CategoryRegion && cat != tools.CategoryOther {
-				of = append(of, st)
-			}
-		}
-		ok := 0
-		if len(of) == 0 {
-			return false, false
-		}
-		for _, st := range of {
-			if len(s.rounds[st.ID]) == 0 {
-				return false, false
-			}
-			if bestRound(s.rounds[st.ID]) > 0 {
-				ok++
-			}
-		}
-		return ok*2 >= len(of), true
+	if d := m.derived(); d.verdictKey != "" {
+		m.badge(c, m.T("connectivity.verdict."+d.verdictKey), d.verdictTone)
 	}
-	home, k1 := opens("domestic")
-	abroad, k2 := opens("global")
-	if !k1 || !k2 {
-		return
-	}
-	tone, key := "danger", "none"
-	switch {
-	case home && abroad:
-		tone, key = "success", "ok"
-	case home:
-		key = "noGlobal"
-	case abroad:
-		tone, key = "warning", "noDomestic"
-	}
-	m.badge(c, m.T("connectivity.verdict."+key), tone)
 }
 
 // siteMosaic is every site's every round as a small cell, lit as the
@@ -441,56 +398,112 @@ func (m *mainUI) siteMosaic(c *ui.Context) {
 		}
 	}
 drawn:
-	lit := func(b ui.Element, r []int, k int, landed bool) {
-		if landed {
-			v := b.Keyframes("in", []ui.Keyframe{{Value: 0}, {At: 360 * time.Millisecond, Value: 1, Ease: easeBack}},
-				ui.KeyframeOptions{Run: s.sitesRun<<8 | uint64(k+1)})
-			b.Scale(v, v)
+	// One element draws every cell: hundreds of boxes, each its own animated
+	// color and scale, cost a frame more than the rest of the page, which
+	// they cost again whenever one of them moves. Drawn, the cells' motion
+	// repaints the cells alone, without building the page.
+	tipAt := func(x, y float32) string {
+		if rounds {
+			colW := (w - float32(perRow-1)*gap*1.5) / float32(perRow)
+			rowH := float32(siteRounds)*cell + float32(siteRounds-1)*gap + gap*1.5
+			col, row := int(x/(colW+gap*1.5)), int(y/rowH)
+			if i := row*perRow + col; col < perRow && i >= 0 && i < n {
+				return s.sites[i].Name
+			}
+			return ""
+		}
+		colW := (w - float32(perRow-1)*gap) / float32(perRow)
+		col, row := int(x/(colW+gap)), int(y/(cell+gap))
+		if i := row*perRow + col; col < perRow && i >= 0 && i < n {
+			return s.sites[i].Name
+		}
+		return ""
+	}
+	if x, y, over := wrap.PointerPosition(); over {
+		if tip := tipAt(x, y); tip != "" {
+			wrap.Tooltip(tip)
 		}
 	}
-	wrap.Children(func() {
-		if !rounds {
-			ui.Grid(c).Columns(perRow).Gap(gap).Children(func() {
-				for _, st := range s.sites {
-					r := s.rounds[st.ID]
-					b := ui.Box(c.Key(st.ID)).Size(cell, cell).Radius(max(0.5, cell/3.5)).Tooltip(st.Name)
-					col := p.Surface3
-					switch best := bestRound(r); {
-					case best > 0:
-						col = siteColorOf(p, best)
-					case best == 0:
-						col = p.Danger.Alpha(0.45)
-					case s.sitesBusy:
-						b.Opacity(1 - 0.4*b.Loop("pulse", time.Second, ui.Bounce(ui.EaseInOut)))
-					}
-					lit(b, r, 0, len(r) > 0)
-					b.Background(b.AnimateColor("bg", col, ui.Animation{Duration: 160 * time.Millisecond}))
+	wrap.Draw(func(pt *ui.Painter, r ui.Rect) {
+		now := pt.Now()
+		moving := false
+		// A cell fills with its color and pops in as its round lands, and a
+		// cell waiting for one pulses while the sites are tested.
+		paint := func(x, y float32, from, col ui.Color, at time.Time, wait bool) {
+			size, c := cell, col
+			switch {
+			case !at.IsZero():
+				t := now.Sub(at)
+				if t < 360*time.Millisecond {
+					moving = true
+					size = cell * easeBack(float32(t)/float32(360*time.Millisecond))
 				}
-			})
-			return
-		}
-		ui.Grid(c).Columns(perRow).Gap(gap * 1.5).Children(func() {
-			for _, st := range s.sites {
-				r := s.rounds[st.ID]
-				ui.Column(c.Key(st.ID)).Gap(gap).Children(func() {
-					for k := range siteRounds {
-						b := ui.Box(c.Key(k)).Size(cell, cell).Radius(max(1, cell/3.5))
-						col, landed := p.Surface3, false
-						switch {
-						case k < len(r) && r[k] > 0:
-							col, landed = siteColorOf(p, r[k]), true
-						case k < len(r):
-							col, landed = p.Danger.Alpha(0.45), true
-						case s.sitesBusy && k == len(r):
-							col = p.BorderStrong
-							b.Opacity(1 - 0.55*b.Loop("pulse", time.Second, ui.Bounce(ui.EaseInOut)))
-						}
-						lit(b, r, k, landed)
-						b.Background(b.AnimateColor("bg", col, ui.Animation{Duration: 160 * time.Millisecond}))
-					}
-				})
+				if t < 160*time.Millisecond {
+					c = from.Mix(col, float32(t)/float32(160*time.Millisecond))
+				}
+			case wait:
+				moving = true
+				phase := float32(now.UnixNano()%int64(time.Second)) / float32(time.Second)
+				k := ui.Bounce(ui.EaseInOut)(phase)
+				if rounds {
+					c = col.Alpha(1 - 0.55*k)
+				} else {
+					c = col.Alpha(1 - 0.4*k)
+				}
 			}
-		})
+			off := (cell - size) / 2
+			pt.Fill(ui.Rect{X: r.X + x + off, Y: r.Y + y + off, W: size, H: size}, c, max(0.5, size/3.5))
+		}
+		if !rounds {
+			colW := (r.W - float32(perRow-1)*gap) / float32(perRow)
+			for i, st := range s.sites {
+				x, y := float32(i%perRow)*(colW+gap), float32(i/perRow)*(cell+gap)
+				rs := s.rounds[st.ID]
+				col, wait := p.Surface3, false
+				switch best := bestRound(rs); {
+				case best > 0:
+					col = siteColorOf(p, best)
+				case best == 0:
+					col = p.Danger.Alpha(0.45)
+				default:
+					wait = s.sitesBusy
+				}
+				var at time.Time
+				if len(rs) > 0 {
+					if l := s.landed[st.ID]; l != nil {
+						at = l[0]
+					}
+				}
+				paint(x, y, p.Surface3, col, at, wait)
+			}
+		} else {
+			colW := (r.W - float32(perRow-1)*gap*1.5) / float32(perRow)
+			rowH := float32(siteRounds)*cell + float32(siteRounds-1)*gap + gap*1.5
+			for i, st := range s.sites {
+				x, y0 := float32(i%perRow)*(colW+gap*1.5), float32(i/perRow)*rowH
+				rs := s.rounds[st.ID]
+				l := s.landed[st.ID]
+				for k := range siteRounds {
+					col, from, wait := p.Surface3, p.Surface3, false
+					switch {
+					case k < len(rs) && rs[k] > 0:
+						col = siteColorOf(p, rs[k])
+					case k < len(rs):
+						col = p.Danger.Alpha(0.45)
+					case s.sitesBusy && k == len(rs):
+						col, from, wait = p.BorderStrong, p.BorderStrong, true
+					}
+					var at time.Time
+					if k < len(rs) && l != nil {
+						at = l[k]
+					}
+					paint(x, y0+float32(k)*(cell+gap), from, col, at, wait)
+				}
+			}
+		}
+		if moving {
+			pt.AnimationFrame()
+		}
 	})
 }
 
@@ -511,10 +524,14 @@ func (m *mainUI) siteBars(c *ui.Context, r []int, slowest int, h float32) {
 			switch {
 			case k < len(r) && r[k] > 0:
 				target, col, landed = float32(30+70*math.Sqrt(float64(r[k])/float64(slowest))), siteColorOf(p, r[k]), true
-				bar.Tooltip(locales.ConnectivityRound(fmt.Sprint(k+1), fmt.Sprintf("%d ms", r[k])))
+				if bar.Hovered() { // its words are made for the bar the pointer is on
+					bar.Tooltip(locales.ConnectivityRound(fmt.Sprint(k+1), fmt.Sprintf("%d ms", r[k])))
+				}
 			case k < len(r):
 				col, landed = p.Danger.Alpha(0.45), true
-				bar.Tooltip(locales.ConnectivityRound(fmt.Sprint(k+1), locales.ConnectivityUnreachable()))
+				if bar.Hovered() {
+					bar.Tooltip(locales.ConnectivityRound(fmt.Sprint(k+1), locales.ConnectivityUnreachable()))
+				}
 			case s.sitesBusy && k == len(r):
 				col = p.BorderStrong
 				bar.Opacity(1 - 0.55*bar.Loop("pulse", time.Second, ui.Bounce(ui.EaseInOut)))
@@ -564,6 +581,152 @@ func (m *mainUI) catLabel(cat string) string {
 // would not open, and how many wait for their rounds.
 type siteTally struct{ n, failed, pending int }
 
+// siteTallies are what the sites stand at, as the page shows it: the tally
+// of each category, of each country group, and of 常用; the slowest round
+// of any site, which the bars are scaled by; and the median of the best
+// rounds.
+type siteTallies struct {
+	byCat, byRegion map[string]*siteTally
+	favorite        *siteTally
+	slowest, median int
+	// done sites have a round, ok of them one that opened.
+	done, ok int
+}
+
+// tallySites walks the sites once. It is a frame's cost for every site the
+// page has, so it does no more than count; derived keeps what it finds
+// until the sites or their rounds change.
+func (m *mainUI) tallySites() siteTallies {
+	s := &m.cty
+	tl := siteTallies{byCat: map[string]*siteTally{}, byRegion: map[string]*siteTally{}, favorite: &siteTally{}, slowest: 1}
+	favorites := favoriteSet(s.favoriteOrder)
+	var times []int
+	for _, st := range s.sites {
+		r := s.rounds[st.ID]
+		best := bestRound(r)
+		count := func(m map[string]*siteTally, key string) {
+			t := m[key]
+			if t == nil {
+				t = &siteTally{}
+				m[key] = t
+			}
+			t.n++
+			if best == 0 {
+				t.failed++
+			}
+			if s.sitesBusy && len(r) < siteRounds {
+				t.pending++
+			}
+		}
+		count(tl.byCat, tools.SiteCategory(st))
+		if favorites[st.ID] {
+			tl.favorite.n++
+			if best == 0 {
+				tl.favorite.failed++
+			}
+			if s.sitesBusy && len(r) < siteRounds {
+				tl.favorite.pending++
+			}
+		}
+		if reg := tools.SiteRegion(st); reg != "" {
+			count(tl.byRegion, reg)
+		}
+		for _, d := range r {
+			tl.slowest = max(tl.slowest, d)
+		}
+		if len(r) > 0 {
+			tl.done++
+		}
+		if best > 0 {
+			tl.ok++
+			times = append(times, best)
+		}
+	}
+	if len(times) > 0 {
+		slices.Sort(times)
+		tl.median = times[len(times)/2]
+	}
+	return tl
+}
+
+// ctyDerived is what the page works out of the sites and their rounds:
+// their tallies, the categories they are in, and whether sites at home and
+// abroad open.
+type ctyDerived struct {
+	siteTallies
+	cats        []string
+	verdictKey  string // "" while there is none
+	verdictTone string
+}
+
+// derivedKey is what ctyDerived was made of.
+type derivedKey struct {
+	first *tools.Site // the sites, which are made anew whenever they change
+	n     int
+	busy  bool
+	ver   uint64 // s.roundsVer: the rounds landed
+	fav   string
+}
+
+// derived is the page's numbers for the sites as they are now, worked out
+// once for as long as the sites, the favorites and the rounds are as they
+// were: a walk of every site, which every frame of a page whose sites are
+// being tested would make again.
+func (m *mainUI) derived() *ctyDerived {
+	s := &m.cty
+	k := derivedKey{n: len(s.sites), busy: s.sitesBusy, ver: s.roundsVer, fav: strings.Join(s.favoriteOrder, ",")}
+	if len(s.sites) > 0 {
+		k.first = &s.sites[0]
+	}
+	if s.derived != nil && s.derivedKey == k {
+		return s.derived
+	}
+	d := &ctyDerived{siteTallies: m.tallySites(), cats: tools.SiteCategories(s.sites)}
+	d.verdictKey, d.verdictTone = m.siteVerdictOf()
+	s.derived, s.derivedKey = d, k
+	return d
+}
+
+// siteVerdictOf says whether the sites at home and abroad open, as MyIP
+// does; "" for the key when it cannot yet.
+func (m *mainUI) siteVerdictOf() (key, tone string) {
+	s := &m.cty
+	opens := func(group string) (bool, bool) {
+		// The sites of a country's own and the user's say little about
+		// whether sites abroad open: the verdict leaves them out.
+		of, ok := 0, 0
+		for _, st := range s.sites {
+			if cat := tools.SiteCategory(st); cmp.Or(st.Group, "global") == group && cat != tools.CategoryRegion && cat != tools.CategoryOther {
+				of++
+				if len(s.rounds[st.ID]) == 0 {
+					return false, false
+				}
+				if bestRound(s.rounds[st.ID]) > 0 {
+					ok++
+				}
+			}
+		}
+		if of == 0 {
+			return false, false
+		}
+		return ok*2 >= of, true
+	}
+	home, k1 := opens("domestic")
+	abroad, k2 := opens("global")
+	if !k1 || !k2 {
+		return "", ""
+	}
+	switch {
+	case home && abroad:
+		return "ok", "success"
+	case home:
+		return "noGlobal", "danger"
+	case abroad:
+		return "noDomestic", "warning"
+	}
+	return "none", "danger"
+}
+
 // sitesDetail shows the sites of one category at a time, the categories in
 // a column beside them, however many there are, each saying how many sites
 // it has and marking one with a site that would not open; the country
@@ -572,54 +735,15 @@ func (m *mainUI) sitesDetail(c *ui.Context, running bool) {
 	m.ctyFollow() // shown in the home page's sheet too
 	s, p := &m.cty, m.pal
 	// 常用 leads, empty or not: the user's shortcuts, before the categories.
-	cats := append([]string{tools.CategoryGeneral}, tools.SiteCategories(s.sites)...)
+	d := m.derived()
+	cats := append([]string{tools.CategoryGeneral}, d.cats...)
 	if !slices.Contains(cats, s.cat) {
 		s.cat = cats[0]
 	}
 	if !slices.Contains(s.regionOrder, s.region) && len(s.regionOrder) > 0 {
 		s.region = s.regionOrder[0]
 	}
-	byCat, byRegion := map[string]*siteTally{}, map[string]*siteTally{}
-	favorites := favoriteSet(s.favoriteOrder)
-	favoriteTally := &siteTally{}
-	slowest := 1
-	var times []int
-	for _, st := range s.sites {
-		r := s.rounds[st.ID]
-		count := func(m map[string]*siteTally, key string) {
-			t := m[key]
-			if t == nil {
-				t = &siteTally{}
-				m[key] = t
-			}
-			t.n++
-			if len(r) > 0 && bestRound(r) == 0 {
-				t.failed++
-			}
-			if s.sitesBusy && len(r) < siteRounds {
-				t.pending++
-			}
-		}
-		count(byCat, tools.SiteCategory(st))
-		if favorites[st.ID] {
-			favoriteTally.n++
-			if len(r) > 0 && bestRound(r) == 0 {
-				favoriteTally.failed++
-			}
-			if s.sitesBusy && len(r) < siteRounds {
-				favoriteTally.pending++
-			}
-		}
-		if reg := tools.SiteRegion(st); reg != "" {
-			count(byRegion, reg)
-		}
-		for _, d := range r {
-			slowest = max(slowest, d)
-		}
-		if b := bestRound(r); b > 0 {
-			times = append(times, b)
-		}
-	}
+	byCat, byRegion, favoriteTally, slowest, median := d.byCat, d.byRegion, d.favorite, d.slowest, d.median
 	pick := func(cat, region string) {
 		if cat == s.cat && (cat != tools.CategoryRegion || region == s.region) {
 			return
@@ -847,9 +971,8 @@ func (m *mainUI) sitesDetail(c *ui.Context, running bool) {
 					ui.Text(c, title).FontSize(15).FontWeight(650).SingleLine()
 					ui.Text(c, fmt.Sprint(len(of))).FontSize(12.5).TextColor(p.Faint).FontFeatures("tnum")
 				})
-				if len(times) > 0 {
-					slices.Sort(times)
-					ui.Text(c, locales.ConnectivityMedian(fmt.Sprint(times[len(times)/2]))).FontSize(12).TextColor(p.Faint).SingleLine().Shrink(0).ContentTransition(numRoll)
+				if median > 0 {
+					ui.Text(c, locales.ConnectivityMedian(fmt.Sprint(median))).FontSize(12).TextColor(p.Faint).SingleLine().Shrink(0).ContentTransition(numRoll)
 				}
 				if m.iconButton(c, "manage", icCirclePlus, locales.ConnectivityManage()).Clicked() {
 					s.manage, s.tab, s.custErr = true, 0, ""
@@ -868,8 +991,8 @@ func (m *mainUI) sitesDetail(c *ui.Context, running bool) {
 				case s.cat == tools.CategoryGeneral:
 					m.favoriteGrid(c, of, card)
 				default:
-					m.cardGridOf(c, "sites-"+view, 180, len(of), func(i int) any { return of[i].ID }, func(i int) {
-						card(of[i], ui.Column(c).Grow(1))
+					m.siteGrid(c, "sites-"+view, len(of), func(i int) any { return of[i].ID }, func(i int, box ui.Element) {
+						card(of[i], box)
 					})
 				}
 			})
@@ -919,7 +1042,7 @@ func (m *mainUI) unlockDetail(c *ui.Context, running bool) {
 		if len(items) == 0 {
 			continue
 		}
-		ui.Column(c.Key("group-"+g)).Gap(8).Transition(listRow).Children(func() {
+		ui.Column(c.Key("group-" + g)).Gap(8).Transition(listRow).Children(func() {
 			ui.Text(c, m.unlockGroupLabel(g)).FontSize(12).FontWeight(600).TextColor(p.TextMuted).PaddingStart(2)
 			m.cardGridOf(c, "unlock-"+g, 250, len(items), func(i int) any { return items[i].ID }, func(i int) {
 				it := items[i]

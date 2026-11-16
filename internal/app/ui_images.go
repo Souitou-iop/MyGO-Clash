@@ -40,10 +40,22 @@ func bitmapImage(path string) *ui.Bitmap {
 // theme of that shade would hide: they sit on a plate of the other
 // shade, as an app icon does.
 var logoPlates = map[string]bool{ // true: dark ink, plated in the dark theme
-	"artmotion": true, "dailymotion": true, "digitalocean": true, "guardian": true, "heroku": true,
-	"kleinanzeigen": true, "manus": true, "midjourney": true, "musixmatch": true, "phonepe": true,
-	"physicswallah": true, "tidal": true,
-	"skillshare": false, "western-union": false,
+	"adidas": true, "alibabacloud": true, "artmotion": true, "bbc-zh": true, "bestbuy": false,
+	"bt": true, "craigslist": true, "cursor": true, "dailymotion": true, "delta": true, "devto": true,
+	"digitalocean": true, "dmm-tv": true, "docomo": true, "etherscan": true, "foxnews": true,
+	"govuk": true, "gradle": true, "grok": true, "guardian": true, "heroku": true, "hk01": true,
+	"hoyoverse": false, "ibmcloud": true, "initium": false, "irs": true, "itvx": true, "jal": true,
+	"kakao": false, "kbs": false, "kleinanzeigen": true, "lihkg": true, "linode": true,
+	"lloyds": true, "lufthansa": true, "manus": true, "mdn": true, "medium": true, "midjourney": true,
+	"musixmatch": true, "nexon": true, "nicovideo": true, "nike": true, "note": true,
+	"notebooklm": true, "nuget": true, "nyt-cn": true, "ollama": true, "openrouter": true,
+	"peacock": true, "phonepe": true, "physicswallah": true, "pluto": true, "proton": false,
+	"quay": true, "railway": true, "render": true, "replicate": true, "rightmove": false,
+	"robinhood": false, "ryanair": true, "sentry": true, "singtel": false, "skillshare": false,
+	"sky": true, "skynews": true, "supercell": true, "tabelog": false, "tesco": true, "tidal": true,
+	"tubi": true, "tumblr": true, "uber": true, "upbit": true, "usps": true, "washingtonpost": true,
+	"western-union": false, "wsj": true, "wwe": true, "yahoo": true, "yahoo-finance": true,
+	"yahoo-jp": true, "yahoo-tw": true,
 }
 
 // svgImage parses an embedded SVG once; nil when there is none, or MyGo

@@ -89,7 +89,7 @@ type mainUI struct {
 	memHist   []int64
 	connHist  []int
 	routeHist map[string][]int64
-	upd      *UpdateState
+	upd       *UpdateState
 }
 
 func newMainUI(a *App) *mainUI {
@@ -558,32 +558,47 @@ func (m *mainUI) sidebar(c *ui.Context) {
 				})
 			}
 			ui.Column(c).Gap(8).Children(func() {
+				// Folded, each rate is centered on the column of the icons
+				// above; as its digits change its width, its place glides
+				// rather than jumps.
 				rate := func(key string, icon *ui.SVG, col ui.Color, v int64) {
-					ui.Row(c.Key(key)).PaddingStart(lerp(14, 16, k)).Gap(5).AlignItems(ui.Center).Children(func() {
-						ui.Icon(c, icon).FontSize(12).TextColor(col).Shrink(0)
-						// Folded, the rate is said short. The two ways of
-						// saying it swap at once rather than roll into each
-						// other; within each the digits roll.
-						s, form := fmtRate(v), "long"
-						if collapsed {
-							s, form = shortRate(v), "short"
-						}
-						ui.Text(c.Key(form), s).FontSize(11.5).TextColor(p.TextMuted).FontFeatures("tnum").ContentTransition(numRoll).SingleLine().Shrink(0)
+					row := ui.Row(c.Key(key))
+					row.Children(func() {
+						in := ui.Row(c.Key("in")).Gap(5).AlignItems(ui.Center).Shrink(0)
+						center := row.AnimateTo("center", (railW-in.LayoutBounds().W)/2, ui.Animation{Duration: 200 * time.Millisecond, Ease: easeStd})
+						row.PaddingStart(lerp(14, max(0, center), k))
+						in.Children(func() {
+							ui.Icon(c, icon).FontSize(12).TextColor(col).Shrink(0)
+							// Folded, the rate is said short. The two ways of
+							// saying it swap at once rather than roll into each
+							// other; within each the digits roll.
+							s, form := fmtRate(v), "long"
+							if collapsed {
+								s, form = shortRate(v), "short"
+							}
+							ui.Text(c.Key(form), s).FontSize(11.5).TextColor(p.TextMuted).FontFeatures("tnum").ContentTransition(numRoll).SingleLine().Shrink(0)
+						})
 					})
 				}
 				rate("up", icArrowUp, p.Accent2, m.now.Up)
 				rate("down", icArrowDown, p.Accent, m.now.Down)
-				const buttons = 28*2 + 4
-				ui.Row(c.Key("buttons")).Gap(4).PaddingStart(lerp(14, (railW-buttons)/2, k)).Children(func() {
+				// The two buttons side by side at the bar's edge, unfolded;
+				// one above the other on the icons' column, folded, gliding
+				// between the two as it folds.
+				const btn, gap = float32(28), float32(4)
+				mid := (railW - btn) / 2
+				ui.Box(c.Key("buttons")).Height(lerp(btn, 2*btn+gap, k)).Shrink(0).Children(func() {
 					icon, tip := icPanelLeftClose, locales.NavCollapse()
 					if collapsed {
 						icon, tip = icPanelLeftOpen, locales.NavExpand()
 					}
-					if m.iconButton(c, "fold", icon, tip).Clicked() {
+					fold := m.iconButton(c, "fold", icon, tip).Absolute().Left(lerp(14, mid, k)).Top(0)
+					if fold.Clicked() {
 						m.st.UI.CollapseNav = !collapsed // at once; the settings confirm
 						m.patch(map[string]any{"ui": map[string]any{"collapseNav": !collapsed}})
 					}
-					if m.eyeButton(c).Clicked() {
+					eye := m.eyeButton(c).Absolute().Left(lerp(14+btn+gap, mid, k)).Top(lerp(0, btn+gap, k))
+					if eye.Clicked() {
 						v := !m.reveal()
 						m.st.UI.RevealPrivate = v
 						m.patch(map[string]any{"ui": map[string]any{"revealPrivate": v}})

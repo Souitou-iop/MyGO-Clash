@@ -300,7 +300,7 @@ var ConnectivitySites = defaultSites()
 
 // MaxConnectivitySites caps the site list the page keeps: the defaults
 // and room for the user's own.
-const MaxConnectivitySites = 600
+const MaxConnectivitySites = 1000
 
 // NormalizeSites prepares a site list to keep: valid http(s) addresses
 // only, one per host, unique ids, at most MaxConnectivitySites.

@@ -172,3 +172,47 @@ func (m *mainUI) favoriteGrid(c *ui.Context, of []tools.Site, card func(tools.Si
 		s.favPress, s.favLift, s.favDrag = "", false, ui.Point{}
 	}
 }
+
+// lazyCards are the cards of a grid at most this many are built whole; of a
+// larger one, a screenful and a margin are, the rest being plates. A
+// category of 248 sites builds ten times the elements of one of 30, every
+// frame its sites are tested or it is scrolled, which most are out of view
+// for.
+const lazyCards = 48
+
+// lazyMargin is how many cards beyond those in view a large grid builds
+// whole, which a scroll shows before the frame after it builds them.
+const lazyMargin = 18
+
+// siteGrid is the sites of a category as cards in a grid. A large one
+// builds the cards in view, as the frame before had them, and a margin of
+// them; any other is a plate, a card's box and color, which the frame after
+// it comes into view builds whole.
+func (m *mainUI) siteGrid(c *ui.Context, key any, n int, id func(i int) any, card func(i int, box ui.Element)) {
+	s := &m.cty
+	if n <= lazyCards {
+		m.cardGridOf(c, key, 180, n, id, func(i int) { card(i, ui.Column(c).Grow(1)) })
+		return
+	}
+	lo, hi := s.lazyLo, s.lazyHi
+	if s.lazyKey != key {
+		lo, hi = 0, 0 // the first screenful, until the grid has been seen
+		s.lazyKey = key
+	}
+	seen := [2]int{n, -1}
+	m.flipGrid(c, key, 12, func(w float32) int { return int((w + 12) / (180 + 12)) }, &reflowOut, n, id, func(i int, box ui.Element) {
+		if box.InView() {
+			seen[0], seen[1] = min(seen[0], i), max(seen[1], i)
+		}
+		if i >= lo-lazyMargin && i <= hi+lazyMargin+lazyCards/2 {
+			box.Children(func() { card(i, ui.Column(c).Grow(1)) })
+			return
+		}
+		box.Children(func() {
+			ui.Box(c).Grow(1).Height(siteCardH).Radius(tileRadius).Background(m.pal.Card)
+		})
+	})
+	if seen[1] >= 0 {
+		s.lazyLo, s.lazyHi = seen[0], seen[1]
+	}
+}

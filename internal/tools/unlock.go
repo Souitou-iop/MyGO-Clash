@@ -81,38 +81,33 @@ var (
 var checkers = []checker{
 	// ---- Video and music ----
 	{"netflix", "Netflix", "media", "netflix", false, func(ctx context.Context, c, f *http.Client) Unlock {
-		// A Netflix original and a licensed title.
+		// A Netflix original and a licensed title; the country Netflix takes
+		// the visitor for is the one its speed test names.
 		r1, _, err1 := get(ctx, c, "https://www.netflix.com/title/81280792", nil)
 		r2, _, err2 := get(ctx, c, "https://www.netflix.com/title/70143836", nil)
 		if err1 != nil || err2 != nil {
 			return netErr
 		}
 		region := ""
-		if loc := r1.Header.Get("X-Originating-Url"); loc != "" {
-			region = regionFromPath(loc)
+		if _, body, err := get(ctx, f, netflixSpeedtest, nil); err == nil {
+			region = judgeNetflixRegion(body)
 		}
-		if l, err := r1.Location(); err == nil {
-			region = regionFromPath(l.Path)
+		if region == "" {
+			if loc := r1.Header.Get("X-Originating-Url"); loc != "" {
+				region = regionFromPath(loc)
+			}
+			if l, err := r1.Location(); err == nil {
+				region = regionFromPath(l.Path)
+			}
 		}
-		switch {
-		case r1.StatusCode == 403 || r2.StatusCode == 403:
-			return Unlock{Status: "no"}
-		case r1.StatusCode < 400 && r2.StatusCode < 400:
-			return Unlock{Status: "yes", Region: orUS(region)}
-		case r1.StatusCode < 400:
-			return Unlock{Status: "partial", Region: orUS(region), Detail: "originals only"}
-		}
-		return Unlock{Status: "no"}
+		return judgeNetflix(r1.StatusCode, r2.StatusCode, region)
 	}},
 	{"disneyplus", "Disney+", "media", "disneyplus", false, func(ctx context.Context, c, f *http.Client) Unlock {
 		resp, _, err := get(ctx, f, "https://www.disneyplus.com/", nil)
 		if err != nil {
 			return netErr
 		}
-		if strings.Contains(resp.Request.URL.Path, "unavailable") || resp.StatusCode == 403 {
-			return Unlock{Status: "no"}
-		}
-		return Unlock{Status: "yes", Region: regionFromPath(resp.Request.URL.Path)}
+		return judgeDisney(resp.StatusCode, resp.Request.URL.Path)
 	}},
 	{"primevideo", "Prime Video", "media", "primevideo", false, func(ctx context.Context, c, f *http.Client) Unlock {
 		_, body, err := get(ctx, f, "https://www.primevideo.com", nil)
@@ -142,6 +137,34 @@ var checkers = []checker{
 			return netErr
 		}
 		return judgeSpotify(resp.StatusCode, body)
+	}},
+	{"peacock", "Peacock", "media", "peacock", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		resp, _, err := get(ctx, f, "https://www.peacocktv.com/", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgePeacock(resp.StatusCode, resp.Request.URL.Path)
+	}},
+	{"paramount", "Paramount+", "media", "paramount", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		resp, _, err := get(ctx, f, "https://www.paramountplus.com/", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeParamount(resp.StatusCode, resp.Request.URL.Path)
+	}},
+	{"tubi", "Tubi", "media", "tubi", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		resp, body, err := get(ctx, f, "https://tubitv.com/home", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeTubi(resp.Request.URL.Host, body)
+	}},
+	{"youtube-cdn", "YouTube CDN", "media", "youtube", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		_, body, err := get(ctx, f, "https://redirector.googlevideo.com/report_mapping", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeYouTubeCDN(body)
 	}},
 
 	// ---- Social ----
@@ -185,11 +208,23 @@ var checkers = []checker{
 		if err != nil {
 			return netErr
 		}
-		region := trace(ctx, f, "claude.ai")
-		if strings.Contains(resp.Request.URL.Path, "unavailable") {
-			return Unlock{Status: "no", Region: region}
+		res := judgeClaude(resp.StatusCode, resp.Request.URL.Path)
+		if res.Status != "failed" {
+			res.Region = trace(ctx, f, "claude.ai")
 		}
-		return Unlock{Status: "yes", Region: region}
+		return res
+	}},
+	{"claude-api", "Claude API", "ai", "anthropic-api", false, func(ctx context.Context, c, f *http.Client) Unlock {
+		// A made-up key: the API answers it by country before it looks at it.
+		resp, body, err := get(ctx, f, "https://api.anthropic.com/v1/models", map[string]string{"x-api-key": "x", "anthropic-version": "2023-06-01"})
+		if err != nil {
+			return netErr
+		}
+		res := judgeClaudeAPI(resp.StatusCode, body)
+		if res.Status != "failed" {
+			res.Region = trace(ctx, f, "api.anthropic.com")
+		}
+		return res
 	}},
 	{"gemini", "Gemini", "ai", "gemini", false, func(ctx context.Context, c, f *http.Client) Unlock {
 		resp, body, err := get(ctx, f, "https://gemini.google.com/", nil)
@@ -237,6 +272,14 @@ var checkers = []checker{
 		}
 		return judgeWikipediaEdit(resp.StatusCode, body)
 	}},
+	{"google-play", "Google Play", "platform", "", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		// The page is large; the country is in the first part of it.
+		resp, body, err := get(ctx, f, "https://play.google.com/", map[string]string{"Accept-Language": "en-US;q=0.9"})
+		if err != nil {
+			return netErr
+		}
+		return judgeGooglePlay(resp.StatusCode, body)
+	}},
 
 	// ---- Services of one region ----
 	{"bilibili-hkmotw", "Bilibili", "region", "bilibili", true, func(ctx context.Context, c, f *http.Client) Unlock {
@@ -253,7 +296,7 @@ var checkers = []checker{
 		}
 		return judgeBilibili(body)
 	}},
-	{"abema", "ABEMA", "region", "", true, func(ctx context.Context, c, f *http.Client) Unlock {
+	{"abema", "ABEMA", "region", "abema", true, func(ctx context.Context, c, f *http.Client) Unlock {
 		_, body, err := get(ctx, f, "https://api.abema.io/v1/ip/check?device=android", nil)
 		if err != nil {
 			return netErr
@@ -273,6 +316,80 @@ var checkers = []checker{
 			return netErr
 		}
 		return judgeTVB(body)
+	}},
+	{"kktv", "KKTV", "region", "kktv", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		_, body, err := get(ctx, f, "https://api.kktv.me/v3/ipcheck", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeKKTV(body)
+	}},
+	{"hami", "Hami Video", "region", "hami", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		_, body, err := get(ctx, f, "https://hamivideo.hinet.net/api/play.do?id=OTT_VOD_0000249064&freeProduct=1", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeHami(body)
+	}},
+	{"mytvsuper", "myTV SUPER", "region", "mytvsuper", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		_, body, err := get(ctx, f, "https://www.mytvsuper.com/api/auth/getSession/self/", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeMyTVSuper(body)
+	}},
+	{"viu", "Viu", "region", "viu", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		resp, _, err := get(ctx, c, "https://www.viu.com/", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeViu(resp.Header.Get("Location"))
+	}},
+	{"tving", "TVING", "region", "tving", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		// The web player's public key, as the site's own pages send it.
+		_, body, err := get(ctx, f, "https://api.tving.com/v2/media/stream/info?apiKey=1e7952d0917d6aab1f0293a063697610&mediaCode=RV60891248", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeTving(body)
+	}},
+	{"coupang-play", "Coupang Play", "region", "coupangplay", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		resp, _, err := get(ctx, c, "https://www.coupangplay.com/", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeCoupangPlay(resp.StatusCode, resp.Header.Get("Location"))
+	}},
+	{"radiko", "radiko", "region", "radiko", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		_, body, err := get(ctx, f, "https://radiko.jp/area", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeRadiko(body)
+	}},
+	{"dmm-tv", "DMM TV", "region", "dmm-tv", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		_, body, err := post(ctx, f, "https://api.beacon.dmm.com/v1/streaming/start",
+			`{"player_name":"dmmtv_browser","player_version":"0.0.0","content_type_detail":"VOD_SVOD","content_id":"11uvjcm4fw2wdu7drtd1epnvz","purchase_product_id":null}`)
+		if err != nil {
+			return netErr
+		}
+		return judgeDMMTV(body)
+	}},
+	{"channel4", "Channel 4", "region", "channel4", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		resp, _, err := get(ctx, c, "https://www.channel4.com/simulcast/channels/C4", nil)
+		if err != nil {
+			return netErr
+		}
+		return judgeChannel4(resp.StatusCode)
+	}},
+	{"itvx", "ITVX", "region", "", true, func(ctx context.Context, c, f *http.Client) Unlock {
+		_, body, err := postWith(ctx, f, "https://magni.itv.com/playlist/itvonline/ITV/10_4782_0001.001",
+			`{"client":{"id":"browser"},"device":{"deviceGroup":"dotcom"},"variantAvailability":{"player":"hls","featureset":["mpeg-dash","hls"],"platformTag":"dotcom","drm":{"system":"widevine","maxSupported":"L3"}},"user":{}}`,
+			map[string]string{"Accept": "application/vnd.itv.vod.playlist.v2+json", "Origin": "https://www.itv.com", "Referer": "https://www.itv.com/"})
+		if err != nil {
+			return netErr
+		}
+		return judgeITVX(body)
 	}},
 }
 
@@ -494,20 +611,18 @@ func regionFromPath(p string) string {
 	return ""
 }
 
-func orUS(r string) string {
-	if r == "" {
-		return "US"
-	}
-	return r
+func post(ctx context.Context, c *http.Client, rawURL, body string) (*http.Response, string, error) {
+	return postWith(ctx, c, rawURL, body, nil)
 }
 
-func post(ctx context.Context, c *http.Client, rawURL, body string) (*http.Response, string, error) {
+// postWith posts a JSON body with hdr besides the browser's own headers.
+func postWith(ctx context.Context, c *http.Client, rawURL, body string, hdr map[string]string) (*http.Response, string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, rawURL, strings.NewReader(body))
 	if err != nil {
 		return nil, "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return send(c, req, nil)
+	return send(c, req, hdr)
 }
 
 // ---- Running them ----

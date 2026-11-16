@@ -55,10 +55,16 @@ type connectivityPage struct {
 	started bool
 	ips     map[string]*exitIP
 
-	sites     []tools.Site
-	rounds    map[string][]int
-	sitesBusy bool
-	sitesRun  uint64 // site tests started, which replay the bars growing
+	sites      []tools.Site
+	rounds     map[string][]int
+	sitesBusy  bool
+	sitesRun   uint64      // site tests started, which replay the bars growing
+	roundsVer  uint64      // how many times the rounds changed
+	derived    *ctyDerived // what the page worked out of them (derived)
+	derivedKey derivedKey
+	// landed is when each round of each site landed, for the mosaic's
+	// cells to pop in from.
+	landed map[string]*[siteRounds]time.Time
 
 	unlocks  []tools.Unlock
 	results  map[string]unlockResult
@@ -92,6 +98,9 @@ type connectivityPage struct {
 	favLift       bool      // it is dragged
 	favFrom       int       // its slot as it was pressed
 	favDrag       ui.Point  // how far the pointer moved it
+	lazyKey       any       // the large grid whose cards in view lazyLo..lazyHi are
+	lazyLo        int
+	lazyHi        int
 
 	manage     bool
 	tab        int
@@ -99,10 +108,10 @@ type connectivityPage struct {
 	unlockMgr  bool // the checks to run are being chosen
 	// The settings the lists were last made from (ctyFollow).
 	unlockSig, siteSig, favSig string
-	custName string
-	custURL  string
-	custGrp  int
-	custErr  string
+	custName                   string
+	custURL                    string
+	custGrp                    int
+	custErr                    string
 }
 
 // uiCache keeps what the pages remember across launches, as the web page
@@ -476,7 +485,8 @@ func (m *mainUI) testCtySites() {
 	if s.sitesBusy {
 		return
 	}
-	s.sitesBusy, s.rounds = true, map[string][]int{}
+	s.roundsVer++
+	s.sitesBusy, s.rounds, s.landed = true, map[string][]int{}, map[string]*[siteRounds]time.Time{}
 	s.sitesRun++
 	// A few dozen sites at a time, each through its rounds, the sites of
 	// the category in view first: with hundreds of sites, those looked at
@@ -484,6 +494,30 @@ func (m *mainUI) testCtySites() {
 	q := &siteQueue{sites: slices.Clone(s.sites), cat: s.cat, region: s.region, favorite: favoriteSet(s.favoriteOrder)}
 	s.queue = q
 	proxy, win := a.proxyURL(), m.window()
+	// A round lands in the page a few times a second, in batches, rather
+	// than a frame each: with a few dozen sites in flight a round lands every
+	// ten milliseconds or so, and each frame builds every card in view.
+	batch := &roundBatch{}
+	flush := func() {
+		if done := batch.take(); len(done) > 0 {
+			at := time.Now()
+			win.Update(func() {
+				s.roundsVer++
+				for _, r := range done {
+					k := len(s.rounds[r.id])
+					s.rounds[r.id] = append(s.rounds[r.id], r.delay)
+					if k < siteRounds {
+						l := s.landed[r.id]
+						if l == nil {
+							l = new([siteRounds]time.Time)
+							s.landed[r.id] = l
+						}
+						l[k] = at
+					}
+				}
+			})
+		}
+	}
 	go func() {
 		var wg sync.WaitGroup
 		for range siteTestSlots {
@@ -504,14 +538,52 @@ func (m *mainUI) testCtySites() {
 						if r.Error != "" {
 							d = 0
 						}
-						win.Update(func() { s.rounds[st.ID] = append(s.rounds[st.ID], d) })
+						batch.add(siteRound{st.ID, d}, flush)
 					}
 				}
 			}()
 		}
 		wg.Wait()
+		flush()
 		win.Update(func() { s.sitesBusy, s.queue = false, nil })
 	}()
+}
+
+// siteFlush is how often the rounds that landed are handed to the page.
+const siteFlush = 100 * time.Millisecond
+
+type siteRound struct {
+	id    string
+	delay int
+}
+
+// roundBatch gathers the rounds that landed since the page last had any.
+type roundBatch struct {
+	mu      sync.Mutex
+	pending []siteRound
+	armed   bool
+}
+
+// add keeps a round, and has flush called once siteFlush has passed if it
+// is not already due.
+func (b *roundBatch) add(r siteRound, flush func()) {
+	b.mu.Lock()
+	b.pending = append(b.pending, r)
+	arm := !b.armed
+	b.armed = true
+	b.mu.Unlock()
+	if arm {
+		time.AfterFunc(siteFlush, flush)
+	}
+}
+
+// take hands over the rounds kept, and disarms.
+func (b *roundBatch) take() []siteRound {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := b.pending
+	b.pending, b.armed = nil, false
+	return out
 }
 
 // siteQueue is the sites still to test, handed out the category in view
@@ -846,6 +918,10 @@ func (m *mainUI) unlockName(u tools.Unlock) string {
 		return locales.UnlockNameBilibiliHkmotw()
 	case "bilibili-tw":
 		return locales.UnlockNameBilibiliTw()
+	case "google-play":
+		return locales.UnlockNameGooglePlay()
+	case "youtube-cdn":
+		return locales.UnlockNameYoutubeCdn()
 	}
 	return u.Name
 }
@@ -863,6 +939,8 @@ func unlockDetailText(d string) string {
 		return locales.UnlockDetailCaptcha()
 	case "blocked":
 		return locales.UnlockDetailBlocked()
+	case "challenge":
+		return locales.UnlockDetailChallenge()
 	case "overseas only":
 		return locales.UnlockDetailOverseas()
 	case "network error":
