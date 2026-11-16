@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.4
+
+小版本：设置里可以查看最近五个版本的更新日志；macOS 开启 TUN 后系统 DNS 查询也会进入 TUN；节点名只写城市或机场代码时也能显示国旗。/ A small release: the settings show the release notes of the last five versions, DNS queries on macOS go through TUN while it is on, and nodes named only by a city or an airport code get their flags.
+
+### ✨ 新增功能 / New Features
+
+- “设置 → 高级 → 软件更新”新增“查看更新日志”：窗口从按钮展开、关闭时收回按钮，每个版本可单独展开收起，正文按界面语言只显示中文或英文 / “View release notes” in Settings → Advanced → Software update: the dialog grows out of its button and back into it, each version opens and closes on its own, and the notes show in the interface's language only
+
+### 🐛 修复 / Fixes
+
+- macOS 开启 TUN 时，系统的 DNS 查询不再绕过虚拟网卡直接发给路由器，而是交给内核处理；关闭 TUN 或内核退出后自动恢复原来的 DNS / With TUN on macOS, the system's DNS queries no longer go around the virtual adapter straight to the router but to the core; turning TUN off, or the core quitting, gives the system its DNS back
+- 节点名只写城市、机场代码、三位国家代码或中文地名（如 tokyo、NRT、JPN、东京）时也能显示国旗；日本等白底国旗加了描边，在浅色卡片上不再看不见 / Nodes named only by a city, an airport code, a three-letter country code or a place name in Chinese (tokyo, NRT, JPN) show their flags, and white flags such as Japan's have a hairline so they no longer vanish on light cards
+
 ## 1.0.3
 
 修复版：首页节点卡片里的分组按钮在某些窗口宽度下不再被截成半截；应用更新后静默更新 TUN 服务的那几秒，设置里不再误显示“未安装”。/ A fix release: the group buttons on the home page's node card are no longer cut in half at some window widths, and in the few seconds the app takes to update the TUN service after an update, the settings no longer show it as not installed.
