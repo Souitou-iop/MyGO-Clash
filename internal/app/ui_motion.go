@@ -472,10 +472,7 @@ func (m *mainUI) flipGridMode(c *ui.Context, key any, mode string, gap float32, 
 					cs.fromW, cs.fromH, cs.fromMode = lb.W, lb.H, fromMode
 					cs.toW, cs.toH = lb.W, lb.H
 					if landed != nil {
-						// A cell of another kind does not travel: it changes
-						// shape where its new place is.
 						cs.toW, cs.toH = landed[i].W, landed[i].H
-						cs.fromX, cs.fromY = 0, 0
 					}
 				}
 				rowH = max(rowH, lb.H)
@@ -499,18 +496,18 @@ func (m *mainUI) flipGridMode(c *ui.Context, key any, mode string, gap float32, 
 }
 
 // morphCell builds a cell part of the way, k, through the change of its
-// kind. The cell does not travel: it has its new place and size, which holds
+// kind. The cell has the place and the size of what it becomes, which holds
 // the new content, fading in; what shows of it is clipped to a box of the
-// size between the old one and the new, grown from the same corner and never
-// beyond the new place, over the old content, at its old size, which fades
-// out under it.
-func (m *mainUI) morphCell(c *ui.Context, box ui.Element, i int, k float32, cs *flipCellState, to ui.Rect, mode string, cell func(i int, box ui.Element, mode string)) {
+// size between the old one and the new, grown from the same corner, over
+// the old content, at its old size, which fades out under it.
+func (m *mainUI) morphCell(c *ui.Context, box ui.Element, i int, k float32, cs *flipCellState, now ui.Rect, mode string, cell func(i int, box ui.Element, mode string)) {
 	clamp := func(v float32) float32 { return max(0, min(1, v)) }
-	w, h := lerp(min(cs.fromW, to.W), to.W, k), lerp(min(cs.fromH, to.H), to.H, k)
-	box.ClipInset(0, to.W-w, to.H-h, 0, 14)
+	w, h := lerp(cs.fromW, now.W, k), lerp(cs.fromH, now.H, k)
+	// Insets that are negative show beyond the cell, where it was larger.
+	box.ClipInset(0, now.W-w, now.H-h, 0, 14)
 	box.Children(func() {
 		old := ui.Column(c.Key("was")).Absolute().Left(0).Top(0).Width(cs.fromW).Height(cs.fromH).IgnoreInput(true)
-		old.Opacity(1 - clamp((k-0.3)/0.4))
+		old.Opacity(1 - clamp((k-0.5)/0.3))
 		cell(i, old, cs.fromMode)
 		fresh := ui.Column(c.Key("is")).IgnoreInput(true)
 		fresh.Opacity(clamp((k - 0.1) / 0.5))
