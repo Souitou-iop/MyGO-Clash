@@ -87,6 +87,7 @@ type host struct {
 	tsName    string
 	unregDNS  func()
 	ctrl      controller
+	trust     tunTrust
 
 	stop     chan struct{}
 	stopOnce sync.Once
@@ -167,6 +168,7 @@ func (h *host) shutdown() { h.stopOnce.Do(func() { close(h.stop) }) }
 func (h *host) cleanup() {
 	done := make(chan struct{})
 	go func() {
+		h.trust.release()
 		executor.Shutdown() // removes TUN routes and firewall rules
 		h.node.Close()
 		close(done)
@@ -307,6 +309,7 @@ func (h *host) apply(w mhttp.ResponseWriter, r *mhttp.Request) {
 	// force makes mihomo (re)create the listeners of ports; it leaves those
 	// whose address did not change alone.
 	executor.ApplyConfig(cfg, true)
+	go h.trust.sync()
 
 	sum := sha256.Sum256([]byte(req.Config))
 	h.hash = hex.EncodeToString(sum[:])

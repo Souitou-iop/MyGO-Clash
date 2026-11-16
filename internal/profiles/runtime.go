@@ -160,6 +160,11 @@ func (m *Manager) Generate(ctx context.Context, in Inputs) (*Runtime, error) {
 	logf("cleanup", enhance.CleanupGroups(cfg)...)
 	rt.Display = enhance.Sort(cfg)
 	rt.Core = rt.Display.Clone()
+	if in.Base.Tun.Enable {
+		if up, stub := enhance.StubUpstreams(); stub {
+			logf("dns", enhance.AvoidStubDNS(rt.Core, up)...)
+		}
+	}
 	if t := in.Tailnet; t != nil && t.Mode == "embedded" {
 		for _, p := range rt.Core.Slice("proxies") {
 			if pm, ok := p.(*yamlx.Map); ok && pm.String("name") == t.ProxyName && pm.String("type") == "tailscale" {
