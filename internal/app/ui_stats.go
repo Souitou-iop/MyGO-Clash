@@ -625,7 +625,7 @@ func (m *mainUI) statsSettings(c *ui.Context) {
 					}
 				}
 				cur := labels[max(0, slices.Index(days, m.st.Stats.KeepDays))]
-				if ui.Select(c.Key("keep"), &cur, labels).Width(160).Changed() {
+				if dropdown(c.Key("keep"), &cur, labels).Width(160).Changed() {
 					v := days[slices.Index(labels, cur)]
 					m.st.Stats.KeepDays = v
 					m.patch(map[string]any{"stats": map[string]any{"keepDays": v}})

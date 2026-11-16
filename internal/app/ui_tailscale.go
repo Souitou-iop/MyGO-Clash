@@ -525,7 +525,7 @@ func (m *mainUI) tsExitNode(c *ui.Context, st *coreapi.TailscaleStatus, mode str
 			ids = append(ids, pe.ID)
 		}
 		cur := labels[max(0, slices.Index(ids, st.ExitNodeID))]
-		if ui.Select(c.Key("exit"), &cur, labels).Disabled(s.busy == "exit").Changed() {
+		if dropdown(c.Key("exit"), &cur, labels).Disabled(s.busy == "exit").Changed() {
 			id := ids[slices.Index(labels, cur)]
 			s.busy = "exit"
 			m.run(locales.CommonFailed(), func() error { return Tailscale{a}.SetExitNode(context.Background(), id) }, func(error) { s.busy = "" })
@@ -765,7 +765,7 @@ func (m *mainUI) tsEmbeddedSettings(c *ui.Context) {
 			labels := append([]string{locales.TsDirect()}, s.groups...)
 			values := append([]string{""}, s.groups...)
 			cur := labels[max(0, slices.Index(values, ts.ControlVia))]
-			if ui.Select(c.Key("sel"), &cur, labels).Width(200).Changed() {
+			if dropdown(c.Key("sel"), &cur, labels).Width(200).Changed() {
 				m.patch(map[string]any{"tailscale": map[string]any{"controlVia": values[slices.Index(labels, cur)]}})
 			}
 		})

@@ -1050,13 +1050,13 @@ func (m *mainUI) ruleForm(c *ui.Context, add func(...any)) {
 		s.rule[1] = ""
 	}
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Wrap().Children(func() {
-		ui.Select(c.Key("type"), &s.rule[0], ruleTypes).Width(170)
+		dropdown(c.Key("type"), &s.rule[0], ruleTypes).Width(170)
 		if !match {
 			if ui.TextInput(c.Key("payload"), &s.rule[1]).Placeholder(locales.EditorPayload()).Grow(1).MinWidth(160).Submitted() && strings.TrimSpace(s.rule[1]) != "" {
 				submit()
 			}
 		}
-		ui.Select(c.Key("target"), &s.rule[2], targets).Width(170)
+		dropdown(c.Key("target"), &s.rule[2], targets).Width(170)
 		if slices.Contains(noResolveTypes, s.rule[0]) {
 			on := s.rule[3] == "1"
 			if ui.Checkbox(c.Key("nr"), &on, "no-resolve").Changed() {
@@ -1075,7 +1075,7 @@ func (m *mainUI) groupForm(c *ui.Context, add func(...any)) {
 	tests := s.group[1] == "url-test" || s.group[1] == "fallback" || s.group[1] == "load-balance"
 	ui.Row(c).Gap(8).Children(func() {
 		ui.TextInput(c.Key("name"), &s.group[0]).Placeholder(locales.EditorGroupName()).Grow(1)
-		ui.Select(c.Key("kind"), &s.group[1], groupKinds).Width(150)
+		dropdown(c.Key("kind"), &s.group[1], groupKinds).Width(150)
 	})
 	if tests {
 		ui.TextInput(c.Key("url"), &s.group[2]).Placeholder("https://www.gstatic.com/generate_204")

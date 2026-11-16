@@ -559,7 +559,7 @@ func (p *quickPanel) view(c *ui.Context) {
 		cur := p.current()
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			if len(names) > 0 {
-				if ui.Select(c, &p.group, names).Grow(1).Label(tr(a, "group")).Changed() {
+				if dropdown(c, &p.group, names).Grow(1).Label(tr(a, "group")).Changed() {
 					p.query = ""
 					p.fit(p.window())
 				}
@@ -673,7 +673,7 @@ func (p *quickPanel) view(c *ui.Context) {
 					uids[it.Name] = it.UID
 				}
 				if len(pnames) > 0 {
-					if ui.Select(c, &p.profile, pnames).Grow(1).Label(tr(a, "profile")).Changed() {
+					if dropdown(c, &p.profile, pnames).Grow(1).Label(tr(a, "profile")).Changed() {
 						uid := uids[p.profile]
 						go func() {
 							if err := (Profiles{a}).Activate(context.Background(), uid); err != nil {

@@ -230,7 +230,7 @@ func (m *mainUI) proxiesReady(c *ui.Context, groups []*ProxyGroup, sel *ProxyGro
 						ui.SearchField(c.Key("search"), &s.search).Placeholder(locales.ProxiesSearch()).Width(200)
 						sorts := []string{locales.ProxiesSortDefault(), locales.ProxiesSortDelay(), locales.ProxiesSortName()}
 						cur := sorts[max(0, slices.Index([]string{"", "delay", "name"}, s.sort))]
-						if ui.Select(c.Key("sort"), &cur, sorts).Width(130).Changed() {
+						if dropdown(c.Key("sort"), &cur, sorts).Width(130).Changed() {
 							s.sort = []string{"", "delay", "name"}[slices.Index(sorts, cur)]
 						}
 						variant := "ghost"

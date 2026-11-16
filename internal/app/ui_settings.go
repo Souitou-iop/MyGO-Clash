@@ -154,7 +154,7 @@ func (m *mainUI) selectOf(c *ui.Context, cur any, values any, labels []string, w
 	} else if len(labels) > 0 {
 		shown = labels[0]
 	}
-	if ui.Select(c.Key("sel"), &shown, labels).Width(width).Changed() {
+	if dropdown(c.Key("sel"), &shown, labels).Width(width).Changed() {
 		if j := slices.Index(labels, shown); j >= 0 {
 			callPick(pick, vals[j])
 		}

@@ -321,7 +321,7 @@ func (m *mainUI) ruleList(c *ui.Context, profile string, reload func()) {
 	ui.Row(c).Padding(0, 22, 10).Gap(8).AlignItems(ui.Center).Shrink(0).Children(func() {
 		ui.SearchField(c.Key("search"), &s.search).Placeholder(locales.RulesSearch()).Width(260)
 		typ := cmp.Or(s.typ, typeList[0])
-		if ui.Select(c.Key("type"), &typ, typeList).Width(170).Changed() {
+		if dropdown(c.Key("type"), &typ, typeList).Width(170).Changed() {
 			s.typ = typ
 			if typ == typeList[0] {
 				s.typ = ""
@@ -329,7 +329,7 @@ func (m *mainUI) ruleList(c *ui.Context, profile string, reload func()) {
 		}
 		statuses := []string{locales.RulesStatusAll(), locales.RulesStatusHit(), locales.RulesStatusUnhit(), locales.RulesStatusOff()}
 		st := statuses[s.status]
-		if ui.Select(c.Key("status"), &st, statuses).Width(130).Changed() {
+		if dropdown(c.Key("status"), &st, statuses).Width(130).Changed() {
 			s.status = slices.Index(statuses, st)
 		}
 		ui.Text(c, locales.RulesShown(fmt.Sprint(len(rules)))).FontSize(12).TextColor(p.TextMuted)
@@ -694,7 +694,7 @@ func (m *mainUI) ruleSetsDialog(c *ui.Context) {
 						ui.Text(c, host(x.URL)).FontSize(12).TextColor(p.Faint).SingleLine().Shrink(1)
 					})
 					pol := policyLabels[max(0, slices.Index(policies, x.Policy))]
-					if ui.Select(c.Key("pol"), &pol, policyLabels).Width(150).Changed() {
+					if dropdown(c.Key("pol"), &pol, policyLabels).Width(150).Changed() {
 						next := slices.Clone(sets)
 						next[i].Policy = policies[slices.Index(policyLabels, pol)]
 						save(next)
@@ -737,10 +737,10 @@ func (m *mainUI) ruleSetsDialog(c *ui.Context) {
 				ui.TextInput(c.Key("url"), &s.setURL).Placeholder(locales.RulesetsUrl()).Grow(1)
 			})
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-				ui.Select(c.Key("beh"), &s.setBeh, []string{"domain", "ipcidr", "classical"}).Width(130)
-				ui.Select(c.Key("fmt"), &s.setFmt, []string{"mrs", "yaml", "text"}).Width(110)
+				dropdown(c.Key("beh"), &s.setBeh, []string{"domain", "ipcidr", "classical"}).Width(130)
+				dropdown(c.Key("fmt"), &s.setFmt, []string{"mrs", "yaml", "text"}).Width(110)
 				pol := policyLabels[max(0, slices.Index(policies, s.setPol))]
-				if ui.Select(c.Key("pol"), &pol, policyLabels).Width(180).Changed() {
+				if dropdown(c.Key("pol"), &pol, policyLabels).Width(180).Changed() {
 					s.setPol = policies[slices.Index(policyLabels, pol)]
 				}
 				if m.button(c, "add", locales.CommonAdd(), icPlus, "primary").Disabled(!valid).Clicked() {
