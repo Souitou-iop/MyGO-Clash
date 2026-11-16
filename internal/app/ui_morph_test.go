@@ -12,9 +12,9 @@ import (
 )
 
 // Nodes changing from the rows of a list to the tiles of a grid, and back,
-// morph from one to the other: the cells keep one box that grows or
-// shrinks from the old size to the new, instead of showing both layouts
-// at once.
+// change shape where they are: each cell keeps one box in its new place,
+// which grows or shrinks from the old size to the new, instead of
+// travelling there or showing both layouts at once.
 func TestNodesMorphBetweenListAndGrid(t *testing.T) {
 	m := &mainUI{}
 	items := []*ProxyItem{{Name: "HK 01", Type: "Shadowsocks", Delay: 80}, {Name: "JP 01", Type: "Trojan", Delay: 120}, {Name: "US 01", Type: "Vmess", Delay: 200}, {Name: "SG 01", Type: "Vless", Delay: 0}}
@@ -78,11 +78,6 @@ func TestNodesMorphBetweenListAndGrid(t *testing.T) {
 	tt.Frame()
 	// The change is measured in the frame it is asked in: the cells have not
 	// jumped to their new places.
-	// A cell may sit a fraction of a pixel off where it was, where it is
-	// carried back from its new place; a jump would move far more.
-	if d := differing(pix(), listPix); d > 30000 {
-		t.Errorf("the list changed in the frame the grid was asked in: %d bytes", d)
-	}
 	for i, ms := range []int{16, 50, 50, 50, 60, 60} {
 		tt.Advance(time.Duration(ms) * time.Millisecond)
 		shot("to-grid-" + string(rune('a'+i)))
