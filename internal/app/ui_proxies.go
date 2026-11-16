@@ -537,13 +537,8 @@ func (m *mainUI) proxyGroup(c *ui.Context, g *ProxyGroup, hide *regexp.Regexp, r
 	if list {
 		gap = 4
 	}
-	mode := "card"
-	if list {
-		mode = "list"
-	}
-	m.flipGridMode(c, "grid", mode, gap, cols, &nodeMotion, len(items), func(i int) any { return items[i].Name }, func(i int, box ui.Element, mode string) {
+	m.flipGrid(c, "grid", gap, cols, &nodeMotion, len(items), func(i int) any { return items[i].Name }, func(i int, box ui.Element) {
 		it := items[i]
-		list := mode == "list"
 		box.Children(func() {
 			active := it.Name == now
 			testing := s.testing[g.Name+"/"+it.Name] || s.testing[g.Name]
