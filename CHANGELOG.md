@@ -2,6 +2,14 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.5
+
+修复版：macOS 上开启“静默启动”后，启动时程序坞图标不再先跳一下再消失。/ A fix release: with silent start on macOS, the Dock icon no longer bounces in for a moment as the app starts.
+
+### 🐛 修复 / Fixes
+
+- macOS 开启静默启动时，应用从启动的第一刻起就不出现在程序坞里；打开主窗口时图标照常出现 / With silent start on macOS, the app stays out of the Dock from the moment it launches; its icon comes in as the main window opens, as before
+
 ## 1.0.4
 
 小版本：设置里可以查看最近五个版本的更新日志；macOS 开启 TUN 后系统 DNS 查询也会进入 TUN；节点名只写城市或机场代码时也能显示国旗。/ A small release: the settings show the release notes of the last five versions, DNS queries on macOS go through TUN while it is on, and nodes named only by a city or an airport code get their flags.
