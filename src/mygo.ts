@@ -1480,6 +1480,12 @@ export interface UI {
    */
   onboardingSeen: boolean;
   /**
+   * TourInvites counts the launches on which the sidebar's mark invited
+   * one who knew the app before the guide to play it; it invites on
+   * TourInviteLaunches of them, or until the guide plays.
+   */
+  tourInvites?: number;
+  /**
    * ConnectivityRegionOrder is the user's order for the country groups
    * in the connectivity page. Missing entries use the built-in order.
    */

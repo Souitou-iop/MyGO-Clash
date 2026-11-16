@@ -4235,6 +4235,16 @@ func (msgs Messages) NavTools() string {
 	return Catalog.Format(msgs.locale, "navTools", nil)
 }
 
+// NavTourInvite says "See what's new"
+// in the language the app shows.
+func NavTourInvite() string { return In(i18n.Locale()).NavTourInvite() }
+
+// NavTourInvite says "See what's new"
+// in the language of msgs.
+func (msgs Messages) NavTourInvite() string {
+	return Catalog.Format(msgs.locale, "navTourInvite", nil)
+}
+
 // OnbAddProfile says "Add a subscription"
 // in the language the app shows.
 func OnbAddProfile() string { return In(i18n.Locale()).OnbAddProfile() }

@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/mygo-clash/mygo-clash/internal/app/locales"
+	"github.com/mygo-clash/mygo-clash/internal/config"
 )
 
 // The first-run guide of the main window: six short scenes the app's
@@ -547,7 +548,9 @@ func (m *mainUI) onbFinish(c *ui.Context, how string, stage ui.Rect) {
 	o.closing, o.open = now, false
 	if !m.st.UI.OnboardingSeen && m.st.Theme != "" {
 		m.st.UI.OnboardingSeen = true // at once; the settings confirm
-		m.patch(map[string]any{"ui": map[string]any{"onboardingSeen": true}})
+		m.patch(map[string]any{"ui": map[string]any{"onboardingSeen": true, "tourInvites": config.TourInviteLaunches}})
+	} else {
+		m.endTourInvites() // played from the settings
 	}
 	if how == "profiles" {
 		m.goTo("profiles", "")

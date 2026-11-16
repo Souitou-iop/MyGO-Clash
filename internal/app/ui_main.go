@@ -82,6 +82,7 @@ type mainUI struct {
 	dash     dashState
 	nav      navState
 	onb      onboarding
+	tour     tourInvite
 	connList []coreapi.Connection
 	// The last trafficLen seconds of the core's memory and connections, and
 	// the last routeLen of what each route (a chain's last proxy) brings
@@ -483,6 +484,18 @@ func (m *mainUI) sidebar(c *ui.Context) {
 			mark := ui.ButtonBase(c.Key("mark")).Size(30, 30).Shrink(0).Label("MyGO-Clash")
 			pressable(mark)
 			turn := compassSpin(mark)
+			inviting := m.tourInviting(c)
+			if inviting {
+				mark.Tooltip(locales.NavTourInvite())
+				if mark.Clicked() {
+					m.playTour()
+				}
+				turn += m.tourNudge(c)
+				mark.Children(func() {
+					// Cut out of the ring by the window behind it.
+					ui.Box(c.Key("tour")).Size(10, 10).Radius(5).Background(p.Accent).Border(2, p.Theme.Background).Absolute().Top(-2).End(-2)
+				})
+			}
 			mark.Draw(func(pt *ui.Painter, r ui.Rect) {
 				drawCompass(pt, r.X+r.W/2, r.Y+r.H/2, 34, compassLook{Ring: true, Turn: turn})
 			})

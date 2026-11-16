@@ -1680,6 +1680,10 @@ export interface Messages {
    */
   navTools(): string;
   /**
+   * `See what's new`
+   */
+  navTourInvite(): string;
+  /**
    * `Add a subscription`
    */
   onbAddProfile(): string;
@@ -5581,6 +5585,7 @@ const catalog = createCatalog<Messages>({
     "navStats": [],
     "navTailscale": [],
     "navTools": [],
+    "navTourInvite": [],
     "onbAddProfile": [],
     "onbCheckBody": [],
     "onbCheckTitle": [],
@@ -6868,6 +6873,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Statistics",
       "navTailscale": "Tailscale",
       "navTools": "Tools",
+      "navTourInvite": "See what's new",
       "onbAddProfile": "Add a subscription",
       "onbCheckBody": "See which services get through, and how fast.",
       "onbCheckTitle": "Connectivity at a glance",
@@ -8154,6 +8160,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "الإحصاءات",
       "navTailscale": "Tailscale",
       "navTools": "الأدوات",
+      "navTourInvite": "شاهد الجديد",
       "onbAddProfile": "إضافة اشتراك",
       "onbCheckBody": "اعرف أي الخدمات تصل وبأي سرعة.",
       "onbCheckTitle": "الاتصال في لمحة",
@@ -9440,6 +9447,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Statistik",
       "navTailscale": "Tailscale",
       "navTools": "Werkzeuge",
+      "navTourInvite": "Neuerungen ansehen",
       "onbAddProfile": "Abo hinzufügen",
       "onbCheckBody": "Sieh, welche Dienste durchkommen und wie schnell.",
       "onbCheckTitle": "Erreichbarkeit auf einen Blick",
@@ -10726,6 +10734,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Estadísticas",
       "navTailscale": "Tailscale",
       "navTools": "Herramientas",
+      "navTourInvite": "Ver las novedades",
       "onbAddProfile": "Añadir una suscripción",
       "onbCheckBody": "Mira qué servicios responden y con qué rapidez.",
       "onbCheckTitle": "La conectividad de un vistazo",
@@ -12012,6 +12021,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "آمار",
       "navTailscale": "Tailscale",
       "navTools": "ابزارها",
+      "navTourInvite": "تازه‌ها را ببینید",
       "onbAddProfile": "افزودن اشتراک",
       "onbCheckBody": "ببینید کدام سرویس‌ها در دسترس‌اند و با چه سرعتی.",
       "onbCheckTitle": "اتصال در یک نگاه",
@@ -13298,6 +13308,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Statistiques",
       "navTailscale": "Tailscale",
       "navTools": "Outils",
+      "navTourInvite": "Voir les nouveautés",
       "onbAddProfile": "Ajouter un abonnement",
       "onbCheckBody": "Voyez quels services passent, et à quelle vitesse.",
       "onbCheckTitle": "La connectivité d'un coup d'œil",
@@ -14584,6 +14595,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Statistik",
       "navTailscale": "Tailscale",
       "navTools": "Alat",
+      "navTourInvite": "Lihat yang baru",
       "onbAddProfile": "Tambah langganan",
       "onbCheckBody": "Lihat layanan mana yang tersambung, dan seberapa cepat.",
       "onbCheckTitle": "Konektivitas sekilas",
@@ -15870,6 +15882,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "トラフィック統計",
       "navTailscale": "Tailscale",
       "navTools": "ツール",
+      "navTourInvite": "新しくなったところを見る",
       "onbAddProfile": "サブスクリプションを追加",
       "onbCheckBody": "よく使うサービスがつながるか、どれだけ速いかがすぐわかります。",
       "onbCheckTitle": "接続状況をひと目で",
@@ -17156,6 +17169,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "트래픽 통계",
       "navTailscale": "Tailscale",
       "navTools": "도구",
+      "navTourInvite": "새로워진 점 보기",
       "onbAddProfile": "구독 추가",
       "onbCheckBody": "자주 쓰는 서비스가 연결되는지, 얼마나 빠른지 바로 보입니다.",
       "onbCheckTitle": "연결 상태 한눈에",
@@ -18442,6 +18456,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Estatísticas",
       "navTailscale": "Tailscale",
       "navTools": "Ferramentas",
+      "navTourInvite": "Ver as novidades",
       "onbAddProfile": "Adicionar assinatura",
       "onbCheckBody": "Veja quais serviços respondem e com que rapidez.",
       "onbCheckTitle": "Conectividade num relance",
@@ -19728,6 +19743,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Статистика",
       "navTailscale": "Tailscale",
       "navTools": "Инструменты",
+      "navTourInvite": "Посмотреть, что нового",
       "onbAddProfile": "Добавить подписку",
       "onbCheckBody": "Сразу видно, какие сервисы доступны и насколько быстро.",
       "onbCheckTitle": "Связь как на ладони",
@@ -21014,6 +21030,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "İstatistikler",
       "navTailscale": "Tailscale",
       "navTools": "Araçlar",
+      "navTourInvite": "Yenilikleri gör",
       "onbAddProfile": "Abonelik ekle",
       "onbCheckBody": "Hangi hizmetlere ulaşılıyor, ne kadar hızlı; hemen gör.",
       "onbCheckTitle": "Bağlantı bir bakışta",
@@ -22300,6 +22317,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "Thống kê",
       "navTailscale": "Tailscale",
       "navTools": "Công cụ",
+      "navTourInvite": "Xem điểm mới",
       "onbAddProfile": "Thêm đăng ký",
       "onbCheckBody": "Xem dịch vụ nào truy cập được và nhanh đến đâu.",
       "onbCheckTitle": "Kết nối trong nháy mắt",
@@ -23586,6 +23604,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "流量统计",
       "navTailscale": "Tailscale",
       "navTools": "工具",
+      "navTourInvite": "看看新版",
       "onbAddProfile": "添加订阅",
       "onbCheckBody": "常用服务通不通、快不快，一眼看清。",
       "onbCheckTitle": "连通性一扫便知",
@@ -24872,6 +24891,7 @@ const catalog = createCatalog<Messages>({
       "navStats": "流量統計",
       "navTailscale": "Tailscale",
       "navTools": "工具",
+      "navTourInvite": "看看新版",
       "onbAddProfile": "新增訂閱",
       "onbCheckBody": "常用服務通不通、快不快，一眼看清。",
       "onbCheckTitle": "連通性一掃便知",

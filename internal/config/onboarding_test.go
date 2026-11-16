@@ -32,3 +32,20 @@ func TestOnboardingSeenOnLoad(t *testing.T) {
 		t.Error("a saved false must stay false")
 	}
 }
+
+func TestInvitesToTour(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		ui   UI
+		want bool
+	}{
+		{"a newcomer, whom the guide meets by itself", UI{}, false},
+		{"one who knew the app before the guide", UI{OnboardingSeen: true}, true},
+		{"on the last launch it invites on", UI{OnboardingSeen: true, TourInvites: TourInviteLaunches - 1}, true},
+		{"after the launches it invites on, or the guide played", UI{OnboardingSeen: true, TourInvites: TourInviteLaunches}, false},
+	} {
+		if got := c.ui.InvitesToTour(); got != c.want {
+			t.Errorf("%s: %v, want %v", c.name, got, c.want)
+		}
+	}
+}

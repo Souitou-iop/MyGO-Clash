@@ -156,6 +156,10 @@ type UI struct {
 	// was finished or skipped. Settings saved before the guide existed
 	// read as seen (Load): those who upgrade know the app already.
 	OnboardingSeen bool `json:"onboardingSeen"`
+	// TourInvites counts the launches on which the sidebar's mark invited
+	// one who knew the app before the guide to play it; it invites on
+	// TourInviteLaunches of them, or until the guide plays.
+	TourInvites int `json:"tourInvites,omitempty"`
 	// ConnectivityRegionOrder is the user's order for the country groups
 	// in the connectivity page. Missing entries use the built-in order.
 	ConnectivityRegionOrder []string `json:"connectivityRegionOrder,omitempty"`
@@ -964,6 +968,15 @@ type Store struct {
 	mu   sync.Mutex
 	path string
 	cur  Settings
+}
+
+// TourInviteLaunches is how many launches the sidebar's mark invites on.
+const TourInviteLaunches = 3
+
+// InvitesToTour reports whether the sidebar's mark invites to the guide:
+// for one who never saw it play by itself, on the first launches.
+func (u UI) InvitesToTour() bool {
+	return u.OnboardingSeen && u.TourInvites < TourInviteLaunches
 }
 
 // Load reads the settings in path; a missing file gives the defaults.
