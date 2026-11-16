@@ -454,20 +454,6 @@ func launchLanguage() string {
 	return mygo.App.Locale()
 }
 
-// launchSilent reports the silent start setting, read before the
-// settings are open.
-func launchSilent() bool {
-	dir, err := mygo.App.Path(mygo.PathUserData)
-	if err != nil {
-		return false
-	}
-	var st struct {
-		SilentStart bool `json:"silentStart"`
-	}
-	b, err := os.ReadFile(filepath.Join(dir, "settings.json"))
-	return err == nil && json.Unmarshal(b, &st) == nil && st.SilentStart
-}
-
 // updaterLanguage turns a language of the interface into the plugin's tag.
 func updaterLanguage(l string) string {
 	switch l {

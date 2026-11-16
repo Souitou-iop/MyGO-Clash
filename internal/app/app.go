@@ -143,9 +143,12 @@ func Main() {
 	mygo.App.OnBeforeQuit(a.beforeQuit)
 	mygo.App.OnQuit(a.cleanup)
 	useUpdater()
-	// A silent start stays out of the Dock from the first moment: set
-	// after Run, the policy lets its icon bounce in first.
-	if runtime.GOOS == "darwin" && launchSilent() {
+	// On macOS the app starts out of the Dock, and showMain brings its
+	// icon in with the window: LSUIElement in mygo.json keeps macOS from
+	// showing the icon as it launches the app, before any code runs, and
+	// the policy given before Run keeps MyGo from making the app a regular
+	// one as it starts, which would bounce the icon in for a silent start.
+	if runtime.GOOS == "darwin" {
 		mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
 	}
 	mygo.App.WhenReady(a.start)
