@@ -2,6 +2,26 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.2
+
+修复版：不再依赖网页视图，Linux 的安装包因此不再需要 WebKitGTK；首页节点名过长时不再被截断，代理页切换方块与列表的动画更连贯，下拉选择与更多菜单有了展开和收回的动画。/ A fix release: nothing depends on a web view any more, so the Linux packages no longer need WebKitGTK; long node names on the home page are no longer cut, switching between tiles and list on the Proxies page is smoother, and drop-downs and menus open and close with a motion.
+
+### ✨ 新增功能 / New Features
+
+- 下拉选择和各处“⋯”菜单打开、收回时有了动画：列表从按钮边缘轻轻展开，收回时更快缩回；系统开启“减少动态效果”时直接显示 / Drop-downs and the “more” menus open and close with a motion: the list grows out of its button and shrinks back faster; with reduced motion on they show at once
+- IP 质量的风险单独成为一个徽章，颜色随风险高低（绿、黄、红）变化，底色更深更醒目；首页与出口详情的分档统一 / The risk of an IP quality is a badge of its own, in green, amber or red by how risky it is, in a deeper tint; the home page and the exit's details rate it alike
+
+### 🐛 修复 / Fixes
+
+- 首页的节点名过长时，字号会先缩小再省略，窗口拉伸到某些宽度时不再被截断 / A long node name on the home page steps down in size before it is cut, so it is no longer cut at some window widths
+- 左上角罗盘小圆点的提示改到下方弹出，在 macOS 上不再与红绿灯重叠 / The tip of the dot by the compass opens below it, clear of the traffic lights on macOS
+- 代理页在方块与列表之间切换时，节点从各自真正的位置平滑过渡，动画更连贯 / Switching between tiles and list on the Proxies page glides each node from where it really is, and the motion is smoother
+- 轻量模式、README 的说明不再提到网页视图；README 注明 Linux 已在 Fedora 上实测 / Lightweight mode and the README no longer speak of a web view; the README notes that Linux has been tried on Fedora
+
+### 🔧 其他 / Other
+
+- 彻底移除网页视图与 React 前端：Linux 的 deb、rpm、Arch 包不再依赖 WebKitGTK，Windows 10 也无需 WebView2；原生界面本来就不使用它们 / The web view and the React front end are gone: the deb, rpm and Arch packages no longer depend on WebKitGTK, and Windows 10 needs no WebView2; the native interface never used them
+
 ## 1.0.1
 
 修复版：在 Fedora 等启用了 SELinux 与 firewalld 的 Linux 上，TUN 模式终于可以正常使用；同时修复设置弹窗的显示问题。/ A fix release: TUN mode finally works on Linux distributions with SELinux and firewalld, such as Fedora, and the settings dialogs show properly again.
