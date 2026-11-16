@@ -339,11 +339,19 @@ const flipDur = 320 * time.Millisecond
 // flipGridState is a grid's columns and height as last laid out, and its
 // height gliding.
 type flipGridState struct {
-	cols  int
-	laid  bool    // it had its width in the frame before
-	gridH float32 // the grid's own height in the frame before
-	fromH float32
-	start time.Time
+	cols int
+	mode string  // what its cells are, as last laid out; see flipGridMode
+	gap  float32 // as last laid out
+	// A change of kind being measured: the phase it is in, and what it
+	// becomes.
+	phase  int
+	toCols int
+	toMode string
+	toGap  float32
+	laid   bool    // it had its width in the frame before
+	gridH  float32 // the grid's own height in the frame before
+	fromH  float32
+	start  time.Time
 }
 
 // flipCellState is a cell's offset gliding out.
@@ -351,6 +359,10 @@ type flipCellState struct {
 	fromX, fromY float32
 	start        time.Time
 	offX, offY   float32
+	// While its kind changes: how big it was, and what it was.
+	fromW, fromH float32
+	toW, toH     float32 // what it becomes, as the new layout measured
+	fromMode     string
 }
 
 // flipGrid lays n cells out in the columns colsFor gives its width, gap
@@ -358,18 +370,55 @@ type flipCellState struct {
 // is the cells' Transition between column changes, as they are sorted,
 // added or removed.
 func (m *mainUI) flipGrid(c *ui.Context, key any, gap float32, colsFor func(width float32) int, motion *ui.ElementTransition, n int, id func(i int) any, cell func(i int, box ui.Element)) {
+	m.flipGridMode(c, key, "", gap, colsFor, motion, n, id, func(i int, box ui.Element, _ string) { cell(i, box) })
+}
+
+// flipGridMode is flipGrid for cells of a kind, mode, that the app changes,
+// as a list of rows becomes a grid of tiles: cell is told the kind to
+// build. As the kind changes, each cell does not swap its content at once
+// but morphs, from the size and the place of what it was to what it
+// becomes: the old content fades out of a box that grows or shrinks, the
+// new one fades in.
+func (m *mainUI) flipGridMode(c *ui.Context, key any, mode string, gap float32, colsFor func(width float32) int, motion *ui.ElementTransition, n int, id func(i int) any, cell func(i int, box ui.Element, mode string)) {
 	// The box holding the grid has its width and place, and its height but
 	// while that glides.
 	wrap := ui.Column(c.Key(key))
 	wb := wrap.LayoutBounds()
 	cols := max(1, colsFor(wb.W))
-	gs := ui.Local(wrap, "flip", func() flipGridState { return flipGridState{cols: cols} })
+	gs := ui.Local(wrap, "flip", func() flipGridState { return flipGridState{cols: cols, mode: mode, gap: gap} })
 	now := c.Now()
 	prev := gs.laid
+	canMove := prev && wb.W > 0 && !c.Preferences().ReduceMotion
 	// Not as the grid first gets its width, which only places its cells.
-	changed := gs.cols != cols && prev && wb.W > 0 && !c.Preferences().ReduceMotion
-	gs.laid, gs.cols = wb.W > 0, cols
-	settled := prev && !changed
+	changed := gs.cols != cols && canMove
+	// A change of kind is measured before it plays: the frame it is asked
+	// in still shows the cells as they were, and builds the new ones out of
+	// sight; the next knows where each goes, and starts from where it was.
+	var landed []ui.Rect
+	probing := false
+	switch {
+	case gs.phase == 0 && gs.mode != mode && canMove:
+		gs.phase, gs.toCols, gs.toMode, gs.toGap = 1, cols, mode, gap
+		probing, changed = true, false
+	case gs.phase == 1:
+		gs.phase = 0
+		if cols == gs.toCols && mode == gs.toMode && gap == gs.toGap && canMove {
+			landed = make([]ui.Rect, n)
+			changed = true
+		} else if gs.mode != mode {
+			changed = canMove // asked again at once: as it is
+		}
+	}
+	fromMode := gs.mode
+	cfgCols, cfgMode, cfgGap := cols, mode, gap
+	if probing {
+		cfgCols, cfgMode, cfgGap = gs.cols, gs.mode, gs.gap
+	}
+	if !probing {
+		gs.cols, gs.mode, gs.gap = cols, mode, gap
+	}
+	gs.laid = wb.W > 0
+	settled := prev && !changed && !probing
 	if changed {
 		gs.fromH, gs.start = wb.H, now
 	}
@@ -377,26 +426,54 @@ func (m *mainUI) flipGrid(c *ui.Context, key any, gap float32, colsFor func(widt
 		wrap.Height(gs.fromH + (gs.gridH-gs.fromH)*easeStd(e))
 		c.AnimationFrame()
 	}
-	cellW := (wb.W - float32(cols-1)*gap) / float32(cols)
+	if probing {
+		c.AnimationFrame()
+	}
+	cellW := (wb.W - float32(cfgCols-1)*cfgGap) / float32(cfgCols)
 	var rowTop, rowH float32
 	wrap.Children(func() {
-		grid := ui.Grid(c.Key("grid")).Gap(gap).Columns(cols).Shrink(0)
+		// Where each cell lands is read from the new layout, built out of
+		// sight for a frame and measured in the next.
+		if probing || landed != nil {
+			probe := ui.Grid(c.Key("probe")).Absolute().Left(0).Top(0).Width(wb.W).Gap(gs.toGap).Columns(gs.toCols).Opacity(0).IgnoreInput(true)
+			probe.Children(func() {
+				for i := range n {
+					pb := ui.Column(c.Key([2]any{"probe", id(i)}))
+					if landed != nil {
+						lb := pb.LayoutBounds()
+						landed[i] = ui.Rect{X: lb.X - wb.X, Y: lb.Y - wb.Y, W: lb.W, H: lb.H}
+					}
+					if probing {
+						cell(i, pb, gs.toMode)
+					}
+				}
+			})
+		}
+		grid := ui.Grid(c.Key("grid")).Gap(cfgGap).Columns(cfgCols).Shrink(0)
 		gs.gridH = grid.LayoutBounds().H
 		grid.Children(func() {
 			for i := range n {
 				box := ui.Column(c.Key(id(i)))
 				cs := ui.Local(box, "flip", func() flipCellState { return flipCellState{} })
 				lb := box.LayoutBounds()
-				if i%cols == 0 && i > 0 {
-					rowTop += rowH + gap
+				if i%cfgCols == 0 && i > 0 {
+					rowTop += rowH + cfgGap
 					rowH = 0
 				}
 				if changed && lb.W > 0 {
 					// From where it shows to where it goes.
-					nx, ny := float32(i%cols)*(cellW+gap), rowTop
+					nx, ny := float32(i%cfgCols)*(cellW+cfgGap), rowTop
+					if landed != nil {
+						nx, ny = landed[i].X, landed[i].Y
+					}
 					cs.fromX = lb.X - wb.X + cs.offX - nx
 					cs.fromY = lb.Y - wb.Y + cs.offY - ny
 					cs.start = now
+					cs.fromW, cs.fromH, cs.fromMode = lb.W, lb.H, fromMode
+					cs.toW, cs.toH = lb.W, lb.H
+					if landed != nil {
+						cs.toW, cs.toH = landed[i].W, landed[i].H
+					}
 				}
 				rowH = max(rowH, lb.H)
 				cs.offX, cs.offY = 0, 0
@@ -405,12 +482,36 @@ func (m *mainUI) flipGrid(c *ui.Context, key any, gap float32, colsFor func(widt
 					cs.offX, cs.offY = cs.fromX*k, cs.fromY*k
 					box.Translate(cs.offX, cs.offY).ZIndex(1)
 					c.AnimationFrame()
+					if cs.fromMode != "" && cs.fromMode != cfgMode && cs.fromW > 0 && lb.W > 0 {
+						m.morphCell(c, box, i, easeStd(e), cs, ui.Rect{W: cs.toW, H: cs.toH}, cfgMode, cell)
+						continue
+					}
 				} else if motion != nil && settled {
 					box.Transition(*motion)
 				}
-				cell(i, box)
+				cell(i, box, cfgMode)
 			}
 		})
+	})
+}
+
+// morphCell builds a cell part of the way, k, through the change of its
+// kind. The cell has the place and the size of what it becomes, which holds
+// the new content, fading in; what shows of it is clipped to a box of the
+// size between the old one and the new, grown from the same corner, over
+// the old content, at its old size, which fades out under it.
+func (m *mainUI) morphCell(c *ui.Context, box ui.Element, i int, k float32, cs *flipCellState, now ui.Rect, mode string, cell func(i int, box ui.Element, mode string)) {
+	clamp := func(v float32) float32 { return max(0, min(1, v)) }
+	w, h := lerp(cs.fromW, now.W, k), lerp(cs.fromH, now.H, k)
+	// Insets that are negative show beyond the cell, where it was larger.
+	box.ClipInset(0, now.W-w, now.H-h, 0, 14)
+	box.Children(func() {
+		old := ui.Column(c.Key("was")).Absolute().Left(0).Top(0).Width(cs.fromW).Height(cs.fromH).IgnoreInput(true)
+		old.Opacity(1 - clamp((k-0.5)/0.3))
+		cell(i, old, cs.fromMode)
+		fresh := ui.Column(c.Key("is")).IgnoreInput(true)
+		fresh.Opacity(clamp((k - 0.1) / 0.5))
+		cell(i, fresh, mode)
 	})
 }
 
