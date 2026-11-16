@@ -159,7 +159,7 @@ func (m *mainUI) homeView(c *ui.Context) {
 			if bw <= 0 {
 				bw = max(view.W-44, 320)
 			}
-			places, height, layout := boardLayout(bw)
+			places, height, layout := boardLayout(bw, max(0, h.pillsH-pillH))
 			if layout != h.boardLayout {
 				if h.boardLayout != "" && !c.Preferences().ReduceMotion {
 					h.boardFrom, h.boardStart = maps.Clone(h.boardAt), c.Now()
@@ -508,6 +508,7 @@ func (m *mainUI) exitTile(c *ui.Context, t ui.Element) {
 	g, byName := m.heroGroup()
 	mode := m.st.Clash.Mode
 	big := func(title, sub string, col ui.Color) {
+		m.notePills(c, 0) // no pills under a word in place of the exit
 		t.Justify(ui.Center).Gap(6).Children(func() {
 			ui.Text(c, title).FontSize(26).FontWeight(680).TextColor(col).SingleLine()
 			if sub != "" {
@@ -1224,7 +1225,11 @@ func lerp(a, b, k float32) float32 { return a + (b-a)*k }
 // the exit side by side, then the traffic and today's total, in two rows of
 // two on a narrower board too, and one under another on a narrow one. Heights follow what a tile holds, not the window, so
 // that no tile stands large and empty.
-func boardLayout(w float32) (places map[string]ui.Rect, height float32, layout string) {
+//
+// more is how much taller than one line the exit tile's route pills stand,
+// wrapped to its width: its row grows by that, so that no line of pills
+// is cut.
+func boardLayout(w, more float32) (places map[string]ui.Rect, height float32, layout string) {
 	const gap = 12
 	places = map[string]ui.Rect{}
 	y := float32(0)
@@ -1245,20 +1250,21 @@ func boardLayout(w float32) (places map[string]ui.Rect, height float32, layout s
 	switch {
 	case w >= 880:
 		layout = "wide"
-		row(232, []string{"compass", "exit"}, []float32{5.4, 6.6})
+		row(232+more, []string{"compass", "exit"}, []float32{5.4, 6.6})
 		row(184, []string{"speed", "today"}, []float32{8.6, 3.4})
 	case w >= 560:
 		layout = "mid"
-		row(252, []string{"compass", "exit"}, []float32{1, 1})
+		row(252+more, []string{"compass", "exit"}, []float32{1, 1})
 		row(184, []string{"speed", "today"}, []float32{1.8, 1})
 	default:
 		layout = "narrow"
 		row(262, []string{"compass"}, []float32{1})
-		row(252, []string{"exit"}, []float32{1})
+		row(252+more, []string{"exit"}, []float32{1})
 		row(188, []string{"speed"}, []float32{1})
 		row(176, []string{"today"}, []float32{1})
 	}
-	return places, y - gap, layout
+	// A change of the pills' lines glides the tiles as a new layout does.
+	return places, y - gap, fmt.Sprint(layout, "/", more)
 }
 
 // trafficTile is the traffic now: the speed, large, over its last half
@@ -1290,6 +1296,18 @@ func (m *mainUI) trafficTile(c *ui.Context, t ui.Element) {
 	})
 }
 
+// pillH is the height of a route pill.
+const pillH = 30
+
+// notePills keeps how tall the route pills were laid out, for the board
+// to size the exit tile by; a change asks for another frame to apply it.
+func (m *mainUI) notePills(c *ui.Context, h float32) {
+	if h != m.home.pillsH {
+		m.home.pillsH = h
+		c.Invalidate()
+	}
+}
+
 // routePills are the other groups and where each leaves, small, under the
 // exit they share its tile with: each opens its group's sheet out of it.
 // Out of the rule mode they recede, as the rules no longer pick them.
@@ -1303,9 +1321,13 @@ func (m *mainUI) routePills(c *ui.Context, hero *ProxyGroup, byName map[string]*
 		}
 	}
 	if len(gs) == 0 {
+		m.notePills(c, 0)
 		return
 	}
-	row := ui.Row(c.Key("routes")).Gap(6).Wrap().Clip().MaxHeight(72)
+	// The pills keep their lines whole: the board makes the tile as tall
+	// as they wrap to, three lines at most, and any further line is left out whole.
+	row := ui.Row(c.Key("routes")).Gap(6).Wrap().Clip().Shrink(0).MaxHeight(3*pillH + 2*6)
+	m.notePills(c, row.LayoutBounds().H)
 	row.Opacity(row.AnimateTo("quiet", map[bool]float32{true: 0.45, false: 1}[m.st.Clash.Mode != "rule"], ui.Animation{Duration: 250 * time.Millisecond}))
 	row.Children(func() {
 		for _, g := range gs {
@@ -1320,7 +1342,7 @@ func (m *mainUI) routePills(c *ui.Context, hero *ProxyGroup, byName map[string]*
 			if v, ok := h.delays[exit]; ok {
 				delay = v
 			}
-			b := ui.ButtonBase(c.Key(g.Name)).Row().Height(30).Padding(0, 10).Gap(6).Radius(10).AlignItems(ui.Center).Shrink(0).Label(g.Name)
+			b := ui.ButtonBase(c.Key(g.Name)).Row().Height(pillH).Padding(0, 10).Gap(6).Radius(10).AlignItems(ui.Center).Shrink(0).Label(g.Name)
 			bg := p.Surface2
 			if b.Hovered() {
 				bg = p.Surface3

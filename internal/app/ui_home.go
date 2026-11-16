@@ -32,6 +32,7 @@ type homePage struct {
 	boardFrom   map[string]ui.Rect
 	boardStart  time.Time
 	boardFromH  float32
+	pillsH      float32 // the exit tile's route pills, as last laid out
 
 	// The proxies of a group.
 	view        ProxiesView
