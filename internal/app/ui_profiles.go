@@ -480,8 +480,23 @@ func (m *mainUI) openProfileDialog(pr *profiles.Profile) {
 
 // field is a labelled control, with a hint or an error under it.
 func (m *mainUI) field(c *ui.Context, label, hint, errText string, control func()) {
+	m.fieldBox(c, false, label, hint, errText, control)
+}
+
+// rowField is a field beside others in a row, which share its width
+// between them. (A field in a column is as tall as it is: a basis of
+// nothing along the column would leave it no height.)
+func (m *mainUI) rowField(c *ui.Context, label, hint, errText string, control func()) {
+	m.fieldBox(c, true, label, hint, errText, control)
+}
+
+func (m *mainUI) fieldBox(c *ui.Context, inRow bool, label, hint, errText string, control func()) {
 	p := m.pal
-	ui.Column(c).Gap(5).Grow(1).Basis(0).MinWidth(0).Children(func() {
+	box := ui.Column(c).Gap(5).Grow(1).MinWidth(0)
+	if inRow {
+		box.Basis(0)
+	}
+	box.Children(func() {
 		if label != "" {
 			ui.Text(c, label).FontSize(12.5).FontWeight(550).TextColor(p.Text2)
 		}
@@ -541,8 +556,8 @@ func (m *mainUI) profileDialog(c *ui.Context) {
 				if remote && !editing {
 					hint, ph = locales.ProfilesNameHint(), locales.ProfilesNameAuto()
 				}
-				m.field(c, locales.ProfilesName(), hint, "", func() { ui.TextInput(c.Key("name"), &s.dlgName).Placeholder(ph) })
-				m.field(c, locales.ProfilesDesc(), "", "", func() { ui.TextInput(c.Key("desc"), &s.dlgDesc) })
+				m.rowField(c, locales.ProfilesName(), hint, "", func() { ui.TextInput(c.Key("name"), &s.dlgName).Placeholder(ph) })
+				m.rowField(c, locales.ProfilesDesc(), "", "", func() { ui.TextInput(c.Key("desc"), &s.dlgDesc) })
 			})
 			// The ways to fetch a remote profile fold in and away as the
 			// type changes, the dialog following.
@@ -555,19 +570,19 @@ func (m *mainUI) profileDialog(c *ui.Context) {
 					ui.TextArea(c.Key("url"), &s.dlgURL).Placeholder("https://").Font("ui-monospace").Height(64)
 				})
 				ui.Row(c).Gap(12).Children(func() {
-					m.field(c, locales.ProfilesUserAgent(), locales.ProfilesUserAgentHint(), "", func() {
+					m.rowField(c, locales.ProfilesUserAgent(), locales.ProfilesUserAgentHint(), "", func() {
 						ui.TextInput(c.Key("ua"), &s.dlgOpt.UserAgent).Placeholder("mihomo/1.19 clash-verge/v2.4 MyGO-Clash")
 					})
 					hint := locales.ProfilesIntervalHint()
 					if s.dlgIntvl == "0" && s.dlgSuggst > 0 {
 						hint = locales.ProfilesIntervalFollow(fmt.Sprint(s.dlgSuggst))
 					}
-					m.field(c, locales.ProfilesInterval(), hint, "", func() {
+					m.rowField(c, locales.ProfilesInterval(), hint, "", func() {
 						ui.TextInput(c.Key("interval"), &s.dlgIntvl).Disabled(s.dlgOpt.NoAutoUpdate).Width(140)
 					})
 				})
 				ui.Row(c).Gap(12).Children(func() {
-					m.field(c, locales.ProfilesTimeout(), "", "", func() { ui.TextInput(c.Key("timeout"), &s.dlgTO).Width(140) })
+					m.rowField(c, locales.ProfilesTimeout(), "", "", func() { ui.TextInput(c.Key("timeout"), &s.dlgTO).Width(140) })
 					ui.Box(c).Grow(1).Basis(0)
 				})
 				m.rows(c, "opts", func() {

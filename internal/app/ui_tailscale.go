@@ -309,7 +309,7 @@ func (m *mainUI) tsLogin(c *ui.Context, st *coreapi.TailscaleStatus) {
 				// the card ends at its label until the QR code beside it
 				// stretches the column.
 				ui.Row(c).Children(func() {
-					m.field(c, locales.TsAuthKey(), locales.TsAuthKeyHint(), "", func() {
+					m.rowField(c, locales.TsAuthKey(), locales.TsAuthKeyHint(), "", func() {
 						ui.Row(c).Gap(8).Children(func() {
 							ui.TextInput(c.Key("key"), &s.authKey).Password().Placeholder("tskey-auth-…").Grow(1)
 							if s.busy == "key" {

@@ -823,7 +823,10 @@ func (m *mainUI) dialogFrame(c *ui.Context, key, title string, width float32, bo
 	m.modal(c, "dlg-"+key, &open, func() {
 		ui.Column(c).Width(width).MaxHeight(660).Gap(14).Children(func() {
 			ui.Text(c, title).FontSize(15).FontWeight(650)
-			gutter(ui.Scroll(c).Grow(1).Basis(0).MinHeight(0).Gap(14), 14).Children(body)
+			// Grow alone: the column is as tall as its content, up to its
+			// maximum, and a body told to start from nothing (Basis 0)
+			// has no room to grow into there and shows as an empty dialog.
+			gutter(ui.Scroll(c).Grow(1).Gap(14), 14).Children(body)
 			ui.Row(c).Gap(8).Justify(ui.End).Children(func() {
 				if save == nil {
 					if m.button(c, "done", locales.CommonDone(), nil, "primary").Clicked() {
@@ -857,8 +860,8 @@ func (m *mainUI) sysProxyDialog(c *ui.Context) {
 			}
 		})
 		ui.Row(c).Gap(12).Children(func() {
-			m.field(c, locales.SettingsProxyHost(), locales.SettingsProxyHostHint(), "", func() { ui.TextInput(c.Key("host"), &s.sp.Host) })
-			m.field(c, locales.SettingsGuardInterval(), locales.SettingsGuardHint(), "", func() {
+			m.rowField(c, locales.SettingsProxyHost(), locales.SettingsProxyHostHint(), "", func() { ui.TextInput(c.Key("host"), &s.sp.Host) })
+			m.rowField(c, locales.SettingsGuardInterval(), locales.SettingsGuardHint(), "", func() {
 				ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 					ui.Switch(c.Key("guard"), &s.sp.Guard)
 					ui.TextInput(c.Key("interval"), &s.guard).Width(90)
@@ -926,8 +929,8 @@ func (m *mainUI) tunDialog(c *ui.Context) {
 			case "windows":
 				ph = "MyGO"
 			}
-			m.field(c, locales.SettingsDevice(), locales.SettingsDeviceHint(), "", func() { ui.TextInput(c.Key("dev"), &s.tun.Device).Placeholder(ph) })
-			m.field(c, "MTU", "", "", func() { ui.TextInput(c.Key("mtu"), &s.mtu).Width(120) })
+			m.rowField(c, locales.SettingsDevice(), locales.SettingsDeviceHint(), "", func() { ui.TextInput(c.Key("dev"), &s.tun.Device).Placeholder(ph) })
+			m.rowField(c, "MTU", "", "", func() { ui.TextInput(c.Key("mtu"), &s.mtu).Width(120) })
 		})
 		m.rows(c, "opts", func() {
 			m.setting(c, "route", locales.SettingsAutoRoute(), locales.SettingsAutoRouteDesc(), func() { ui.Switch(c.Key("sw"), &s.tun.AutoRoute) })
@@ -1271,8 +1274,8 @@ func (m *mainUI) controllerDialog(c *ui.Context) {
 			m.setting(c, "en", locales.SettingsControllerEnable(), locales.SettingsControllerDesc(), func() { ui.Switch(c.Key("sw"), &s.ctrl.Enabled) })
 		})
 		ui.Row(c).Gap(12).Children(func() {
-			m.field(c, locales.SettingsAddress(), locales.SettingsAddressHint(), "", func() { ui.TextInput(c.Key("addr"), &s.ctrl.Address).Font("ui-monospace") })
-			m.field(c, locales.SettingsSecret(), "", "", func() {
+			m.rowField(c, locales.SettingsAddress(), locales.SettingsAddressHint(), "", func() { ui.TextInput(c.Key("addr"), &s.ctrl.Address).Font("ui-monospace") })
+			m.rowField(c, locales.SettingsSecret(), "", "", func() {
 				ui.Row(c).Gap(6).Children(func() {
 					ui.TextInput(c.Key("secret"), &s.ctrl.Secret).Font("ui-monospace").Grow(1)
 					if m.iconButton(c, "dice", icDices, locales.SettingsRandomSecret()).Size(32, 32).Clicked() {

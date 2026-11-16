@@ -919,7 +919,7 @@ func (m *mainUI) syncSetupDialog(c *ui.Context) {
 			if c.Direction() == ui.RightToLeft {
 				dir = -dir
 			}
-			gutter(ui.Scroll(c).Grow(1).Basis(0).MinHeight(0).ChildExit(ui.Motion{X: -16 * dir}), 14).Children(func() {
+			gutter(ui.Scroll(c).Grow(1).ChildExit(ui.Motion{X: -16 * dir}), 14).Children(func() {
 				ui.Column(c.Key(s.step)).Gap(12).Transition(ui.ElementTransition{
 					Enter: &ui.Motion{X: 16 * dir}, Exit: &ui.Motion{X: -16 * dir},
 					Colors: true, Duration: 240 * time.Millisecond, Ease: easeStd,
@@ -939,7 +939,7 @@ func (m *mainUI) syncSetupDialog(c *ui.Context) {
 							}
 						})
 						ui.Row(c).Gap(12).Children(func() {
-							m.field(c, locales.SyncUsername(), "", "", func() {
+							m.rowField(c, locales.SyncUsername(), "", "", func() {
 								if ui.TextInput(c.Key("user"), &su.Username).Changed() {
 									changed()
 								}
@@ -948,7 +948,7 @@ func (m *mainUI) syncSetupDialog(c *ui.Context) {
 							if m.st.Sync.URL != "" {
 								hint = locales.SyncPasswordKeep()
 							}
-							m.field(c, locales.SyncPassword(), hint, "", func() {
+							m.rowField(c, locales.SyncPassword(), hint, "", func() {
 								if ui.TextInput(c.Key("pass"), &su.Password).Password().Changed() {
 									changed()
 								}

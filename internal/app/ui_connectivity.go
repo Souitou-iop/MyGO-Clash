@@ -707,11 +707,11 @@ func (m *mainUI) sitesDialog(c *ui.Context, running bool) {
 				// in this column would squeeze it to nothing.
 				ui.Row(c.Key("fields")).Gap(12).AlignItems(ui.Start).Shrink(0).Children(func() {
 					ui.Row(c).Width(180).Shrink(0).Children(func() {
-						m.field(c, locales.ConnectivityCustomName(), "", "", func() {
+						m.rowField(c, locales.ConnectivityCustomName(), "", "", func() {
 							ui.TextInput(c.Key("name"), &s.custName).Placeholder(locales.ConnectivityCustomNamePh()).MaxLength(20)
 						})
 					})
-					m.field(c, locales.ConnectivityCustomUrl(), "", s.custErr, func() {
+					m.rowField(c, locales.ConnectivityCustomUrl(), "", s.custErr, func() {
 						ui.TextInput(c.Key("url"), &s.custURL).Placeholder(locales.ConnectivityCustomUrlPh())
 					})
 				})
