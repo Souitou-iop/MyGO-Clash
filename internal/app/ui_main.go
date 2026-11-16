@@ -81,10 +81,11 @@ type mainUI struct {
 	// The last trafficLen seconds of the core's memory and connections, and
 	// the last routeLen of what each route (a chain's last proxy) brings
 	// down, for the sheets' trails.
-	memHist   []int64
-	connHist  []int
-	routeHist map[string][]int64
-	upd       *UpdateState
+	memHist      []int64
+	connHist     []int
+	routeHist    map[string][]int64
+	upd          *UpdateState
+	releaseNotes releaseNotesPage
 }
 
 func newMainUI(a *App) *mainUI {

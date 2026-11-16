@@ -75,18 +75,32 @@ func enterPose(c *ui.Context, e ui.Element, from ui.Pose, a ui.Animation) {
 // modalState is where a dialog of the main window is in its coming and
 // going.
 type modalState struct {
-	frame   uint64    // the last frame that built it
-	shown   bool      // open in that frame
-	closing time.Time // when it closed, while it pops out
+	frame   uint64        // the last frame that built it
+	shown   bool          // open in that frame
+	closing time.Time     // when it closed, while it pops out
+	out     time.Duration // how long it takes to go
 }
 
-const modalOut = 140 * time.Millisecond
+const (
+	modalOut = 140 * time.Millisecond
+	// modalHome is how long a dialog opened from a control takes to come
+	// out of it, and modalHomeOut to go back into it.
+	modalHome    = 320 * time.Millisecond
+	modalHomeOut = 220 * time.Millisecond
+)
 
 // modal is ui.Modal with the pages' motion: the window dims in, and the
 // dialog pops in from a little below; it pops out as it closes, while its
 // caller keeps calling modal (those that stop calling it once closed lose
 // only the way out).
 func (m *mainUI) modal(c *ui.Context, key any, open *bool, fn func()) ui.Element {
+	return m.modalFrom(c, key, open, ui.Rect{}, fn)
+}
+
+// modalFrom is modal for a dialog that a control opens: the dialog grows
+// out of from, the control's box in the window, and shrinks back into it
+// as it closes. An empty from is modal's own motion.
+func (m *mainUI) modalFrom(c *ui.Context, key any, open *bool, from ui.Rect, fn func()) ui.Element {
 	if m.modals == nil {
 		m.modals = map[any]*modalState{}
 	}
@@ -96,6 +110,13 @@ func (m *mainUI) modal(c *ui.Context, key any, open *bool, fn func()) ui.Element
 		m.modals[key] = st
 	}
 	st.frame = m.frame
+	homed := from.W > 0 && from.H > 0
+	if st.out == 0 || *open {
+		st.out = modalOut
+		if homed {
+			st.out = modalHomeOut
+		}
+	}
 	closing := false
 	switch {
 	case *open:
@@ -103,7 +124,7 @@ func (m *mainUI) modal(c *ui.Context, key any, open *bool, fn func()) ui.Element
 	case st.shown:
 		st.shown, st.closing = false, c.Now()
 		closing = true
-	case !st.closing.IsZero() && c.Now().Sub(st.closing) < modalOut:
+	case !st.closing.IsZero() && c.Now().Sub(st.closing) < st.out:
 		closing = true
 	default:
 		return ui.Element{}
@@ -112,10 +133,21 @@ func (m *mainUI) modal(c *ui.Context, key any, open *bool, fn func()) ui.Element
 	ptr := open
 	if closing {
 		ptr = &shown
-		c.After(modalOut - c.Now().Sub(st.closing))
+		c.After(st.out - c.Now().Sub(st.closing))
 	}
 	p := m.pal
 	w, h := c.Size()
+	// The dialog sits in the middle of the window: from there to the
+	// control, and as small as it about is.
+	home := ui.Pose{Y: 6, Scale: 0.985, Fade: 1}
+	if homed {
+		home = ui.Pose{
+			X:     from.X + from.W/2 - w/2,
+			Y:     from.Y + from.H/2 - h/2,
+			Scale: max(0.08, min(0.5, from.W/max(w-40, 1))),
+			Fade:  1,
+		}
+	}
 	return ui.DialogBase(c.Key(key), ptr, func(back, panel ui.Element) {
 		target := float32(1)
 		// The backdrop fades from clear: its first target is where it
@@ -124,16 +156,24 @@ func (m *mainUI) modal(c *ui.Context, key any, open *bool, fn func()) ui.Element
 			*first, target = false, 0
 			c.Invalidate()
 		}
-		fade := back.AnimateTo("fade", target, ui.Animation{Duration: modalOut, NonMotion: true})
+		fade := back.AnimateTo("fade", target, ui.Animation{Duration: st.out, NonMotion: true})
 		back.Background(ui.RGBA(0, 0, 0, 0.4*fade))
 		panel.Padding(20).Gap(12).Radius(10).Background(p.Theme.Background).
 			MaxWidth(w-40).MaxHeight(h-40).
 			Shadow(0, 10, 30, 0, ui.RGBA(0, 0, 0, 0.3))
-		if closing {
+		switch {
+		case closing && homed:
 			back.IgnoreInput(true)
-			panel.AnimatePose(ui.Pose{Y: 4, Scale: 0.985, Fade: 1}, ui.Animation{Duration: modalOut, Ease: ui.EaseIn})
-		} else {
-			enterPose(c, panel, ui.Pose{Y: 6, Scale: 0.985, Fade: 1}, ui.Animation{Duration: 180 * time.Millisecond, Ease: easeOut})
+			panel.TransformOrigin(0.5, 0.5)
+			panel.AnimatePose(home, ui.Animation{Duration: st.out, Ease: ui.CubicBezier(0.4, 0, 0.8, 0.4)})
+		case closing:
+			back.IgnoreInput(true)
+			panel.AnimatePose(ui.Pose{Y: 4, Scale: 0.985, Fade: 1}, ui.Animation{Duration: st.out, Ease: ui.EaseIn})
+		case homed:
+			panel.TransformOrigin(0.5, 0.5)
+			enterPose(c, panel, home, ui.Animation{Duration: modalHome, Ease: easeStd})
+		default:
+			enterPose(c, panel, home, ui.Animation{Duration: 180 * time.Millisecond, Ease: easeOut})
 		}
 		fn()
 	})

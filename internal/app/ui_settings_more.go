@@ -1301,6 +1301,15 @@ func (m *mainUI) updatesSection(c *ui.Context) {
 	}
 	m.section(c, "updates", locales.UpdatesTitle(), func() {
 		m.setting(c, "check", locales.UpdatesCheck(), status, func() {
+			nb := m.button(c, "notes", m.T("updates.notes"), icFileStack, "ghost")
+			// Where the button is now, which the dialog comes out of and
+			// goes back into.
+			if b := nb.Bounds(); b.W > 0 {
+				m.releaseNotes.from = b
+			}
+			if nb.Clicked() {
+				m.openReleaseNotes()
+			}
 			if !u.Supported && u.Reason != "dev" && m.button(c, "releases", locales.UpdatesReleases(), icExternalLink, "ghost").Clicked() {
 				go mygo.Shell.OpenExternal((UpdateService{a}).ReleasesURL())
 			}
@@ -1337,4 +1346,5 @@ func (m *mainUI) updatesSection(c *ui.Context) {
 		})
 		_ = p
 	})
+	m.releaseNotesDialog(c)
 }

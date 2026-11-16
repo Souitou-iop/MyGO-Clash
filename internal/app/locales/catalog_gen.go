@@ -12877,6 +12877,66 @@ func (msgs Messages) UpdatesRelaunch() string {
 	return Catalog.Format(msgs.locale, "updatesRelaunch", nil)
 }
 
+// UpdatesCurrent says "Current version"
+// in the language the app shows.
+func UpdatesCurrent() string { return In(i18n.Locale()).UpdatesCurrent() }
+
+// UpdatesCurrent says "Current version"
+// in the language of msgs.
+func (msgs Messages) UpdatesCurrent() string {
+	return Catalog.Format(msgs.locale, "updatesCurrent", nil)
+}
+
+// UpdatesNotes says "View release notes"
+// in the language the app shows.
+func UpdatesNotes() string { return In(i18n.Locale()).UpdatesNotes() }
+
+// UpdatesNotes says "View release notes"
+// in the language of msgs.
+func (msgs Messages) UpdatesNotes() string {
+	return Catalog.Format(msgs.locale, "updatesNotes", nil)
+}
+
+// UpdatesNotesEmpty says "No release notes found"
+// in the language the app shows.
+func UpdatesNotesEmpty() string { return In(i18n.Locale()).UpdatesNotesEmpty() }
+
+// UpdatesNotesEmpty says "No release notes found"
+// in the language of msgs.
+func (msgs Messages) UpdatesNotesEmpty() string {
+	return Catalog.Format(msgs.locale, "updatesNotesEmpty", nil)
+}
+
+// UpdatesNotesFailed says "Could not load release notes"
+// in the language the app shows.
+func UpdatesNotesFailed() string { return In(i18n.Locale()).UpdatesNotesFailed() }
+
+// UpdatesNotesFailed says "Could not load release notes"
+// in the language of msgs.
+func (msgs Messages) UpdatesNotesFailed() string {
+	return Catalog.Format(msgs.locale, "updatesNotesFailed", nil)
+}
+
+// UpdatesNotesRetry says "Retry"
+// in the language the app shows.
+func UpdatesNotesRetry() string { return In(i18n.Locale()).UpdatesNotesRetry() }
+
+// UpdatesNotesRetry says "Retry"
+// in the language of msgs.
+func (msgs Messages) UpdatesNotesRetry() string {
+	return Catalog.Format(msgs.locale, "updatesNotesRetry", nil)
+}
+
+// UpdatesNotesTitle says "Release notes"
+// in the language the app shows.
+func UpdatesNotesTitle() string { return In(i18n.Locale()).UpdatesNotesTitle() }
+
+// UpdatesNotesTitle says "Release notes"
+// in the language of msgs.
+func (msgs Messages) UpdatesNotesTitle() string {
+	return Catalog.Format(msgs.locale, "updatesNotesTitle", nil)
+}
+
 // UpdatesReleases says "Releases"
 // in the language the app shows.
 func UpdatesReleases() string { return In(i18n.Locale()).UpdatesReleases() }

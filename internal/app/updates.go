@@ -11,11 +11,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
@@ -24,6 +29,175 @@ import (
 // ReleasesURL is where every version can be downloaded, for installs that
 // cannot update themselves.
 const ReleasesURL = "https://github.com/Souitou-iop/MyGO-Clash/releases"
+
+const releasesAPI = "https://api.github.com/repos/Souitou-iop/MyGO-Clash/releases?per_page=5"
+
+// ReleaseNote is one published GitHub release.
+type ReleaseNote struct {
+	Version     string
+	Name        string
+	Body        string
+	URL         string
+	PublishedAt time.Time
+}
+
+type githubRelease struct {
+	TagName     string    `json:"tag_name"`
+	Name        string    `json:"name"`
+	Body        string    `json:"body"`
+	HTMLURL     string    `json:"html_url"`
+	Draft       bool      `json:"draft"`
+	PublishedAt time.Time `json:"published_at"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// ReleaseNotes fetches the five newest published releases.
+func (s UpdateService) ReleaseNotes(ctx context.Context) ([]ReleaseNote, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, releasesAPI, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("User-Agent", "MyGO-Clash")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		return nil, fmt.Errorf("GitHub releases: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+	var raw []githubRelease
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(&raw); err != nil {
+		return nil, err
+	}
+	notes := make([]ReleaseNote, 0, min(len(raw), 5))
+	for _, r := range raw {
+		if r.Draft || r.TagName == "" {
+			continue
+		}
+		published := r.PublishedAt
+		if published.IsZero() {
+			published = r.CreatedAt
+		}
+		notes = append(notes, ReleaseNote{
+			Version:     strings.TrimPrefix(r.TagName, "v"),
+			Name:        strings.TrimSpace(r.Name),
+			Body:        cleanReleaseBody(r.Body),
+			URL:         r.HTMLURL,
+			PublishedAt: published,
+		})
+	}
+	sort.SliceStable(notes, func(i, j int) bool {
+		return notes[i].PublishedAt.After(notes[j].PublishedAt)
+	})
+	if len(notes) > 5 {
+		notes = notes[:5]
+	}
+	return notes, nil
+}
+
+func cleanReleaseBody(body string) string {
+	lines := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		head := strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(head, "## 📥 下载地址"),
+			strings.HasPrefix(head, "## Downloads"),
+			strings.HasPrefix(head, "## ❓ 常见问题"),
+			strings.HasPrefix(head, "## FAQ"):
+			return trimRule(strings.Join(kept, "\n"))
+		default:
+			kept = append(kept, line)
+		}
+	}
+	return trimRule(strings.Join(kept, "\n"))
+}
+
+// trimRule drops the rule that closes a release's notes above its
+// downloads.
+func trimRule(body string) string {
+	body = strings.TrimSpace(body)
+	for strings.HasSuffix(body, "---") {
+		body = strings.TrimSpace(strings.TrimSuffix(body, "---"))
+	}
+	return body
+}
+
+// releaseNotesIn keeps the half of each line of body in the interface's
+// language: the notes say everything twice, Chinese first, then " / " and
+// English. Lines that are not split that way stay whole.
+func releaseNotesIn(body string, chinese bool) string {
+	lines := strings.Split(body, "\n")
+	for i, line := range lines {
+		zh, en, ok := splitBilingual(line)
+		if !ok {
+			continue
+		}
+		if chinese {
+			lines[i] = zh
+		} else {
+			lines[i] = markdownPrefix(line) + en
+		}
+	}
+	for i, line := range lines {
+		if strings.HasPrefix(line, "#") {
+			lines[i] = plainHeading(line)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// plainHeading drops the emoji a heading starts with: the headings show as
+// quiet labels.
+func plainHeading(line string) string {
+	prefix := markdownPrefix(line)
+	text := strings.TrimLeftFunc(line[len(prefix):], func(r rune) bool {
+		return unicode.IsSpace(r) || unicode.Is(unicode.So, r) || unicode.Is(unicode.Sk, r) || unicode.Is(unicode.Mn, r) || r == 0xFE0F || r == 0x200D
+	})
+	if text == "" {
+		return line
+	}
+	return prefix + text
+}
+
+// splitBilingual splits a line at the first "/ " with Chinese before it
+// and none after, keeping the Markdown of the line's start on the Chinese
+// half.
+func splitBilingual(line string) (zh, en string, ok bool) {
+	for i := 0; ; {
+		j := strings.Index(line[i:], "/ ")
+		if j < 0 {
+			return "", "", false
+		}
+		at := i + j
+		left, right := line[:at], line[at+2:]
+		if containsHan(left) && !containsHan(right) && strings.TrimSpace(right) != "" {
+			return strings.TrimRight(left, " "), strings.TrimSpace(right), true
+		}
+		i = at + 2
+	}
+}
+
+// markdownPrefix is the heading or list marker a line starts with.
+func markdownPrefix(line string) string {
+	t := strings.TrimLeft(line, " ")
+	indent := line[:len(line)-len(t)]
+	switch {
+	case strings.HasPrefix(t, "#"):
+		n := len(t) - len(strings.TrimLeft(t, "#"))
+		return indent + strings.Repeat("#", n) + " "
+	case strings.HasPrefix(t, "- "), strings.HasPrefix(t, "* "):
+		return indent + t[:2]
+	}
+	return indent
+}
+
+func containsHan(s string) bool {
+	return strings.IndexFunc(s, func(r rune) bool { return unicode.Is(unicode.Han, r) }) >= 0
+}
 
 // updateIntervals are the times between background checks, by the names
 // of config.Updates.Interval.
