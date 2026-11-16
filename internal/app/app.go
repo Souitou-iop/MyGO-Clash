@@ -485,8 +485,7 @@ func (a *App) afterHide() {
 	a.lightTimer = time.AfterFunc(time.Duration(st.Lightweight.DelayMinutes)*time.Minute, a.enterLightweight)
 }
 
-// enterLightweight closes the main window, which frees the web view's
-// memory; the core, the tray and the quick panel stay.
+// enterLightweight closes the main window, which frees its memory; the core, the tray and the quick panel stay.
 func (a *App) enterLightweight() {
 	a.mu.Lock()
 	win := a.win

@@ -27,7 +27,7 @@
 <p align="center"><sub><a href="docs/showcase/promo.mp4">30 秒のプロモーション映像（MP4・音声あり）</a> · <a href="docs/showcase/hero-dark-en.gif">クイックパネルの概要（GIF）</a> · <a href="docs/showcase/hero-light-en.gif">ライトテーマ（GIF）</a></sub></p>
 
 > [!NOTE]
-> 1.0 から、MyGO-Clash のメインウィンドウは MyGo がネイティブに描画しています。画面と主な機能は macOS（Apple シリコン）と Windows で実際に使用しています。Linux での動作は、実環境ではまだテストしていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
+> 1.0 から、MyGO-Clash のメインウィンドウは MyGo がネイティブに描画しています。画面と主な機能は macOS（Apple シリコン）と Windows で実際に使用しています。Linux では Fedora で動作を確認しています。ほかのディストリビューションは数が多く、一つずつは試せていません。問題があれば [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues) で教えてください。
 
 ## 機能
 
@@ -75,7 +75,7 @@
 - ライト・ダークテーマと複数のアクセントカラー、フォントや CSS のカスタマイズ
 - 表示言語は 15 種類：简体中文、繁體中文、English、日本語、한국어、Русский、Español、Português (Brasil)、Deutsch、Français、Türkçe、Bahasa Indonesia、Tiếng Việt、فارسی、العربية。ペルシア語とアラビア語では左右反転したレイアウトになります
 - ウィンドウが前面にないときは、エラーと警告をシステムのネイティブ通知で表示。クリックすると関連する画面が開きます
-- 軽量モード：Web ビューを閉じてメモリを節約し、コアとトレイはそのまま動作
+- 軽量モード：メインウィンドウを閉じてメモリを節約し、コア、トレイ、クイックパネルはそのまま動作
 - ログイン時の起動、サイレント起動、ターミナル用のプロキシ環境変数のコピー
 - 購読 URL やパスワードなどの機密情報は暗号化して保存し、鍵はシステムの安全な保管場所へ（macOS キーチェーン、Windows DPAPI、Linux Secret Service）
 - Windows では、Microsoft Store アプリがプロキシを使えるようにワンクリックで設定

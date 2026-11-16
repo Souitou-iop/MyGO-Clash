@@ -41,7 +41,7 @@
  "advLicense": "授權條款",
  "advLicenseDesc": "GPL-3.0。以 mihomo 與 MyGo 打造。",
  "advLightAuto": "自動進入",
- "advLightAutoDesc": "視窗隱藏一段時間後關閉網頁檢視以釋放記憶體；核心與系統匣繼續執行",
+ "advLightAutoDesc": "視窗隱藏一段時間後關閉主視窗以釋放記憶體；核心、系統匣與快捷面板繼續執行",
  "advLightNow": "立即進入",
  "advLightNowDesc": "快捷面板與系統匣仍可使用",
  "advLightweight": "輕量模式",

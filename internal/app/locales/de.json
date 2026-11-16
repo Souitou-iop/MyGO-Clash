@@ -41,7 +41,7 @@
  "advLicense": "Lizenz",
  "advLicenseDesc": "GPL-3.0. Gebaut mit mihomo und MyGo.",
  "advLightAuto": "Automatisch wechseln",
- "advLightAutoDesc": "Die Webansicht des Fensters schließen, wenn es eine Weile verborgen ist, um Speicher freizugeben; Kern und Infobereich laufen weiter",
+ "advLightAutoDesc": "Das Hauptfenster schließen, wenn es eine Weile verborgen ist, um Speicher freizugeben; Kern, Infobereich und Schnellzugriff laufen weiter",
  "advLightNow": "Jetzt wechseln",
  "advLightNowDesc": "Schnellzugriff und Infobereich bleiben verfügbar",
  "advLightweight": "Ressourcensparmodus",

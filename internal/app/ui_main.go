@@ -486,7 +486,7 @@ func (m *mainUI) sidebar(c *ui.Context) {
 			turn := compassSpin(mark)
 			inviting := m.tourInviting(c)
 			if inviting {
-				mark.Tooltip(locales.NavTourInvite())
+				m.tourTip(c, mark)
 				if mark.Clicked() {
 					m.playTour()
 				}

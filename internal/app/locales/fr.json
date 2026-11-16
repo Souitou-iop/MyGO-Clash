@@ -41,7 +41,7 @@
  "advLicense": "Licence",
  "advLicenseDesc": "GPL-3.0. Conçu avec mihomo et MyGo.",
  "advLightAuto": "Activer automatiquement",
- "advLightAutoDesc": "Fermer la vue web de la fenêtre quand elle reste masquée, pour libérer de la mémoire ; le noyau et la zone de notification continuent de tourner",
+ "advLightAutoDesc": "Fermer la fenêtre principale quand elle reste masquée, pour libérer de la mémoire ; le noyau, la zone de notification et le panneau rapide continuent de tourner",
  "advLightNow": "Activer maintenant",
  "advLightNowDesc": "Le panneau rapide et la zone de notification restent disponibles",
  "advLightweight": "Mode léger",

@@ -41,7 +41,7 @@
  "advLicense": "Lisensi",
  "advLicenseDesc": "GPL-3.0. Dibuat dengan mihomo dan MyGo.",
  "advLightAuto": "Masuk otomatis",
- "advLightAutoDesc": "Tutup tampilan web jendela setelah tersembunyi beberapa saat, untuk membebaskan memori; inti dan baki tetap berjalan",
+ "advLightAutoDesc": "Tutup jendela utama setelah tersembunyi beberapa saat, untuk membebaskan memori; inti, baki, dan panel cepat tetap berjalan",
  "advLightNow": "Masuk sekarang",
  "advLightNowDesc": "Panel cepat dan baki tetap tersedia",
  "advLightweight": "Mode ringan",

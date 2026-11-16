@@ -27,7 +27,7 @@
 <p align="center"><sub><a href="docs/showcase/promo.mp4">观看 30 秒宣传片（MP4，有声）</a> · <a href="docs/showcase/hero-dark.gif">快捷面板速览（GIF）</a> · <a href="docs/showcase/hero-light.gif">浅色主题（GIF）</a></sub></p>
 
 > [!NOTE]
-> 从 1.0 起，MyGO-Clash 的主窗口由 MyGo 原生绘制。界面和主要功能已在 macOS（Apple Silicon）和 Windows 上实际使用；Linux 尚未在真实环境中测试。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
+> 从 1.0 起，MyGO-Clash 的主窗口由 MyGo 原生绘制。界面和主要功能已在 macOS（Apple Silicon）和 Windows 上实际使用；Linux 已在 Fedora 上实际测试，其他发行版众多，尚未逐一测试。遇到问题欢迎提 [Issue](https://github.com/Souitou-iop/MyGO-Clash/issues)。
 
 ## 功能
 
@@ -75,7 +75,7 @@
 - 浅色、深色主题和多种强调色，可自定义字体与 CSS
 - 界面支持 15 种语言：简体中文、繁體中文、English、日本語、한국어、Русский、Español、Português (Brasil)、Deutsch、Français、Türkçe、Bahasa Indonesia、Tiếng Việt、فارسی、العربية；波斯语和阿拉伯语使用从右到左的镜像布局
 - 窗口不在前台时，错误和警告通过系统原生通知提示，点击直接打开相关页面
-- 轻量模式：关闭网页视图以节省内存，内核和托盘照常运行
+- 轻量模式：关闭主窗口以节省内存，内核、托盘和快捷面板照常运行
 - 开机自启、静默启动，一键复制终端用的代理环境变量
 - 订阅地址、密码等敏感信息加密保存，密钥放在系统的安全存储中（macOS 钥匙串、Windows DPAPI、Linux Secret Service）
 - Windows 上可一键解除 Microsoft Store 应用的回环限制

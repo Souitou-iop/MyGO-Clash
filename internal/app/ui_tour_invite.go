@@ -6,6 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/mygo-clash/mygo-clash/internal/app/locales"
 	"github.com/mygo-clash/mygo-clash/internal/config"
 )
 
@@ -77,4 +78,24 @@ func (m *mainUI) tourNudge(c *ui.Context) float32 {
 		return 0
 	}
 	return tourNudgeDeg * float32(math.Exp(float64(-t/0.7))*math.Sin(2*math.Pi*0.9*float64(t)))
+}
+
+// tourTip is the mark's tip. The mark sits under the window's title bar,
+// where on macOS the traffic lights are, so the tip opens below it, from
+// its left edge, instead of above it as a tip does by default.
+func (m *mainUI) tourTip(c *ui.Context, mark ui.Element) {
+	mark.Description(locales.NavTourInvite())
+	th := m.pal.Theme
+	fill, ink := th.Inverse, th.InverseText
+	if fill == ui.Transparent {
+		fill = th.Text
+	}
+	if ink == ui.Transparent {
+		ink = th.Background
+	}
+	ui.TooltipBase(c, mark, func(tip ui.Element) {
+		tip.AttachTo(mark, ui.AnchorBottomLeft, ui.AnchorTopLeft).Margin(6, 0, 0, 0)
+		tip.Padding(5, 10).Radius(6).Background(fill).TextColor(ink).FontSize(12.5).Shadow(0, 2, 8, 0, ui.RGBA(0, 0, 0, 0.2))
+		tip.Children(func() { ui.Text(c, locales.NavTourInvite()).SingleLine() })
+	})
 }

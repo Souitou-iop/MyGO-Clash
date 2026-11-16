@@ -577,8 +577,20 @@ func (m *mainUI) exitTile(c *ui.Context, t ui.Element) {
 					ui.Icon(c, icGlobe2).FontSize(24).TextColor(p.TextMuted)
 				}
 			})
-			ui.Column(c).Grow(1).Basis(0).MinWidth(0).Gap(4).Children(func() {
-				ui.Text(c.Key("name-"+exit), stripFlag(exit)).FontSize(26).FontWeight(680).LetterSpacing(-0.3).SingleLine().
+			names := ui.Column(c).Grow(1).Basis(0).MinWidth(0).Gap(4)
+			names.Children(func() {
+				// The name is as large as its place lets it be: a long one
+				// steps down, to the least that still reads, before it is cut.
+				name, size := stripFlag(exit), float32(26)
+				if room := names.LayoutBounds().W; room > 0 {
+					for size > 19 {
+						if w, _ := c.MeasureText(0, ui.Span{Text: name, Size: size, Weight: 680}); w <= room {
+							break
+						}
+						size -= 0.5
+					}
+				}
+				ui.Text(c.Key("name-"+exit), name).FontSize(size).FontWeight(680).LetterSpacing(-0.3).SingleLine().
 					Transition(ui.ElementTransition{Enter: &ui.Motion{Y: 10}, Duration: 340 * time.Millisecond, Ease: easeOut})
 				if len(facts) > 0 {
 					ui.Text(c, strings.Join(facts, " · ")).FontSize(13.5).TextColor(p.TextMuted).SingleLine()

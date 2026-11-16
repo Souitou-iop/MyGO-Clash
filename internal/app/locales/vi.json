@@ -41,7 +41,7 @@
  "advLicense": "Giấy phép",
  "advLicenseDesc": "GPL-3.0. Xây dựng trên mihomo và MyGo.",
  "advLightAuto": "Tự động chuyển",
- "advLightAutoDesc": "Đóng khung web của cửa sổ khi nó bị ẩn một lúc để giải phóng bộ nhớ; lõi và khay vẫn chạy",
+ "advLightAutoDesc": "Đóng cửa sổ chính khi nó bị ẩn một lúc để giải phóng bộ nhớ; lõi, khay và bảng nhanh vẫn chạy",
  "advLightNow": "Chuyển ngay",
  "advLightNowDesc": "Bảng nhanh và khay vẫn dùng được",
  "advLightweight": "Chế độ nhẹ",

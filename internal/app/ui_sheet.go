@@ -2145,13 +2145,7 @@ func (m *mainUI) riskPanel(c *ui.Context, q *tools.IPQuality) {
 	m.panel(c, "risk-panel", func() {
 		ui.Row(c).Gap(18).AlignItems(ui.Center).Children(func() {
 			if q.Risk >= 0 {
-				col := p.Success
-				switch {
-				case q.Risk >= 66:
-					col = p.Danger
-				case q.Risk >= 33:
-					col = p.Warning
-				}
+				col := m.riskColor(q.Risk)
 				g := ui.Box(c.Key("gauge")).Size(120, 70).Shrink(0)
 				k := g.AnimateTo("k", float32(q.Risk)/100, ui.Animation{Duration: 800 * time.Millisecond, Ease: easeStd})
 				g.Draw(func(pt *ui.Painter, r ui.Rect) {

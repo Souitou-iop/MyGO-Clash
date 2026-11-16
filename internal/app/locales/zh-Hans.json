@@ -41,7 +41,7 @@
  "advLicense": "许可证",
  "advLicenseDesc": "GPL-3.0。基于 mihomo 与 MyGo 构建。",
  "advLightAuto": "自动进入",
- "advLightAutoDesc": "窗口隐藏一段时间后关闭网页视图以释放内存；内核与托盘继续运行",
+ "advLightAutoDesc": "窗口隐藏一段时间后关闭主窗口以释放内存；内核、托盘与快捷面板继续运行",
  "advLightNow": "立即进入",
  "advLightNowDesc": "快捷面板与托盘仍可使用",
  "advLightweight": "轻量模式",

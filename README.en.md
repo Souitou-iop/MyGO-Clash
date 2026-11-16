@@ -27,7 +27,7 @@
 <p align="center"><sub><a href="docs/showcase/promo.mp4">Watch the 30-second promo (MP4, with sound)</a> · <a href="docs/showcase/hero-dark-en.gif">Quick panel preview (GIF)</a> · <a href="docs/showcase/hero-light-en.gif">Light theme (GIF)</a></sub></p>
 
 > [!NOTE]
-> Since 1.0, MyGO-Clash draws its main window natively with MyGo. Its interface and main features have been used on macOS (Apple silicon) and Windows. Linux has not yet been tested in a real environment. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
+> Since 1.0, MyGO-Clash draws its main window natively with MyGo. Its interface and main features have been used on macOS (Apple silicon) and Windows. On Linux, Fedora has been tested; the many other distributions have not been tried one by one. Please report problems in [Issues](https://github.com/Souitou-iop/MyGO-Clash/issues).
 
 ## Features
 
@@ -75,7 +75,7 @@
 - Light and dark themes, several accent colors, your own font and CSS
 - The interface in 15 languages: 简体中文, 繁體中文, English, 日本語, 한국어, Русский, Español, Português (Brasil), Deutsch, Français, Türkçe, Bahasa Indonesia, Tiếng Việt, فارسی and العربية, with a mirrored layout for Persian and Arabic
 - Errors and warnings as native system notifications while the window isn't in front; clicking one opens the related page
-- Lightweight mode: closes the web view to save memory while the core and the tray keep running
+- Lightweight mode: closes the main window to save memory while the core, the tray and the quick panel keep running
 - Launch at login, silent start, and the terminal's proxy variables copied in one click
 - Subscription URLs, passwords and other secrets encrypted, with the key in the system's secure storage (the macOS Keychain, Windows DPAPI, the Linux Secret Service)
 - On Windows, one click lets Microsoft Store apps reach the proxy

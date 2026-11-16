@@ -41,7 +41,7 @@
  "advLicense": "License",
  "advLicenseDesc": "GPL-3.0. Built on mihomo and MyGo.",
  "advLightAuto": "Enter automatically",
- "advLightAutoDesc": "Close the window's web view after it stays hidden, to free memory; the core and the tray keep running",
+ "advLightAutoDesc": "Close the main window after it stays hidden, to free memory; the core, the tray and the quick panel keep running",
  "advLightNow": "Enter now",
  "advLightNowDesc": "The quick panel and the tray stay available",
  "advLightweight": "Lightweight mode",

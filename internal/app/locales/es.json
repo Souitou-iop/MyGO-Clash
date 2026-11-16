@@ -41,7 +41,7 @@
  "advLicense": "Licencia",
  "advLicenseDesc": "GPL-3.0. Hecho con mihomo y MyGo.",
  "advLightAuto": "Entrar automáticamente",
- "advLightAutoDesc": "Cierra la vista web de la ventana cuando lleva un rato oculta para liberar memoria; el núcleo y la bandeja siguen funcionando",
+ "advLightAutoDesc": "Cierra la ventana principal cuando lleva un rato oculta para liberar memoria; el núcleo, la bandeja y el panel rápido siguen funcionando",
  "advLightNow": "Entrar ahora",
  "advLightNowDesc": "El panel rápido y la bandeja siguen disponibles",
  "advLightweight": "Modo ligero",

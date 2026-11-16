@@ -41,7 +41,7 @@
  "advLicense": "Lisans",
  "advLicenseDesc": "GPL-3.0. mihomo ve MyGo ile yapıldı.",
  "advLightAuto": "Otomatik geç",
- "advLightAutoDesc": "Pencere bir süre gizli kalınca belleği boşaltmak için web görünümünü kapatır; çekirdek ve tepsi çalışmaya devam eder",
+ "advLightAutoDesc": "Pencere bir süre gizli kalınca belleği boşaltmak için ana pencereyi kapatır; çekirdek, tepsi ve hızlı panel çalışmaya devam eder",
  "advLightNow": "Şimdi geç",
  "advLightNowDesc": "Hızlı panel ve tepsi kullanılabilir kalır",
  "advLightweight": "Hafif mod",

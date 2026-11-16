@@ -41,7 +41,7 @@
  "advLicense": "라이선스",
  "advLicenseDesc": "GPL-3.0. mihomo와 MyGo로 만들었습니다.",
  "advLightAuto": "자동으로 전환",
- "advLightAutoDesc": "창이 한동안 숨겨져 있으면 웹 뷰를 닫아 메모리를 비웁니다. 코어와 트레이는 계속 실행됩니다",
+ "advLightAutoDesc": "창이 한동안 숨겨져 있으면 메인 창을 닫아 메모리를 비웁니다. 코어, 트레이, 빠른 패널은 계속 실행됩니다",
  "advLightNow": "지금 전환",
  "advLightNowDesc": "빠른 패널과 트레이는 계속 쓸 수 있습니다",
  "advLightweight": "경량 모드",

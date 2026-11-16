@@ -970,6 +970,18 @@ func (m *mainUI) ipQualityBadges(c *ui.Context, ip string, masked bool) {
 	}
 }
 
+// riskColor is the color of a risk score: green below a third, red from two
+// thirds, amber between, the same wherever a risk shows.
+func (m *mainUI) riskColor(risk int) ui.Color {
+	switch {
+	case risk >= 66:
+		return m.pal.Danger
+	case risk >= 33:
+		return m.pal.Warning
+	}
+	return m.pal.Success
+}
+
 func (m *mainUI) ipQualityView(c *ui.Context, q *tools.IPQuality, masked bool) {
 	kinds := map[string]string{"residential": "ipq.residential", "datacenter": "ipq.datacenter", "mobile": "ipq.mobile", "business": "ipq.business"}
 	var flags []string
@@ -983,15 +995,6 @@ func (m *mainUI) ipQualityView(c *ui.Context, q *tools.IPQuality, masked bool) {
 		flags = append(flags, locales.IpqProxy())
 	}
 	kind := kinds[q.Kind]
-	scored := q.Risk >= 0
-	var parts []string
-	if kind != "" {
-		parts = append(parts, m.T(kind))
-	}
-	if scored {
-		parts = append(parts, locales.IpqRisk(fmt.Sprint(q.Risk)))
-	}
-
 	// The badges and their mask take turns, each fading and growing in.
 	turn := ui.ElementTransition{Enter: &ui.Motion{Scale: 0.85}, Duration: 220 * time.Millisecond, Ease: easeOut}
 	if masked {
@@ -1000,18 +1003,16 @@ func (m *mainUI) ipQualityView(c *ui.Context, q *tools.IPQuality, masked bool) {
 	}
 	row := ui.Row(c.Key("ipq-shown")).Gap(4).AlignItems(ui.Center).Transition(turn).Tooltip(strings.Join(slices.DeleteFunc([]string{q.Org, q.Source}, func(s string) bool { return s == "" }), " · "))
 	row.Children(func() {
-		if len(parts) > 0 {
-			tone := ""
-			if scored {
-				tone = "danger"
-				switch {
-				case q.Risk < 25:
-					tone = "success"
-				case q.Risk < 60:
-					tone = "warning"
-				}
-			}
-			m.badge(c, strings.Join(parts, " · "), tone)
+		if kind != "" {
+			m.badge(c, m.T(kind), "")
+		}
+		// The risk is the one badge that takes a color of its own, deeper
+		// than the soft badges', for how risky the address is.
+		if q.Risk >= 0 {
+			col := m.riskColor(q.Risk)
+			ui.Row(c).Height(20).Padding(0, 8).Radius(10).Background(col.Alpha(0.2)).AlignItems(ui.Center).Shrink(0).Children(func() {
+				ui.Text(c, locales.IpqRisk(fmt.Sprint(q.Risk))).FontSize(11.5).FontWeight(650).TextColor(col).SingleLine()
+			})
 		}
 		for _, f := range flags {
 			m.badge(c, f, "warning")

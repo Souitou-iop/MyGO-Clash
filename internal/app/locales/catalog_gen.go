@@ -447,11 +447,11 @@ func (msgs Messages) AdvLightAuto() string {
 	return Catalog.Format(msgs.locale, "advLightAuto", nil)
 }
 
-// AdvLightAutoDesc says "Close the window's web view after it stays hidden, to free memory; the core and the tray keep running"
+// AdvLightAutoDesc says "Close the main window after it stays hidden, to free memory; the core, the tray and the quick panel keep running"
 // in the language the app shows.
 func AdvLightAutoDesc() string { return In(i18n.Locale()).AdvLightAutoDesc() }
 
-// AdvLightAutoDesc says "Close the window's web view after it stays hidden, to free memory; the core and the tray keep running"
+// AdvLightAutoDesc says "Close the main window after it stays hidden, to free memory; the core, the tray and the quick panel keep running"
 // in the language of msgs.
 func (msgs Messages) AdvLightAutoDesc() string {
 	return Catalog.Format(msgs.locale, "advLightAutoDesc", nil)

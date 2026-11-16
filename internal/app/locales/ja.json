@@ -41,7 +41,7 @@
  "advLicense": "ライセンス",
  "advLicenseDesc": "GPL-3.0。mihomo と MyGo で作られています。",
  "advLightAuto": "自動で切り替え",
- "advLightAutoDesc": "ウィンドウがしばらく隠れていたら Web ビューを閉じてメモリを空けます。コアとトレイは動き続けます",
+ "advLightAutoDesc": "ウィンドウがしばらく隠れていたらメインウィンドウを閉じてメモリを空けます。コア、トレイ、クイックパネルは動き続けます",
  "advLightNow": "今すぐ切り替え",
  "advLightNowDesc": "クイックパネルとトレイは使えます",
  "advLightweight": "軽量モード",
