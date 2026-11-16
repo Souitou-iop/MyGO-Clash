@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,13 +25,16 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
+	"golang.org/x/mod/semver"
 )
 
 // ReleasesURL is where every version can be downloaded, for installs that
 // cannot update themselves.
 const ReleasesURL = "https://github.com/Souitou-iop/MyGO-Clash/releases"
 
-const releasesAPI = "https://api.github.com/repos/Souitou-iop/MyGO-Clash/releases?per_page=5"
+const releasesAPI = "https://api.github.com/repos/Souitou-iop/MyGO-Clash/releases"
+
+const firstNativeRelease = "v1.0.0"
 
 // ReleaseNote is one published GitHub release.
 type ReleaseNote struct {
@@ -51,51 +55,60 @@ type githubRelease struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ReleaseNotes fetches the five newest published releases.
+// ReleaseNotes fetches every published release from the native rewrite onward.
 func (s UpdateService) ReleaseNotes(ctx context.Context) ([]ReleaseNote, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, releasesAPI, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "MyGO-Clash")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
-		return nil, fmt.Errorf("GitHub releases: %s: %s", resp.Status, strings.TrimSpace(string(body)))
-	}
-	var raw []githubRelease
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(&raw); err != nil {
-		return nil, err
-	}
-	notes := make([]ReleaseNote, 0, min(len(raw), 5))
-	for _, r := range raw {
-		if r.Draft || r.TagName == "" {
-			continue
+	var notes []ReleaseNote
+	for page := 1; ; page++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, releasesAPI+"?per_page=100&page="+strconv.Itoa(page), nil)
+		if err != nil {
+			return nil, err
 		}
-		published := r.PublishedAt
-		if published.IsZero() {
-			published = r.CreatedAt
+		req.Header.Set("Accept", "application/vnd.github+json")
+		req.Header.Set("User-Agent", "MyGO-Clash")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
 		}
-		notes = append(notes, ReleaseNote{
-			Version:     strings.TrimPrefix(r.TagName, "v"),
-			Name:        strings.TrimSpace(r.Name),
-			Body:        cleanReleaseBody(r.Body),
-			URL:         r.HTMLURL,
-			PublishedAt: published,
-		})
+		if resp.StatusCode >= 300 {
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+			resp.Body.Close()
+			return nil, fmt.Errorf("GitHub releases: %s: %s", resp.Status, strings.TrimSpace(string(body)))
+		}
+		var raw []githubRelease
+		err = json.NewDecoder(io.LimitReader(resp.Body, 16<<20)).Decode(&raw)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range raw {
+			if r.Draft || !releaseVersionAtLeast(r.TagName, firstNativeRelease) {
+				continue
+			}
+			published := r.PublishedAt
+			if published.IsZero() {
+				published = r.CreatedAt
+			}
+			notes = append(notes, ReleaseNote{
+				Version:     strings.TrimPrefix(r.TagName, "v"),
+				Name:        strings.TrimSpace(r.Name),
+				Body:        cleanReleaseBody(r.Body),
+				URL:         r.HTMLURL,
+				PublishedAt: published,
+			})
+		}
+		if len(raw) < 100 {
+			break
+		}
 	}
 	sort.SliceStable(notes, func(i, j int) bool {
 		return notes[i].PublishedAt.After(notes[j].PublishedAt)
 	})
-	if len(notes) > 5 {
-		notes = notes[:5]
-	}
 	return notes, nil
+}
+
+func releaseVersionAtLeast(tag, minimum string) bool {
+	version := "v" + strings.TrimPrefix(strings.TrimSpace(tag), "v")
+	return semver.IsValid(version) && semver.Compare(version, minimum) >= 0
 }
 
 func cleanReleaseBody(body string) string {

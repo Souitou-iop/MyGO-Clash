@@ -527,7 +527,7 @@ func (t *trayUI) paint() {
 	}
 	icon := art.Tray(trayPx(), v, template)
 	if on {
-		icon = speedIcon(icon, up, down)
+		icon = speedIcon(icon, up, down, v == art.Off)
 	}
 	_ = t.tray.SetIcon(icon, template)
 }

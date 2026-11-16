@@ -43,8 +43,8 @@ github.com/easytier/easytier/easytier-go v0.0.0-20261111015056-2abb1676b475 h1:L
 github.com/easytier/easytier/easytier-go v0.0.0-20261111015056-2abb1676b475/go.mod h1:fCEi5+K2yt+sPDONSWO1uNpOifrwPgFGvm3J0YrFRvk=
 github.com/ebitengine/purego v0.11.1 h1:2zpWRSQNVKN4eKsKO9eM1ILDgWfYMY9GwqRmK6XeQ/0=
 github.com/ebitengine/purego v0.11.1/go.mod h1:DCHPP08djqhNSoTfImcnHYQRZmd0qhakvrozqaEYhGQ=
-github.com/egoist/mygo v0.9.1 h1:vzMjSyahUjSk62+n+qmNXt8Bamyx1UNz359OyEDo/kg=
-github.com/egoist/mygo v0.9.1/go.mod h1:Hw9sxdSQ4tHuehHw5Q6alR1qTS8kgv3oSFxEejg+7qo=
+github.com/egoist/mygo v0.9.2 h1:4Yscy6Xrr8iusJyC2rYgQWUhuDjyLRSIvgNTOv2Zc0c=
+github.com/egoist/mygo v0.9.2/go.mod h1:Hw9sxdSQ4tHuehHw5Q6alR1qTS8kgv3oSFxEejg+7qo=
 github.com/enfein/mieru/v3 v3.39.0 h1:22WJN9i7I4FrY1cTAVp5KfKOFm4sWrXVOXhqf5fkdr8=
 github.com/enfein/mieru/v3 v3.39.0/go.mod h1:zJBUCsi5rxyvHM8fjFf+GLaEl4OEjjBXr1s5F6Qd3hM=
 github.com/ericlagergren/aegis v0.0.0-20250325060835-cd0defd64358 h1:kXYqH/sL8dS/FdoFjr12ePjnLPorPo2FsnrHNuXSDyo=

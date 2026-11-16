@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.6
+
+修复版：升级 MyGo 框架，关闭代理接管时菜单栏网速显示改为灰色，并显示原生重写以来的完整更新日志。/ A fix release: updates the MyGo framework, dims the menu bar speed when the app is not taking traffic over, and shows the complete release history since the native rewrite.
+
+### 🐛 修复 / Fixes
+
+- 关闭系统代理和 TUN 时，菜单栏网速文字随图标一起变灰；开启接管后恢复高亮 / When the system proxy and TUN are off, the menu bar speed text dims with the icon and returns to its bright color when traffic takeover is on
+- 更新日志从原生重写的 v1.0.0 起显示所有正式版本；读取完整发布列表时不再因响应过大而加载失败 / Release notes now show every published version from the native rewrite's v1.0.0, and loading the full release list no longer fails when the response is large
+
+### 🔧 其他 / Other
+
+- MyGo Go 框架升级至 0.9.2 / Updates the MyGo Go framework to 0.9.2
+
 ## 1.0.5
 
 修复版：macOS 上开启“静默启动”后，启动时程序坞图标不再先跳一下再消失。/ A fix release: with silent start on macOS, the Dock icon no longer bounces in for a moment as the app starts.

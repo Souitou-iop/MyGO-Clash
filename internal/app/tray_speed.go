@@ -37,21 +37,26 @@ func trayRate(b int64) string {
 }
 
 // speedIcon is the tray icon with the traffic beside it, as a PNG of
-// black on clear for a template image.
-func speedIcon(icon []byte, up, down int64) []byte {
+// black on clear for a template image. muted dims the traffic when the
+// proxy is off, matching the faint tray icon.
+func speedIcon(icon []byte, up, down int64, muted bool) []byte {
 	src, err := png.Decode(bytes.NewReader(icon))
 	if err != nil {
 		return icon
 	}
 	ih := src.Bounds().Dy()
+	textColor := ui.RGBA(0, 0, 0, 1)
+	if muted {
+		textColor = ui.RGBA(0, 0, 0, 115.0/255.0)
+	}
 	label := ui.Render(func(c *ui.Context) {
 		c.Root().Background(ui.Transparent)
 		ui.Column(c).Fill().Justify(ui.Center).Children(func() {
 			for _, l := range [][2]string{{"↑", trayRate(up)}, {"↓", trayRate(down)}} {
 				ui.Row(c).Height(9).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, l[0]).FontSize(8).FontWeight(700).TextColor(ui.RGBA(0, 0, 0, 1))
+					ui.Text(c, l[0]).FontSize(8).FontWeight(700).TextColor(textColor)
 					ui.Spacer(c)
-					ui.Text(c, l[1]).FontSize(9).FontWeight(600).FontFeatures("tnum").TextColor(ui.RGBA(0, 0, 0, 1)).SingleLine()
+					ui.Text(c, l[1]).FontSize(9).FontWeight(600).FontFeatures("tnum").TextColor(textColor).SingleLine()
 				})
 			}
 		})

@@ -20,3 +20,19 @@ func TestCleanReleaseBodyDropsRuleAndDownloads(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestReleaseVersionAtLeast(t *testing.T) {
+	for _, test := range []struct {
+		tag, minimum string
+		want         bool
+	}{
+		{tag: "v1.0.0", minimum: "v1.0.0", want: true},
+		{tag: "1.0.5", minimum: "v1.0.0", want: true},
+		{tag: "v0.2.32-beta", minimum: "v1.0.0", want: false},
+		{tag: "stable", minimum: "v1.0.0", want: false},
+	} {
+		if got := releaseVersionAtLeast(test.tag, test.minimum); got != test.want {
+			t.Errorf("releaseVersionAtLeast(%q, %q) = %v, want %v", test.tag, test.minimum, got, test.want)
+		}
+	}
+}
