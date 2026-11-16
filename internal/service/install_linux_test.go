@@ -8,21 +8,16 @@ import (
 func TestUnitFile(t *testing.T) {
 	p := Layout("mygo-clash")
 	cfg := Config{Slug: "mygo-clash", Owner: "1000"}
-
-	plain := unitFile(p, cfg, "")
-	if strings.Contains(plain, "SELinuxContext") {
-		t.Fatalf("a unit without SELinux has a context:\n%s", plain)
+	u := unitFile(cfg, p.Bin)
+	want := `ExecStart="/usr/local/sbin/mygo-clash/mygo-clash-service" service run --name "mygo-clash" --owner "1000"`
+	if !strings.Contains(u, want) {
+		t.Fatalf("ExecStart:\n%s", u)
 	}
-	if !strings.Contains(plain, "LimitNOFILE=1048576\n\n[Install]") {
-		t.Fatalf("the unit without SELinux changed:\n%s", plain)
+	env := unitFile(cfg, envBin, oldBin("mygo-clash"))
+	if !strings.Contains(env, `ExecStart="/usr/bin/env" "/usr/local/lib/mygo-clash/mygo-clash-service" service run`) {
+		t.Fatalf("ExecStart through env:\n%s", env)
 	}
-
-	se := unitFile(p, cfg, seContext)
-	want := "LimitNOFILE=1048576\nSELinuxContext=" + seContext + "\n\n[Install]"
-	if !strings.Contains(se, want) {
-		t.Fatalf("the context is not in [Service]:\n%s", se)
-	}
-	if !strings.Contains(se, `ExecStart="/usr/local/lib/mygo-clash/mygo-clash-service" service run --name "mygo-clash" --owner "1000"`) {
-		t.Fatalf("ExecStart:\n%s", se)
+	if p.Bin == oldBin("mygo-clash") {
+		t.Fatal("the executable is still where SELinux labels it lib_t")
 	}
 }

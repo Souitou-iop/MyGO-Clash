@@ -4,7 +4,8 @@
 # desktop tools or the app's service are missing.
 #
 # The app's privileged service (TUN mode) is made by the app, not the package:
-# the app copies its executable to /usr/local/lib/<name>/<name>-service and
+# the app copies its executable to /usr/local/sbin/<name>/<name>-service
+# (/usr/local/lib/<name>/ up to 1.0.0) and
 # writes /etc/systemd/system/<name>-service.service, as `<name> service
 # install` does. So the package only removes it when it is removed, and
 # refreshes that copy when the package is upgraded.
@@ -28,8 +29,11 @@ service_cleanup() {
   if have_systemd; then
     systemctl daemon-reload > /dev/null 2>&1 || true
   fi
-  rm -f "/usr/local/lib/$name/$svc" "/run/$svc.sock"
-  rmdir "/usr/local/lib/$name" > /dev/null 2>&1 || true
+  for dir in "/usr/local/sbin/$name" "/usr/local/lib/$name"; do
+    rm -f "$dir/$svc"
+    rmdir "$dir" > /dev/null 2>&1 || true
+  done
+  rm -f "/run/$svc.sock"
   rm -rf "/run/$svc" "/var/lib/$svc"
 }
 

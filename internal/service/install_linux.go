@@ -24,17 +24,37 @@ type Paths struct {
 }
 
 // Layout returns the paths of the service of the app named slug.
+//
+// The executable is in /usr/local/sbin, whose files SELinux labels bin_t
+// by default: systemd starts a bin_t program in unconfined_service_t,
+// where the service may reach the network and open /dev/net/tun. Its
+// updates are written in its directory and so are labeled bin_t too.
 func Layout(slug string) Paths {
 	name := slug + "-service"
 	return Paths{
 		Label:      name,
-		Bin:        "/usr/local/lib/" + slug + "/" + name,
+		Bin:        "/usr/local/sbin/" + slug + "/" + name,
 		Unit:       "/etc/systemd/system/" + name + ".service",
 		Home:       "/var/lib/" + name,
 		Socket:     "/run/" + name + ".sock",
 		CoreSocket: "/run/" + name + "/core.sock",
 		Logs:       "/var/log/" + name,
 	}
+}
+
+// oldBin is where versions up to 1.0.0 put the executable. SELinux labels
+// it lib_t, which systemd starts in its own init_t, where the service may
+// neither connect to the network nor open /dev/net/tun.
+func oldBin(slug string) string {
+	return "/usr/local/lib/" + slug + "/" + slug + "-service"
+}
+
+// removeOldBin removes the executable at oldBin and its directory.
+func removeOldBin(slug string) {
+	old := oldBin(slug)
+	_ = os.Remove(old)
+	_ = os.Remove(old + ".new")
+	_ = os.Remove(filepath.Dir(old))
 }
 
 const unitTemplate = `[Unit]
@@ -44,79 +64,88 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart="%s" service run --name "%s" --owner "%s"
+ExecStart=%s service run --name "%s" --owner "%s"
 Restart=on-failure
 RestartSec=2
 LimitNOFILE=1048576
-%s
+
 [Install]
 WantedBy=multi-user.target
 `
 
-// unitFile is the service's systemd unit; seCtx is its SELinux context, or
-// "" for none (see selinuxContext).
-func unitFile(p Paths, cfg Config, seCtx string) string {
-	line := ""
-	if seCtx != "" {
-		line = "SELinuxContext=" + seCtx + "\n"
+// unitFile is the service's systemd unit, which starts the service with
+// cmd: its executable, after what runs it if anything does.
+func unitFile(cfg Config, cmd ...string) string {
+	q := make([]string, len(cmd))
+	for i, w := range cmd {
+		q[i] = `"` + w + `"`
 	}
-	return fmt.Sprintf(unitTemplate, p.Bin, cfg.Slug, cfg.Owner, line)
+	return fmt.Sprintf(unitTemplate, strings.Join(q, " "), cfg.Slug, cfg.Owner)
 }
 
-// seContext is the SELinux domain the service runs in. systemd moves a
-// program it starts into it by itself only when the program is labeled
-// bin_t, and the service's executable in /usr/local/lib is labeled lib_t:
-// it would stay in systemd's own init_t, which may neither connect to
-// the network nor open /dev/net/tun. A label given to the file would not
-// last: the service's updates replace the file.
-const seContext = "system_u:system_r:unconfined_service_t:s0"
+// envBin starts the service through env during a relocation (see
+// relocate): env is labeled bin_t, so systemd starts it, and the service
+// it runs, in unconfined_service_t.
+const envBin = "/usr/bin/env"
 
-// selinuxContext returns seContext where SELinux is on and its policy has
-// that domain, and "" otherwise, since systemd refuses to start a unit
-// whose context the policy does not know. The kernel checks the context
-// when it is written to selinuxfs, as libselinux's security_check_context
-// does.
-func selinuxContext() string {
-	f, err := os.OpenFile("/sys/fs/selinux/context", os.O_RDWR, 0)
+// sameFile reports whether a and b name the same file, through links:
+// /usr/local/sbin is a link to bin on Fedora.
+func sameFile(a, b string) bool {
+	fa, err := os.Stat(a)
 	if err != nil {
-		return ""
+		return false
 	}
-	defer f.Close()
-	if _, err := f.Write([]byte(seContext + "\x00")); err != nil {
-		return ""
-	}
-	return seContext
+	fb, err := os.Stat(b)
+	return err == nil && os.SameFile(fa, fb)
 }
 
-// fixUnit gives the unit of a service installed before it had a SELinux
-// context that context, and restarts the service in it. It does so only
-// when the service runs in init_t, where it cannot work; the service
-// reaches this version through its own update, without the user
-// installing it again.
-func fixUnit(cfg Config) {
-	cur, err := os.ReadFile("/proc/self/attr/current")
-	if err != nil || !strings.Contains(string(cur), ":init_t:") {
-		return
-	}
-	seCtx := selinuxContext()
-	if seCtx == "" {
-		return
-	}
+// relocate moves a service that runs from oldBin, which its own update
+// brings to this version, to Layout's Bin: it copies itself there,
+// points the unit at the copy and exits for systemd to start that.
+//
+// Under SELinux the service at oldBin runs in init_t, which may not create
+// files labeled bin_t: it then points the unit at itself through env,
+// which brings it back in unconfined_service_t, where the copy succeeds.
+// Should a step fail it stays where it is, as before.
+func relocate(cfg Config) {
 	p := Layout(cfg.Slug)
-	old, err := os.ReadFile(p.Unit)
-	if err != nil || strings.Contains(string(old), "SELinuxContext=") {
+	exe, err := os.Executable()
+	if err != nil {
 		return
 	}
-	if err := os.WriteFile(p.Unit, []byte(unitFile(p, cfg, seCtx)), 0o644); err != nil {
-		log.Printf("selinux: write the unit: %v", err)
+	if sameFile(exe, p.Bin) {
+		removeOldBin(cfg.Slug)
+		return
+	}
+	if !sameFile(exe, oldBin(cfg.Slug)) {
+		return
+	}
+	old, err := os.ReadFile(p.Unit)
+	if err != nil {
+		return
+	}
+	unit := unitFile(cfg, p.Bin)
+	if err := copyExecutable(exe, p.Bin); err != nil {
+		throughEnv := unitFile(cfg, envBin, exe)
+		if string(old) == throughEnv {
+			log.Printf("relocate: copy to %s: %v", p.Bin, err)
+			return
+		}
+		log.Printf("relocate: copy to %s: %v; restarting through %s", p.Bin, err, envBin)
+		unit = throughEnv
+	}
+	if err := os.WriteFile(p.Unit, []byte(unit), 0o644); err != nil {
+		log.Printf("relocate: write the unit: %v", err)
+		_ = os.Remove(p.Bin)
 		return
 	}
 	if out, err := exec.Command("systemctl", "daemon-reload").CombinedOutput(); err != nil {
-		log.Printf("selinux: systemctl daemon-reload: %v: %s", err, out)
+		log.Printf("relocate: systemctl daemon-reload: %v: %s", err, out)
 		_ = os.WriteFile(p.Unit, old, 0o644)
+		_ = os.Remove(p.Bin)
 		return
 	}
-	log.Printf("selinux: restarting in %s", seCtx)
+	log.Printf("relocate: restarting")
 	os.Exit(exitRestart)
 }
 
@@ -136,7 +165,8 @@ func install(cfg Config) error {
 	if err := copyExecutable(exe, p.Bin); err != nil {
 		return err
 	}
-	if err := os.WriteFile(p.Unit, []byte(unitFile(p, cfg, selinuxContext())), 0o644); err != nil {
+	removeOldBin(cfg.Slug)
+	if err := os.WriteFile(p.Unit, []byte(unitFile(cfg, p.Bin)), 0o644); err != nil {
 		return err
 	}
 	for _, args := range [][]string{{"daemon-reload"}, {"enable", "--now", p.Label}, {"restart", p.Label}} {
@@ -157,6 +187,7 @@ func uninstall(slug string) error {
 	_ = exec.Command("systemctl", "daemon-reload").Run()
 	_ = os.Remove(p.Bin)
 	_ = os.Remove(filepath.Dir(p.Bin))
+	removeOldBin(slug)
 	_ = os.Remove(p.Socket)
 	_ = os.RemoveAll(filepath.Dir(p.CoreSocket))
 	_ = os.RemoveAll(p.Home)
