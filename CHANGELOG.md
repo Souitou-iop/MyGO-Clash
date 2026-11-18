@@ -2,6 +2,19 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.7
+
+小版本：升级 MyGo 框架，“查看更新日志”换上了自己的图标，界面更跟手。/ A small release: updates the MyGo framework, gives “View release notes” an icon of its own, and makes the interface a little smoother.
+
+### 🐛 修复 / Fixes
+
+- “设置 → 高级 → 软件更新”里的“查看更新日志”改用带回溯箭头的时钟图标，不再和“订阅”的文件图标重复 / “View release notes” in Settings → Advanced → Software update now shows a clock with a back arrow, no longer the file icon the subscriptions use
+
+### 🔧 其他 / Other
+
+- MyGo Go 框架升级至 0.10.0：界面布局更快，三击可选整段文字，下拉列表不再超出窗口高度 / Updates the MyGo Go framework to 0.10.0: faster layout, triple-click selects a whole paragraph, and drop-down lists no longer run past the window
+- Linux（KDE）上托盘图标的名称随框架更新发生变化，升级后可能需要重新设置一次托盘图标的显示或隐藏 / On Linux (KDE) the framework gives the tray icon a new name, so its show or hide setting may need setting once more after the update
+
 ## 1.0.6
 
 修复版：升级 MyGo 框架，关闭代理接管时菜单栏网速显示改为灰色，并显示原生重写以来的完整更新日志。/ A fix release: updates the MyGo framework, dims the menu bar speed when the app is not taking traffic over, and shows the complete release history since the native rewrite.

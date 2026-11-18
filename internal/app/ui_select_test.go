@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -9,6 +10,54 @@ import (
 
 	"github.com/egoist/mygo/ui"
 )
+
+// A drop-down's list taller than its window keeps its first options inside
+// the window, and scrolling it reaches the last ones: an attached popup
+// can't grow past the window's height, it scrolls inside instead.
+func TestLongDropdownStaysInItsWindow(t *testing.T) {
+	m := &mainUI{}
+	val := "Pick"
+	opts := make([]string, 30)
+	for i := range opts {
+		opts[i] = fmt.Sprintf("Choice%02d", i)
+	}
+	view := func(c *ui.Context) {
+		m.frame++
+		m.pal = mainPalette(false, false, "", "")
+		c.SetTheme(m.pal.Theme)
+		ui.Column(c).Fill().Justify(ui.End).Padding(20).Children(func() {
+			dropdown(c.Key("d"), &val, opts).Width(200)
+		})
+	}
+	tt := ui.NewTester(view, 400, 300)
+	tt.Frame()
+	tt.Advance(time.Second)
+	if err := tt.Click("Pick"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Advance(time.Second)
+	first, ok := tt.Find("Choice00")
+	if !ok {
+		t.Fatal("the list does not show once opened")
+	}
+	if first.Y < 0 || first.Y+first.H > 300 {
+		t.Fatalf("the list starts off the window, at %v", first)
+	}
+	// The last options are off the window's edge until the list scrolls.
+	if err := tt.Click("Choice29"); err == nil {
+		t.Fatal("the last option is in reach without scrolling")
+	}
+	x, y := first.X+first.W/2, first.Y+first.H/2
+	for range 20 {
+		tt.Scroll(x, y, 0, 120)
+	}
+	if err := tt.Click("Choice29"); err != nil {
+		t.Fatalf("the list does not scroll to its end: %v", err)
+	}
+	if val != "Choice29" {
+		t.Errorf("chose %q, want Choice29", val)
+	}
+}
 
 // A drop-down's list grows in as it opens and stays a moment as it closes,
 // and choosing in it still changes the value.

@@ -86,6 +86,7 @@ var iconMotions = map[*ui.SVG][]iconMotion{
 	icCloud:             {nudge().move(2, 0)},
 	// Buttons.
 	icRefreshCw:       {turn(180, ms(600))},
+	icHistory:         {stagger(drawEase(drawIn(ms(450), 1, 3), ui.EaseOut), map[int]time.Duration{3: ms(160)})},
 	icPlus:            {turn(90, ms(350))},
 	icX:               {turn(90, ms(350))},
 	icCopy:            {nudge(1).move(2.5, 2.5)},

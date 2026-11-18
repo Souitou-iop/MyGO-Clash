@@ -1301,7 +1301,7 @@ func (m *mainUI) updatesSection(c *ui.Context) {
 	}
 	m.section(c, "updates", locales.UpdatesTitle(), func() {
 		m.setting(c, "check", locales.UpdatesCheck(), status, func() {
-			nb := m.button(c, "notes", m.T("updates.notes"), icFileStack, "ghost")
+			nb := m.button(c, "notes", m.T("updates.notes"), icHistory, "ghost")
 			// Where the button is now, which the dialog comes out of and
 			// goes back into.
 			if b := nb.Bounds(); b.W > 0 {
