@@ -7,3 +7,4 @@ mygo_windows_*.syso
 # Icon design lives in design/: source/, exports/ and the .icon project are
 # tracked; the project's own Assets are exports of source/.
 /design/MyGo-Clash.icon/Assets/
+/.codegraph/

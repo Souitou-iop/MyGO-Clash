@@ -67,6 +67,9 @@ type Profile struct {
 	// Converted reports a subscription of share links that the app turned
 	// into a configuration.
 	Converted bool `json:"converted,omitempty"`
+	// Skipped counts the share links of a converted profile that name no
+	// proxy the app can read, and were left out.
+	Skipped int `json:"skipped,omitempty"`
 	// Suggested is the update interval the provider suggested at the last
 	// download, in minutes; 0 when it suggested none.
 	Suggested int `json:"suggestedInterval,omitempty"`

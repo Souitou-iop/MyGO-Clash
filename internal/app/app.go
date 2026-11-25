@@ -190,6 +190,7 @@ func (a *App) start() {
 	st := a.settings.Get()
 	a.applyTheme(st)
 	a.applyLocale(st)
+	profiles.HomeCountry = homeCountry(mygo.App.Region().Locale)
 	log.Printf("switch: at start, system proxy %s, TUN %s, mode %s", onOff(st.SystemProxy.Enabled), onOff(st.Tun.Enabled), st.Clash.Mode)
 	a.tray = newTrayUI(a)
 	a.panel = newQuickPanel(a)

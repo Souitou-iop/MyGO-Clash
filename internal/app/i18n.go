@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo"
+	"golang.org/x/text/language"
 
 	"github.com/mygo-clash/mygo-clash/internal/config"
 )
@@ -192,4 +193,18 @@ func (a *App) applyLocale(st config.Settings) {
 	default:
 		mygo.App.SetLocale(st.Language)
 	}
+}
+
+// homeCountry returns the country of the system's regional formats, as
+// "JP" for "ja-JP", or "CN" when they name none.
+func homeCountry(locale string) string {
+	tag, err := language.Parse(locale)
+	if err != nil {
+		return "CN"
+	}
+	region, confidence := tag.Region()
+	if confidence == language.No || !region.IsCountry() {
+		return "CN"
+	}
+	return region.String()
 }

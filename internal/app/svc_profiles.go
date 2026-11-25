@@ -1,17 +1,24 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/egoist/mygo"
-	"github.com/metacubex/mihomo/common/convert"
+	"github.com/liyue201/goqr"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/webp"
 
 	"github.com/mygo-clash/mygo-clash/internal/config"
 	"github.com/mygo-clash/mygo-clash/internal/enhance"
@@ -96,6 +103,90 @@ func (s Profiles) ImportFile(ctx context.Context) (*profiles.Profile, error) {
 		return nil, err
 	}
 	return &p, nil
+}
+
+// ImportQRCode asks for an image, decodes its first QR code and imports the
+// payload through the same share-link or subscription path as text input.
+func (s Profiles) ImportQRCode(ctx context.Context) (*profiles.Profile, error) {
+	if err := s.a.waitReady(ctx); err != nil {
+		return nil, err
+	}
+	paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
+		Parent:  mygo.CallerWindow(ctx),
+		Title:   tr(s.a, "importQRCode"),
+		Filters: []mygo.FileFilter{{Name: "Images", MIMETypes: []string{"image/*"}}},
+	})
+	if err != nil || len(paths) == 0 {
+		return nil, err
+	}
+	data, err := os.ReadFile(paths[0])
+	if err != nil {
+		return nil, err
+	}
+	text, err := decodeQRCode(data)
+	if err != nil {
+		return nil, err
+	}
+	return s.importText(ctx, text)
+}
+
+// ImportText imports either an HTTP(S) subscription or a direct share link.
+func (s Profiles) ImportText(ctx context.Context, text string) (*profiles.Profile, error) {
+	if err := s.a.waitReady(ctx); err != nil {
+		return nil, err
+	}
+	return s.importText(ctx, text)
+}
+
+func (s Profiles) importText(ctx context.Context, text string) (*profiles.Profile, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil, errors.New("the clipboard is empty")
+	}
+	name := "Imported profile"
+	typ := profiles.TypeLocal
+	content := text
+	if isSubscriptionURL(text) {
+		typ, content = profiles.TypeRemote, ""
+	}
+	p, err := s.a.profiles.Create(ctx, profiles.NewProfile{Type: typ, Name: name, URL: text, Content: content})
+	if err != nil {
+		return nil, err
+	}
+	if cur, _ := s.a.profiles.Current(); cur.UID == p.UID {
+		s.a.scheduleApply()
+	}
+	return &p, nil
+}
+
+// isSubscriptionURL tells a subscription from an HTTP proxy shared as a
+// link: a subscription is one line of http(s)://, while a proxy link names
+// its user or itself (#name) and has no path or query.
+func isSubscriptionURL(text string) bool {
+	if strings.ContainsAny(text, "\r\n") {
+		return false
+	}
+	u, err := url.Parse(text)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return false
+	}
+	proxyLink := (u.User != nil || u.Fragment != "") && strings.Trim(u.Path, "/") == "" && u.RawQuery == ""
+	return !proxyLink
+}
+
+func decodeQRCode(data []byte) (string, error) {
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return "", fmt.Errorf("decode image: %w", err)
+	}
+	codes, err := goqr.Recognize(img)
+	if err != nil {
+		return "", fmt.Errorf("scan QR code: %w", err)
+	}
+	if len(codes) == 0 || strings.TrimSpace(string(codes[0].Payload)) == "" {
+		return "", errors.New("no QR code found")
+	}
+	return string(codes[0].Payload), nil
 }
 
 // Update downloads a remote profile again; withProxy chooses the route
@@ -388,9 +479,9 @@ func nonNil(v []any) []any {
 // ParseLinks turns share links (vmess://, ss://, trojan://, vless://,
 // hysteria2://, ..., or a base64 list of them) into proxies.
 func (s Profiles) ParseLinks(text string) ([]map[string]any, error) {
-	proxies, err := convert.ConvertsV2Ray([]byte(strings.TrimSpace(text)))
-	if err != nil {
-		return nil, err
+	proxies, _ := profiles.ConvertLinks([]byte(strings.TrimSpace(text)))
+	if len(proxies) == 0 {
+		return nil, errors.New("no share link could be read")
 	}
 	return proxies, nil
 }

@@ -296,6 +296,9 @@ func (m *Manager) Create(ctx context.Context, np NewProfile) (Profile, error) {
 				return Profile{}, err
 			}
 			content, p.Converted = normalized, converted
+			if converted {
+				p.Skipped = len(SkippedLinks([]byte(np.Content)))
+			}
 		}
 		if p.Name == "" {
 			p.Name = "Local profile"
@@ -335,6 +338,7 @@ func applyFetched(p *Profile, f *Fetched) {
 	p.Size = len(f.Content)
 	p.Proxies, p.Groups = f.Proxies, f.Groups
 	p.Converted = f.Converted
+	p.Skipped = f.Skipped
 	p.Suggested = f.UpdateInterval
 	p.LastError = ""
 }

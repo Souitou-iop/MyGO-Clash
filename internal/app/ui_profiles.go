@@ -23,6 +23,7 @@ import (
 type profilesPage struct {
 	url       string
 	importing bool
+	qrBusy    bool
 	updating  bool
 	busy      map[string]string // what a profile does, by UID
 	errOpen   map[string]bool
@@ -139,11 +140,24 @@ func (m *mainUI) profilesView(c *ui.Context) {
 			if in.Submitted() {
 				m.importURL()
 			}
+			if m.button(c, "paste", m.T("profiles.pasteImport"), icCopy, "").Height(34).Clicked() {
+				m.importClipboard()
+			}
 			m.busySwap(c, "import-busy", s.importing, func() {
 				if m.button(c, "import", locales.ProfilesImport(), nil, "primary").Height(34).Disabled(strings.TrimSpace(s.url) == "").Clicked() {
 					m.importURL()
 				}
 			})
+			if m.spinButton(c, "qr", icWebcam, m.T("profiles.importQRCode"), s.qrBusy).Size(34, 34).Clicked() {
+				s.qrBusy = true
+				m.run(locales.ProfilesImportFailed(), func() error {
+					pr, err := (Profiles{a}).ImportQRCode(context.Background())
+					if err == nil && pr != nil {
+						m.noticeImported(pr)
+					}
+					return err
+				}, func(err error) { s.qrBusy = false })
+			}
 			if m.iconButton(c, "file", icFileUp, locales.ProfilesFromFile()).Size(34, 34).Clicked() {
 				m.run(locales.ProfilesImportFailed(), func() error { _, err := (Profiles{a}).ImportFile(context.Background()); return err }, nil)
 			}
@@ -214,17 +228,26 @@ func (m *mainUI) cardGridOf(c *ui.Context, key any, least float32, n int, id fun
 }
 
 func (m *mainUI) importURL() {
-	s, a := &m.profs, m.a
+	s := &m.profs
 	u := strings.TrimSpace(s.url)
-	if !strings.HasPrefix(strings.ToLower(u), "http://") && !strings.HasPrefix(strings.ToLower(u), "https://") {
-		m.notices = append(m.notices, Notice{Level: "warning", Message: locales.ProfilesBadUrl()})
+	m.importText(u)
+}
+
+func (m *mainUI) importClipboard() {
+	m.importText(strings.TrimSpace(mygo.Clipboard.ReadText()))
+}
+
+func (m *mainUI) importText(text string) {
+	s, a := &m.profs, m.a
+	if strings.TrimSpace(text) == "" {
+		m.notices = append(m.notices, Notice{Level: "warning", Message: m.T("profiles.clipboardEmpty")})
 		return
 	}
 	s.importing = true
 	m.run(locales.ProfilesImportFailed(), func() error {
-		pr, err := (Profiles{a}).Create(context.Background(), profiles.NewProfile{Type: "remote", URL: u})
+		pr, err := (Profiles{a}).ImportText(context.Background(), text)
 		if err == nil {
-			m.notice(Notice{Level: "success", Message: locales.ProfilesImported(), Detail: pr.Name})
+			m.noticeImported(pr)
 		}
 		return err
 	}, func(err error) {
@@ -233,6 +256,16 @@ func (m *mainUI) importURL() {
 			s.url = ""
 		}
 	})
+}
+
+// noticeImported tells that a profile was imported, and how many of its
+// share links were left out when some could not be read.
+func (m *mainUI) noticeImported(pr *profiles.Profile) {
+	if pr.Skipped > 0 {
+		m.notice(Notice{Level: "warning", Message: locales.ProfilesImported(), Detail: pr.Name + " · " + m.T("profiles.skippedLinks", "n", pr.Skipped)})
+		return
+	}
+	m.notice(Notice{Level: "success", Message: locales.ProfilesImported(), Detail: pr.Name})
 }
 
 // profileTile is a profile: what it is, how much of it is used, and what

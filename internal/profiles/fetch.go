@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/metacubex/mihomo/common/convert"
-
 	"github.com/mygo-clash/mygo-clash/internal/yamlx"
 )
 
@@ -45,6 +43,7 @@ type Fetched struct {
 	UpdateInterval int // minutes, 0 when not suggested
 	Home           string
 	Converted      bool
+	Skipped        int
 	Proxies        int
 	Groups         int
 }
@@ -116,6 +115,9 @@ func Fetch(ctx context.Context, rawURL string, opts FetchOptions) (*Fetched, err
 		return nil, err
 	}
 	f.Content, f.Converted = content, converted
+	if converted {
+		f.Skipped = len(SkippedLinks(body))
+	}
 	if cfg, err := yamlx.Parse(content); err == nil {
 		f.Proxies, f.Groups = countOf(cfg)
 	}
@@ -145,16 +147,51 @@ func Normalize(data []byte) (content []byte, converted bool, err error) {
 			return nil, false, errors.New("the subscription is empty")
 		}
 	}
-	proxies, cerr := convert.ConvertsV2Ray(data)
-	if cerr != nil || len(proxies) == 0 {
+	proxies, _ := ConvertLinks(data)
+	if len(proxies) == 0 {
 		return nil, false, errors.New("the subscription is not a Clash profile nor a list of share links; check its URL, or that your provider supports Clash")
 	}
 	return FromProxies(proxies), true, nil
 }
 
+// SkippedLinks returns the lines of a list of share links that Normalize
+// leaves out because they name no proxy it can read: an unsupported
+// scheme, or a link it cannot parse.
+func SkippedLinks(data []byte) []string {
+	_, skipped := ConvertLinks(data)
+	return skipped
+}
+
+// HomeCountry is the country of the user, an ISO 3166 code such as "CN"
+// or "JP", whose sites the profiles made of share links reach directly.
+// The app sets it from the region of the system at start.
+var HomeCountry = "CN"
+
+// directRules are the rules that keep LAN traffic, and that of the sites
+// of country, off the proxy. Only China has a list of its sites by name.
+func directRules(country string) []any {
+	country = strings.ToUpper(strings.TrimSpace(country))
+	if len(country) != 2 {
+		country = "CN"
+	}
+	if country == "CN" {
+		return []any{
+			"GEOSITE,private,DIRECT",
+			"GEOSITE,cn,DIRECT",
+			"GEOIP,private,DIRECT,no-resolve",
+			"GEOIP,CN,DIRECT",
+		}
+	}
+	return []any{
+		"GEOSITE,private,DIRECT",
+		"GEOIP,private,DIRECT,no-resolve",
+		"GEOIP," + country + ",DIRECT",
+	}
+}
+
 // FromProxies builds a profile around proxies: a selector, an automatic
-// group picking the fastest, and rules that keep domestic and LAN traffic
-// off the proxy.
+// group picking the fastest, and rules that keep LAN traffic and that of
+// the user's country (HomeCountry) off the proxy.
 func FromProxies(proxies []map[string]any) []byte {
 	cfg := yamlx.NewMap()
 	names := []any{}
@@ -172,13 +209,7 @@ func FromProxies(proxies []map[string]any) []byte {
 		yamlx.MapOf("name", "Auto", "type", "url-test", "proxies", names,
 			"url", "https://www.gstatic.com/generate_204", "interval", int64(300), "tolerance", int64(50)),
 	})
-	cfg.Set("rules", []any{
-		"GEOSITE,private,DIRECT",
-		"GEOSITE,cn,DIRECT",
-		"GEOIP,private,DIRECT,no-resolve",
-		"GEOIP,CN,DIRECT",
-		"MATCH,Proxy",
-	})
+	cfg.Set("rules", append(directRules(HomeCountry), "MATCH,Proxy"))
 	out, _ := yamlx.Marshal(cfg)
 	return append([]byte("# Converted from a list of share links by MyGO-Clash\n"), out...)
 }

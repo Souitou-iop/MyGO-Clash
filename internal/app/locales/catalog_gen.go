@@ -4835,6 +4835,46 @@ func (msgs Messages) ProfilesImport() string {
 	return Catalog.Format(msgs.locale, "profilesImport", nil)
 }
 
+// ProfilesPasteImport says "Paste & import"
+// in the language the app shows.
+func ProfilesPasteImport() string { return In(i18n.Locale()).ProfilesPasteImport() }
+
+// ProfilesPasteImport says "Paste & import"
+// in the language of msgs.
+func (msgs Messages) ProfilesPasteImport() string {
+	return Catalog.Format(msgs.locale, "profilesPasteImport", nil)
+}
+
+// ProfilesImportQRCode says "Scan QR from image"
+// in the language the app shows.
+func ProfilesImportQRCode() string { return In(i18n.Locale()).ProfilesImportQRCode() }
+
+// ProfilesImportQRCode says "Scan QR from image"
+// in the language of msgs.
+func (msgs Messages) ProfilesImportQRCode() string {
+	return Catalog.Format(msgs.locale, "profilesImportQRCode", nil)
+}
+
+// ProfilesClipboardEmpty says "The clipboard is empty"
+// in the language the app shows.
+func ProfilesClipboardEmpty() string { return In(i18n.Locale()).ProfilesClipboardEmpty() }
+
+// ProfilesClipboardEmpty says "The clipboard is empty"
+// in the language of msgs.
+func (msgs Messages) ProfilesClipboardEmpty() string {
+	return Catalog.Format(msgs.locale, "profilesClipboardEmpty", nil)
+}
+
+// ProfilesSkippedLinks says "{n} links could not be read and were skipped"
+// in the language the app shows.
+func ProfilesSkippedLinks(n string) string { return In(i18n.Locale()).ProfilesSkippedLinks(n) }
+
+// ProfilesSkippedLinks says "{n} links could not be read and were skipped"
+// in the language of msgs.
+func (msgs Messages) ProfilesSkippedLinks(n string) string {
+	return Catalog.Format(msgs.locale, "profilesSkippedLinks", map[string]any{"n": n})
+}
+
 // ProfilesImportFailed says "Could not import the profile"
 // in the language the app shows.
 func ProfilesImportFailed() string { return In(i18n.Locale()).ProfilesImportFailed() }
