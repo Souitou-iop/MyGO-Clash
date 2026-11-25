@@ -2,7 +2,7 @@
   "name": "MyGO-Clash",
   "slug": "mygo-clash",
   "identifier": "io.mygo.clash",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "copyright": "© 2026 MyGO-Clash contributors. GPL-3.0.",
   "i18n": {
     "dir": "internal/app/locales",

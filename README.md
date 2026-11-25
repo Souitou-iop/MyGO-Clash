@@ -45,7 +45,7 @@
 - 远程订阅：显示已用流量和到期时间，定时自动更新，无法直连的订阅可以通过代理更新
 - 本地配置文件，内置 YAML 编辑器
 - 扩展：全局或单个配置的 YAML 合并、JavaScript 脚本，以及规则、节点、代理组的前置、追加、删除
-- 粘贴分享链接（vmess://、ss://、trojan://、vless://、hysteria2:// 等）导入节点
+- 从分享链接（vmess://、ss://、trojan://、vless://、hysteria2://、wireguard://、snell://、ssh:// 等）、剪贴板或二维码图片导入节点
 - 点击 `clash://install-config?url=…` 链接一键导入订阅
 
 ### Tailscale

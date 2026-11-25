@@ -2,6 +2,21 @@
 
 The section of each version is what the app's update window shows.
 
+## 1.0.8
+
+小版本：订阅可以从二维码图片或剪贴板导入，分享链接支持更多协议，无法识别的链接会单独提示，由分享链接生成的配置按系统地区决定直连。/ A small release: import a profile from a QR code image or the clipboard, share links in more protocols, a note for the links that cannot be read, and configurations made from share links follow the system's region.
+
+### ✨ 新增功能 / New Features
+
+- 订阅页新增“粘贴导入”：剪贴板里是订阅地址、一条或一列分享链接，点一下就能导入，不必先粘到输入框 / A new “Paste & import” on the profiles page imports a subscription address or one or more share links straight from the clipboard, without pasting them into the field first
+- 订阅页新增“选择图片扫码”：从截图或相册图片里的二维码导入订阅或节点，支持 PNG、JPEG、WebP 和 BMP / The new “Scan QR from image” imports a subscription or a node from a QR code in a screenshot or photo, in PNG, JPEG, WebP or BMP
+
+### 🐛 修复 / Fixes
+
+- 分享链接支持 wireguard://、wg://、snell:// 和 ssh://；没有名字的节点按“类型 服务器:端口”命名，重名的自动编号 / Share links now include wireguard://, wg://, snell:// and ssh://; unnamed nodes are named after their type and server, and duplicates get a number
+- 一列分享链接里个别行读不出来时，其余节点照常导入，并提示跳过了几条，不再整次导入失败 / When some lines of a list of share links cannot be read, the rest import as usual with a note of how many were skipped, instead of the whole import failing
+- 由分享链接生成的配置按系统地区决定直连规则：中国内地沿用 geosite:cn，其他地区只把本国 IP 直连，不再一律按中国处理 / Configurations made from share links follow the system's region for direct rules: mainland China keeps geosite:cn, other regions send only their own country's IPs direct instead of always following China's rules
+
 ## 1.0.7
 
 小版本：升级 MyGo 框架，“查看更新日志”换上了自己的图标，界面更跟手。/ A small release: updates the MyGo framework, gives “View release notes” an icon of its own, and makes the interface a little smoother.

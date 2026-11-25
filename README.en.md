@@ -45,7 +45,7 @@
 - Remote subscriptions, with the traffic used and the expiry date, updated on a schedule, and through the proxy when the provider can't be reached directly
 - Local profiles, with a built-in YAML editor
 - Extensions: YAML merges and JavaScript scripts, for every profile or one, and items to prepend, append or remove from rules, proxies and groups
-- Proxies imported from share links (vmess://, ss://, trojan://, vless://, hysteria2://…)
+- Proxies imported from share links (vmess://, ss://, trojan://, vless://, hysteria2://, wireguard://, snell://, ssh://…), the clipboard or a QR code image
 - One-click import from `clash://install-config?url=…` links
 
 ### Tailscale
